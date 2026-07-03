@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Makro Hub v03</title>
+  <title>Makro Hub v04</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -602,7 +602,11 @@
         <div id="kanban-view" class="hidden-view h-full">
           <div class="flex items-center justify-between mb-3 flex-shrink-0">
             <h2 class="text-xl font-black uppercase tracking-widest text-white">Fluxo de Trabalho</h2>
-            <div class="flex gap-2">
+            <div class="flex gap-2 items-center">
+              <div class="relative">
+                <input type="text" id="kanbanSearchInput" class="w-44 p-2 pl-8 rounded-xl text-[10px] font-bold" placeholder="Buscar cards..." oninput="state.kanbanSearch=this.value;renderKanban()">
+                <i data-lucide="search" class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500"></i>
+              </div>
               <button onclick="openKanbanColModal()" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all"><i data-lucide="settings-2" class="w-3.5 h-3.5"></i> Colunas</button>
             </div>
           </div>
@@ -847,7 +851,7 @@
       return STAGE_MIGRATION[stage] || stage;
     }
 
-    let state = { activities: [], categories: [], calDate: new Date(), activityIdCounter: 1, categoryIdCounter: 1, kanbanFilter: 'all', searchFilter: 'all' };
+    let state = { activities: [], categories: [], calDate: new Date(), activityIdCounter: 1, categoryIdCounter: 1, kanbanFilter: 'all', searchFilter: 'all', kanbanSearch: '' };
 
     window.initActivities = async () => {
       try {
@@ -994,9 +998,19 @@
       const board = document.getElementById('kanban-board');
       if (!board) return;
 
-      const filteredActivities = state.kanbanFilter === 'all'
+      let filteredActivities = state.kanbanFilter === 'all'
         ? state.activities
         : state.activities.filter(a => String(a.categoria) === String(state.kanbanFilter));
+
+      if (state.kanbanSearch) {
+        const term = state.kanbanSearch.toLowerCase();
+        filteredActivities = filteredActivities.filter(a =>
+          (a.titulo || '').toLowerCase().includes(term) ||
+          (a.descricao || '').toLowerCase().includes(term)
+        );
+        const input = document.getElementById('kanbanSearchInput');
+        if (input && input.value !== state.kanbanSearch) input.value = state.kanbanSearch;
+      }
 
       const colColors = {
         gray: { border: 'border-white/5', bg: 'bg-black/20', text: 'text-gray-300', badge: 'bg-white/10 text-gray-400', dot: 'bg-gray-400' },
@@ -2143,6 +2157,7 @@
       else btn.classList.remove('hidden-view');
 
       if (view !== 'nps' && view !== 'configuracoes' && view !== 'search') renderAllActivities();
+      if (view === 'kanban') { const inp = document.getElementById('kanbanSearchInput'); if (inp) inp.value = state.kanbanSearch || ''; }
       if (view === 'configuracoes') renderConfiguracoes();
       if (view === 'search') { renderSearch(); setTimeout(() => document.getElementById('searchInput')?.focus(), 100); }
       // Instagram connection dot
