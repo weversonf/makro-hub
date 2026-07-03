@@ -1,0 +1,2905 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Makro Hub</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script src="https://unpkg.com/react@18.2.0/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+  <script>
+    // Recharts UMD precisa de React.PropTypes
+    if (window.React && !window.React.PropTypes) {
+      window.React.PropTypes = window.PropTypes;
+    }
+  </script>
+  <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    :root { --makro-red: #ED1C24; --makro-bg: #010816; --makro-card: rgba(255,255,255,0.05); }
+    body { background-color: var(--makro-bg); color: #f1f5f9; font-family: 'Montserrat', sans-serif; margin: 0; }
+    .glass-card { background: var(--makro-card); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); border-radius: 1.5rem; }
+    .hidden-view { display: none !important; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--makro-red); }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fadeup { animation: fadeUp 0.4s ease forwards; }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+    .animate-slide { animation: slideIn 0.3s ease forwards; }
+
+    /* Kanban */
+    .dragging { opacity: 0.4; transform: scale(0.95); }
+    .drag-over { outline: 2px dashed var(--makro-red) !important; background: rgba(237,28,36,0.05) !important; }
+    .card-touch-dragging { opacity: 0.5; transform: scale(0.96); transition: none; }
+    .touch-drag-ghost { position: fixed; pointer-events: none; z-index: 9999; opacity: 0.85; transform: rotate(2deg) scale(1.03); box-shadow: 0 20px 60px rgba(0,0,0,0.6); transition: none; }
+
+    /* Forms */
+    input, select, textarea { background: rgba(255,255,255,0.05) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; outline: none !important; transition: all 0.3s; }
+    input:focus, select:focus, textarea:focus { border-color: var(--makro-red) !important; box-shadow: 0 0 0 2px rgba(237,28,36,0.2); }
+    select option, select optgroup { background-color: #010816 !important; color: #ffffff !important; }
+    input[type=range] { -webkit-appearance: none; background: rgba(255,255,255,0.1) !important; height: 6px; border-radius: 4px; border: none !important; padding: 0 !important; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 18px; width: 18px; border-radius: 50%; background: var(--makro-red); cursor: pointer; box-shadow: 0 0 10px rgba(237,28,36,0.5); }
+    input[type="checkbox"].hub-check { appearance: none; background-color: rgba(255,255,255,0.1); margin: 0; width: 1.15em; height: 1.15em; border-radius: 0.25em; display: grid; place-content: center; cursor: pointer; }
+    input[type="checkbox"].hub-check::before { content: ""; width: 0.65em; height: 0.65em; transform: scale(0); transition: 120ms transform ease-in-out; box-shadow: inset 1em 1em white; transform-origin: center; clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%); }
+    input[type="checkbox"].hub-check:checked { background-color: var(--makro-red); border-color: var(--makro-red) !important; }
+    input[type="checkbox"].hub-check:checked::before { transform: scale(1); }
+
+    /* Calendar editorial */
+    .day-cell { min-height: 80px; transition: all 0.2s; }
+    .day-cell:hover:not(.other-month) { background: rgba(255,255,255,0.03); }
+
+    /* Custom Date Picker */
+    .date-picker-wrap { position: relative; }
+    .date-picker-trigger {
+      width: 100%; padding: 10px 12px; border-radius: 10px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      color: #fff; font-size: 11px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; gap: 8px;
+      transition: all 0.2s; text-align: left;
+    }
+    .date-picker-trigger:hover { border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); }
+    .date-picker-trigger.has-value { color: #fff; }
+    .date-picker-trigger .dp-placeholder { color: rgba(255,255,255,0.25); }
+    .date-picker-trigger .dp-icon { color: rgba(255,255,255,0.25); flex-shrink: 0; width: 14px; height: 14px; }
+    .date-picker-trigger .dp-clear {
+      margin-left: auto; opacity: 0; transition: opacity 0.2s;
+      color: rgba(255,255,255,0.3); cursor: pointer; padding: 1px; font-size: 14px;
+    }
+    .date-picker-trigger:hover .dp-clear { opacity: 1; }
+    .date-picker-trigger .dp-clear:hover { color: #EF4136; }
+
+    .date-picker-dropdown {
+      position: absolute; top: calc(100% + 6px); left: 0; z-index: 200;
+      background: #0d1117; border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px; padding: 14px; width: 280px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+      animation: dpFadeIn 0.15s ease;
+    }
+    @keyframes dpFadeIn { from { opacity: 0; transform: translateY(-6px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+    .dp-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .dp-header button {
+      background: transparent; border: none;
+      border-radius: 8px; color: rgba(255,255,255,0.4); width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .dp-header button:hover { background: rgba(255,255,255,0.06); color: #fff; }
+    .dp-header-label { font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1.5px; }
+
+    .dp-weekdays { display: grid; grid-template-columns: repeat(7,1fr); gap: 1px; margin-bottom: 4px; }
+    .dp-weekdays span { text-align: center; font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.2); text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 0; }
+
+    .dp-days { display: grid; grid-template-columns: repeat(7,1fr); gap: 1px; }
+    .dp-day {
+      text-align: center; padding: 0; border: none; background: transparent;
+      color: rgba(255,255,255,0.6); font-size: 11px; font-weight: 500;
+      border-radius: 8px; height: 30px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.12s;
+    }
+    .dp-day:hover { background: rgba(255,255,255,0.06); color: #fff; }
+    .dp-day.other { color: rgba(255,255,255,0.1); }
+    .dp-day.other:hover { background: transparent; color: rgba(255,255,255,0.15); }
+    .dp-day.today { color: #ED1C24; font-weight: 800; position: relative; }
+    .dp-day.today::after { content:''; position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); width: 3px; height: 3px; border-radius: 50%; background: #ED1C24; }
+    .dp-day.selected {
+      background: #ED1C24; color: #fff; font-weight: 800;
+      box-shadow: 0 2px 10px rgba(237,28,36,0.35);
+    }
+    .dp-day.selected:hover { background: #c5171e; }
+
+    .dp-today-btn {
+      width: 100%; margin-top: 8px; padding: 6px; border: none;
+      border-radius: 8px; background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.3);
+      font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px;
+      cursor: pointer; transition: all 0.15s; text-align: center;
+    }
+    .dp-today-btn:hover { background: rgba(237,28,36,0.08); color: #ED1C24; }
+
+    /* Custom Select */
+    .custom-select-wrap { position: relative; }
+    .custom-select-trigger {
+      width: 100%; padding: 10px 12px; border-radius: 10px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.25); font-size: 11px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; gap: 8px;
+      transition: all 0.2s; text-align: left;
+    }
+    .custom-select-trigger:hover { border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); }
+    .custom-select-trigger.has-value { color: #fff; }
+    .custom-select-trigger .cs-chevron {
+      margin-left: auto; transition: transform 0.2s; color: rgba(255,255,255,0.2); width: 14px; height: 14px;
+    }
+    .custom-select-trigger.open .cs-chevron { transform: rotate(180deg); }
+
+    .custom-select-dropdown {
+      position: absolute; top: calc(100% + 6px); left: 0; z-index: 200;
+      background: #0d1117; border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px; padding: 4px; width: 100%;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+      animation: dpFadeIn 0.15s ease; max-height: 220px; overflow-y: auto;
+    }
+    .custom-select-dropdown::-webkit-scrollbar { width: 3px; }
+    .custom-select-dropdown::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+    .cs-option {
+      width: 100%; padding: 8px 10px; border: none; background: transparent;
+      color: rgba(255,255,255,0.6); font-size: 11px; font-weight: 500;
+      border-radius: 10px; cursor: pointer; transition: all 0.12s;
+      display: flex; align-items: center; gap: 8px; text-align: left;
+    }
+    .cs-option:hover { background: rgba(255,255,255,0.06); color: #fff; }
+    .cs-option.selected { background: rgba(237,28,36,0.1); color: #ED1C24; font-weight: 700; }
+    .cs-option .cs-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+      border: 2px solid transparent;
+    }
+    .cs-option.selected .cs-dot { border-color: #ED1C24; box-shadow: 0 0 6px rgba(237,28,36,0.3); }
+    .cs-option .cs-check { margin-left: auto; color: #ED1C24; opacity: 0; width: 12px; height: 12px; }
+    .cs-option.selected .cs-check { opacity: 1; }
+
+    /* Upload Preview Table */
+    .upload-table { width: 100%; border-collapse: collapse; min-width: 700px; }
+    .upload-table th { padding: 10px 12px; text-align: left; font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .upload-table td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+    .upload-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .upload-table .cell-edit { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 6px 10px; color: #fff; font-size: 11px; font-weight: 600; width: 100%; outline: none; transition: all 0.2s; }
+    .upload-table .cell-edit:focus { border-color: rgba(237,28,36,0.5); box-shadow: 0 0 0 2px rgba(237,28,36,0.15); }
+    .upload-table .cell-select { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 6px 10px; color: #fff; font-size: 11px; font-weight: 600; width: 100%; outline: none; cursor: pointer; }
+    .upload-table .cell-select option { background: #010816; }
+    .upload-table .row-error td { border-bottom-color: rgba(239,68,68,0.3); }
+    .upload-table .row-error .cell-edit { border-color: rgba(239,68,68,0.4); }
+    .upload-badge { font-size: 8px; font-weight: 900; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* Progress Bar */
+    .progress-bar-track { height: 6px; background: rgba(255,255,255,0.06); border-radius: 10px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; border-radius: 10px; transition: width 0.4s ease; }
+    .progress-steps { display: flex; gap: 3px; }
+    .progress-step {
+      flex: 1; height: 20px; border-radius: 6px; cursor: pointer;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.06);
+      transition: all 0.15s; display: flex; align-items: center; justify-content: center;
+      font-size: 8px; font-weight: 800; color: transparent;
+    }
+    .progress-step:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.4); }
+    .progress-step.active { border-color: transparent; color: #fff; }
+
+    /* Checklist */
+    .checklist-item {
+      display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+      border-radius: 10px; transition: all 0.15s; group: true;
+    }
+    .checklist-item:hover { background: rgba(255,255,255,0.03); }
+    .checklist-check {
+      appearance: none; width: 18px; height: 18px; border-radius: 6px; flex-shrink: 0;
+      background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.15);
+      cursor: pointer; display: grid; place-content: center; transition: all 0.15s;
+    }
+    .checklist-check::after {
+      content: ''; width: 10px; height: 10px; clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+      transform: scale(0); transition: 120ms transform ease-in-out; background: #fff;
+    }
+    .checklist-check:checked { background: #10B981; border-color: #10B981; }
+    .checklist-check:checked::after { transform: scale(1); }
+    .checklist-text { flex: 1; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.8); background: transparent; border: none; outline: none; }
+    .checklist-text.done { text-decoration: line-through; opacity: 0.35; }
+    .checklist-del { opacity: 0; transition: opacity 0.15s; cursor: pointer; color: rgba(255,255,255,0.3); }
+    .checklist-item:hover .checklist-del { opacity: 1; }
+    .checklist-del:hover { color: #EF4136; }
+
+    /* File Upload */
+    .file-drop-zone {
+      border: 2px dashed rgba(255,255,255,0.08); border-radius: 14px;
+      padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s;
+    }
+    .file-drop-zone:hover, .file-drop-zone.dragover {
+      border-color: rgba(237,28,36,0.3); background: rgba(237,28,36,0.03);
+    }
+    .file-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 10px; border-radius: 8px; font-size: 10px; font-weight: 700;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.7); max-width: 200px;
+    }
+    .file-chip .file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-chip .file-remove { cursor: pointer; color: rgba(255,255,255,0.3); transition: color 0.15s; }
+    .file-chip .file-remove:hover { color: #EF4136; }
+
+    /* Kanban column */
+    .kanban-column { min-width: 280px; width: 280px; }
+    @media (max-width: 768px) { .kanban-column { min-width: 85vw; width: 85vw; } }
+
+    /* NPS */
+    .zona-excelencia { background: rgba(0,166,80,0.15); color: #00A650; border: 1px solid rgba(0,166,80,0.3); }
+    .zona-qualidade { background: rgba(86,193,116,0.15); color: #56C174; border: 1px solid rgba(86,193,116,0.3); }
+    .zona-aperfeicoamento { background: rgba(253,185,19,0.15); color: #FDB913; border: 1px solid rgba(253,185,19,0.3); }
+    .zona-critica { background: rgba(239,65,54,0.15); color: #EF4136; border: 1px solid rgba(239,65,54,0.3); }
+    .chart-hint { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
+    .input-error { border-color: #EF4136 !important; box-shadow: 0 0 0 2px rgba(239,65,54,0.2); }
+    .trend-up { color: #00A650; } .trend-down { color: #EF4136; } .trend-flat { color: #FDB913; }
+    .label-pill { font-size: 0.6rem; font-weight: 900; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+    @keyframes moveMenuIn { from { opacity:0; transform:scale(0.92) translateY(8px); } to { opacity:1; transform:scale(1) translateY(0); } }
+
+    /* Mobile Bottom Nav */
+    #mobile-bottom-nav { display: none; }
+    @media (max-width: 1023px) { #mobile-bottom-nav { display: flex; } }
+    .mob-nav-bar { background: #0d1117; border: 1px solid rgba(255,255,255,0.08); border-radius: 28px; display: flex; align-items: center; justify-content: space-around; padding: 0 8px; height: 64px; width: 100%; box-shadow: 0 8px 40px rgba(0,0,0,0.6); }
+    .mob-tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: none; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; padding: 0; height: 100%; }
+    .mob-tab-bubble { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.3s cubic-bezier(0.34,1.4,0.64,1); background: transparent; }
+    .mob-tab-bubble i { color: #555; transition: color 0.2s; }
+    .mob-tab-label { font-size: 8px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.06em; color: transparent; line-height: 1; transition: color 0.2s; }
+    .mob-tab.active .mob-tab-bubble { background: #e01d24; transform: translateY(-14px); box-shadow: 0 6px 20px rgba(224,29,36,0.5); width: 48px; height: 48px; }
+    .mob-tab.active .mob-tab-bubble i { color: #fff; }
+    .mob-tab.active .mob-tab-label { color: #e01d24; }
+    .mob-tab-add .mob-tab-bubble { background: #e01d24; transform: translateY(-14px); box-shadow: 0 6px 24px rgba(224,29,36,0.55); width: 52px; height: 52px; }
+    .mob-tab-add .mob-tab-bubble i { color: #fff; }
+  </style>
+</head>
+<body class="antialiased h-screen w-screen overflow-hidden">
+
+  <!-- LOADER -->
+  <div id="global-loader" class="fixed inset-0 bg-[#010816] z-[999] flex flex-col items-center justify-center transition-opacity duration-500">
+    <div class="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+    <p class="text-xs font-black uppercase tracking-[3px] text-gray-500 animate-pulse">Carregando Makro Hub...</p>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast-container" class="fixed bottom-24 lg:bottom-8 right-8 z-[200] flex flex-col gap-2"></div>
+
+  <!-- MODAL ATIVIDADE -->
+  <div id="modalActivity" class="hidden-view fixed inset-0 bg-black/80 backdrop-blur-md z-[150] flex items-end lg:items-center justify-center p-0 lg:p-4">
+    <div class="absolute inset-0" onclick="closeModal('modalActivity')"></div>
+    <div class="bg-[#010816] border border-white/10 w-full max-w-2xl rounded-t-3xl lg:rounded-3xl shadow-2xl z-10 overflow-hidden animate-fadeup flex flex-col max-h-[95vh]">
+      <div class="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+        <h2 id="activityModalTitle" class="text-lg font-black uppercase tracking-widest text-white">Nova Atividade</h2>
+        <button onclick="closeModal('modalActivity')" class="p-2 text-gray-500 hover:text-white bg-white/5 hover:bg-red-600 rounded-xl"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div class="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
+        <input type="hidden" id="actId">
+        <div>
+          <label class="text-[9px] font-black uppercase opacity-40 mb-2 block tracking-widest">Título</label>
+          <input type="text" id="actTitle" class="w-full p-4 rounded-xl text-sm font-bold">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="text-[9px] font-black uppercase opacity-40 mb-2 block tracking-widest">Categoria</label>
+            <div class="custom-select-wrap" id="csWrapCategory">
+              <button type="button" class="custom-select-trigger" id="csTriggerCategory" onclick="toggleCustomSelect('csCategory')">
+                <span class="cs-label">Selecionar...</span>
+                <svg class="cs-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+            </div>
+            <input type="hidden" id="actCategory">
+          </div>
+          <div>
+            <label class="text-[9px] font-black uppercase opacity-40 mb-2 block tracking-widest">Status</label>
+            <div class="custom-select-wrap" id="csWrapStage">
+              <button type="button" class="custom-select-trigger" id="csTriggerStage" onclick="toggleCustomSelect('csStage')">
+                <span class="cs-label">Selecionar...</span>
+                <svg class="cs-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+            </div>
+            <input type="hidden" id="actStage">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="text-[9px] font-black uppercase opacity-40 mb-2 block tracking-widest">Data de Entrega</label>
+            <div class="date-picker-wrap" id="dpWrapDue">
+              <button type="button" class="date-picker-trigger" id="dpTriggerDue" onclick="toggleDatePicker('dpDue')">
+                <svg class="dp-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                <span class="dp-placeholder">Selecionar data...</span>
+                <span class="dp-clear" onclick="event.stopPropagation();clearDatePicker('dpDue')">&times;</span>
+              </button>
+            </div>
+            <input type="hidden" id="actDue">
+          </div>
+          <div id="postDateGroup" class="hidden-view">
+            <label class="text-[9px] font-black uppercase opacity-40 mb-2 block tracking-widest">Data de Postagem</label>
+            <div class="date-picker-wrap" id="dpWrapPost">
+              <button type="button" class="date-picker-trigger" id="dpTriggerPost" onclick="toggleDatePicker('dpPost')">
+                <svg class="dp-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                <span class="dp-placeholder">Selecionar data...</span>
+                <span class="dp-clear" onclick="event.stopPropagation();clearDatePicker('dpPost')">&times;</span>
+              </button>
+            </div>
+            <input type="hidden" id="actPostDate">
+          </div>
+        </div>
+        <div>
+          <label class="text-[9px] font-black uppercase opacity-40 mb-2 block tracking-widest">Canais</label>
+          <div id="actChannels" class="flex flex-wrap gap-2 mt-1"></div>
+        </div>
+        <div>
+          <label class="text-[9px] font-black uppercase opacity-40 mb-2 block tracking-widest">Descrição</label>
+          <textarea id="actDesc" rows="4" class="w-full p-4 rounded-xl text-sm custom-scrollbar" placeholder="Detalhes da atividade..."></textarea>
+        </div>
+
+        <!-- Dynamic: Admin Fields -->
+        <div id="adminFields" class="hidden-view space-y-4 border-t border-white/5 pt-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-[9px] font-black uppercase opacity-40 mb-2 block tracking-widest">Nº da Nota Fiscal</label>
+              <input type="text" id="actNotaFiscal" class="w-full p-3 rounded-xl text-xs font-bold" placeholder="Ex: 123456">
+            </div>
+            <div>
+              <label class="text-[9px] font-black uppercase opacity-40 mb-2 block tracking-widest">Valor (R$)</label>
+              <input type="text" id="actValor" class="w-full p-3 rounded-xl text-xs font-bold" placeholder="Ex: 1.500,00">
+            </div>
+          </div>
+        </div>
+
+        <!-- Progresso -->
+        <div class="border-t border-white/5 pt-4">
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-[9px] font-black uppercase opacity-40 tracking-widest">Progresso</label>
+            <span id="progressLabel" class="text-[10px] font-black text-white">0%</span>
+          </div>
+          <div id="progressSteps" class="progress-steps"></div>
+        </div>
+
+        <!-- Checklist -->
+        <div class="border-t border-white/5 pt-4">
+          <div class="flex items-center justify-between mb-3">
+            <label class="text-[9px] font-black uppercase opacity-40 tracking-widest flex items-center gap-2">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              Checklist
+            </label>
+            <span id="checklistCount" class="text-[9px] font-bold text-gray-500">0/0</span>
+          </div>
+          <div id="checklistProgress" class="w-full bg-white/5 rounded-full h-1.5 mb-3 overflow-hidden">
+            <div id="checklistProgressFill" class="bg-emerald-500 h-full rounded-full transition-all duration-300" style="width:0%"></div>
+          </div>
+          <div id="checklistItems" class="space-y-1 mb-3"></div>
+          <div class="flex gap-2">
+            <input type="text" id="newCheckItem" class="flex-1 p-2.5 rounded-lg text-xs bg-white/[0.04] border border-white/[0.08] text-white outline-none focus:border-red-500/50" placeholder="Adicionar item..." onkeypress="if(event.key==='Enter')addChecklistItem()">
+            <button onclick="addChecklistItem()" class="px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-[10px] font-bold text-gray-400 hover:text-white transition">Add</button>
+          </div>
+        </div>
+
+        <!-- Anexos -->
+        <div class="border-t border-white/5 pt-4">
+          <label class="text-[9px] font-black uppercase opacity-40 mb-2 block tracking-widest flex items-center gap-2">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            Anexos
+          </label>
+          <div id="fileDropZone" class="file-drop-zone" onclick="document.getElementById('actFileInput').click()">
+            <p class="text-[10px] text-gray-500 font-bold">Arraste arquivos aqui ou clique para selecionar</p>
+            <p class="text-[9px] text-gray-600 mt-1">Máx. 500KB por arquivo</p>
+          </div>
+          <input type="file" id="actFileInput" class="hidden" multiple onchange="handleActFileSelect(this)">
+          <div id="filesList" class="flex flex-wrap gap-2 mt-3"></div>
+        </div>
+
+
+      </div>
+      <div class="px-6 py-4 bg-white/[0.02] border-t border-white/5 flex justify-between items-center">
+        <button id="btnDeleteAct" onclick="deleteActivity()" class="text-xs font-bold text-red-500 hidden-view flex items-center gap-1"><i data-lucide="trash-2" class="w-3 h-3"></i> Excluir</button>
+        <div class="flex gap-3 ml-auto">
+          <button onclick="closeModal('modalActivity')" class="px-4 py-2 text-xs font-bold text-gray-400 hover:text-white transition">Cancelar</button>
+          <button onclick="saveActivity()" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-widest rounded-xl shadow-lg active:scale-95 transition-all">Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CATEGORIA -->
+  <div id="modalCategory" class="hidden-view fixed inset-0 bg-black/80 backdrop-blur-md z-[150] flex items-end lg:items-center justify-center p-0 lg:p-4">
+    <div class="absolute inset-0" onclick="closeModal('modalCategory')"></div>
+    <div class="bg-[#010816] border border-white/10 w-full max-w-md rounded-t-3xl lg:rounded-3xl shadow-2xl z-10 overflow-hidden animate-fadeup">
+      <div class="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+        <h2 id="catModalTitle" class="text-lg font-black uppercase tracking-widest text-white">Nova Categoria</h2>
+        <button onclick="closeModal('modalCategory')" class="p-2 text-gray-500 hover:text-white bg-white/5 hover:bg-red-600 rounded-xl"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div class="p-6 space-y-4">
+        <input type="hidden" id="catIdInput">
+        <div>
+          <label class="text-[9px] font-black uppercase opacity-40 mb-2 block tracking-widest">Nome</label>
+          <input type="text" id="catNameInput" class="w-full p-4 rounded-xl text-sm font-bold">
+        </div>
+        <div>
+          <label class="text-[9px] font-black uppercase opacity-40 mb-2 block tracking-widest">Cor</label>
+          <div class="flex items-center gap-4">
+            <input type="color" id="catColorInput" class="w-12 h-12 rounded-lg cursor-pointer border-none p-0 bg-transparent">
+            <span class="text-[10px] text-gray-500 font-bold">Cor de identificação visual</span>
+          </div>
+        </div>
+      </div>
+      <div class="px-6 py-4 bg-white/[0.02] border-t border-white/5 flex justify-between items-center">
+        <button id="btnDeleteCat" onclick="deleteCategoryFromModal()" class="text-xs font-bold text-red-500 hidden-view flex items-center gap-1"><i data-lucide="trash-2" class="w-3 h-3"></i> Excluir</button>
+        <div class="flex gap-3 ml-auto">
+          <button onclick="closeModal('modalCategory')" class="px-4 py-2 text-xs font-bold text-gray-400 hover:text-white transition">Cancelar</button>
+          <button onclick="saveCategory()" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-widest rounded-xl shadow-lg active:scale-95 transition-all">Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL EDITAR COLUNAS KANBAN -->
+  <div id="kanban-col-modal" class="hidden-view fixed inset-0 bg-black/80 backdrop-blur-md z-[160] flex items-center justify-center p-4">
+    <div class="bg-[#010816] border border-white/10 w-full max-w-md rounded-3xl animate-fadeup flex flex-col max-h-[90vh] overflow-hidden shadow-2xl">
+      <div class="flex justify-between items-center p-6 border-b border-white/5 bg-white/[0.02]">
+        <div class="flex items-center gap-3"><i data-lucide="columns" class="text-red-500 w-5 h-5"></i><h2 class="text-base font-black uppercase tracking-widest text-white">Suas Colunas</h2></div>
+        <button onclick="closeKanbanColModal()" class="text-gray-500 hover:text-white p-2 bg-white/5 hover:bg-red-600 rounded-xl transition-all"><i data-lucide="x"></i></button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-3" id="kanban-col-list"></div>
+      <div class="p-6 border-t border-white/5 space-y-3">
+        <div class="flex gap-2">
+          <input type="text" id="kanban-col-new-name" placeholder="Nome da nova coluna..." class="flex-1 p-3 rounded-xl text-sm">
+          <select id="kanban-col-new-color" class="p-3 rounded-xl text-sm w-32">
+            <option value="gray" class="bg-[#010816]">Padrão</option>
+            <option value="blue" class="bg-[#010816]">Azul</option>
+            <option value="emerald" class="bg-[#010816]">Verde</option>
+            <option value="yellow" class="bg-[#010816]">Amarelo</option>
+            <option value="red" class="bg-[#010816]">Vermelho</option>
+            <option value="purple" class="bg-[#010816]">Roxo</option>
+          </select>
+        </div>
+        <button onclick="addKanbanCol()" class="w-full py-3 bg-white/10 hover:bg-white/20 rounded-xl font-black uppercase text-xs tracking-widest text-white transition-all flex items-center justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Adicionar Coluna</button>
+        <button onclick="saveKanbanCols()" class="w-full py-3 bg-red-600 hover:bg-red-700 rounded-xl font-black uppercase text-xs tracking-widest text-white transition-all flex items-center justify-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> Salvar Layout</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL UPLOAD PREVIEW -->
+  <div id="uploadModal" class="hidden-view fixed inset-0 bg-black/80 backdrop-blur-md z-[160] flex items-end lg:items-center justify-center p-0 lg:p-4">
+    <div class="absolute inset-0" onclick="closeUploadModal()"></div>
+    <div class="bg-[#010816] border border-white/10 w-full max-w-5xl rounded-t-3xl lg:rounded-3xl shadow-2xl z-10 overflow-hidden animate-fadeup flex flex-col max-h-[95vh]">
+      <div class="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+        <div class="flex items-center gap-3">
+          <i data-lucide="file-spreadsheet" class="text-emerald-500 w-5 h-5"></i>
+          <div>
+            <h2 class="text-lg font-black uppercase tracking-widest text-white">Preview do Upload</h2>
+            <p id="uploadFileName" class="text-[10px] text-gray-500 font-bold"></p>
+          </div>
+        </div>
+        <button onclick="closeUploadModal()" class="p-2 text-gray-500 hover:text-white bg-white/5 hover:bg-red-600 rounded-xl"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div class="flex-1 overflow-auto custom-scrollbar p-6">
+        <div id="uploadPreviewTable" class="overflow-x-auto"></div>
+      </div>
+      <div class="px-6 py-4 bg-white/[0.02] border-t border-white/5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span id="uploadCount" class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">0 itens</span>
+          <span id="uploadErrors" class="text-[10px] font-bold text-red-500 uppercase tracking-widest hidden"></span>
+        </div>
+        <div class="flex gap-3">
+          <button onclick="closeUploadModal()" class="px-4 py-2 text-xs font-bold text-gray-400 hover:text-white transition">Cancelar</button>
+          <button onclick="confirmUpload()" id="btnConfirmUpload" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-widest rounded-xl shadow-lg active:scale-95 transition-all flex items-center gap-2">
+            <i data-lucide="check" class="w-4 h-4"></i> Confirmar Upload
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <div id="app-view" class="h-screen w-full flex flex-col bg-[#010816]">
+
+    <!-- HEADER -->
+    <header class="h-20 flex-shrink-0 border-b border-white/5 flex items-center justify-between px-6 lg:px-8 bg-black/20 backdrop-blur-md z-40">
+      <div class="flex items-center gap-4">
+        <img src="http://makroengenharia.com.br/wp-content/uploads/2023/03/logo-1.png" class="h-6 hidden md:block" alt="Logo">
+        <div class="h-6 w-[1px] bg-white/10 hidden md:block mx-2"></div>
+        <h2 id="header-title" class="font-black uppercase tracking-[3px] text-xs opacity-60"><i data-lucide="briefcase" class="inline w-4 h-4 mr-2 text-red-500"></i> Board Operacional</h2>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="document.getElementById('uploadFileInput').click()" class="flex p-3 px-5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white text-[10px] font-black uppercase tracking-widest items-center gap-2 transition-all">
+          <i data-lucide="upload" class="w-4 h-4"></i> Upload
+        </button>
+        <button id="btn-header-add" onclick="openNewActivity()" class="flex p-3 px-6 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[10px] font-black uppercase tracking-widest items-center gap-2 transition-all">
+          <i data-lucide="plus" class="w-4 h-4"></i> Nova Atividade
+        </button>
+        <input type="file" id="uploadFileInput" accept=".csv,.xlsx,.xls" class="hidden" onchange="handleFileUpload(this)">
+      </div>
+    </header>
+
+    <div class="flex-1 flex overflow-hidden">
+      <!-- SIDEBAR -->
+      <aside id="desktop-sidebar" onmouseenter="expandSidebar()" onmouseleave="collapseSidebar()" class="w-[84px] border-r border-white/5 px-3 py-8 flex flex-col hidden lg:flex bg-black/10 transition-all duration-300 relative flex-shrink-0">
+        <div class="flex items-center justify-between mb-8 h-8 overflow-hidden">
+          <span class="sidebar-text hidden-view text-[10px] font-black uppercase tracking-[3px] text-gray-400">Menu</span>
+          <button onclick="toggleDesktopSidebar()" class="p-2 text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl flex-shrink-0 ml-auto">
+            <i data-lucide="chevron-right" id="sidebar-toggle-icon" class="w-4 h-4"></i>
+          </button>
+        </div>
+        <nav class="flex-1 space-y-2 overflow-y-auto custom-scrollbar pr-2">
+          <!-- ATIVIDADES -->
+          <div id="menu-group-atividades" class="border-t border-white/5 pt-4 mt-2">
+            <button onclick="toggleSubMenu('desktop-atividades')" class="w-full p-4 text-gray-400 hover:text-white bg-white/5 rounded-2xl flex items-center justify-between cursor-pointer transition-all">
+              <div class="flex items-center gap-4"><i data-lucide="briefcase" class="w-4 h-4 flex-shrink-0"></i><span class="sidebar-text hidden-view font-bold uppercase text-[10px] tracking-[2px]">Atividades</span></div>
+              <i data-lucide="chevron-down" id="icon-desktop-atividades" class="w-4 h-4 sidebar-text hidden-view transition-transform duration-300"></i>
+            </button>
+            <div id="desktop-atividades" class="space-y-1 mt-2 pl-4">
+              <div onclick="changeView('dashboard')" class="nav-item-dashboard p-3 bg-red-600/10 text-red-500 rounded-xl flex items-center gap-3 cursor-pointer font-bold uppercase text-[9px] tracking-[2px] transition-all"><i data-lucide="layout-dashboard" class="w-3 h-3 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Dashboard</span></div>
+              <div onclick="changeView('kanban')" class="nav-item-kanban p-3 text-gray-500 hover:text-white rounded-xl flex items-center gap-3 cursor-pointer font-bold uppercase text-[9px] tracking-[2px] transition-all"><i data-lucide="columns" class="w-3 h-3 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Kanban</span></div>
+              <div onclick="changeView('calendar')" class="nav-item-calendar p-3 text-gray-500 hover:text-white rounded-xl flex items-center gap-3 cursor-pointer font-bold uppercase text-[9px] tracking-[2px] transition-all"><i data-lucide="calendar-days" class="w-3 h-3 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Calendário</span></div>
+              <div onclick="changeView('categories')" class="nav-item-categories p-3 text-gray-500 hover:text-white rounded-xl flex items-center gap-3 cursor-pointer font-bold uppercase text-[9px] tracking-[2px] transition-all"><i data-lucide="tags" class="w-3 h-3 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Categorias</span></div>
+              <div onclick="changeView('export')" class="nav-item-export p-3 text-gray-500 hover:text-white rounded-xl flex items-center gap-3 cursor-pointer font-bold uppercase text-[9px] tracking-[2px] transition-all"><i data-lucide="download" class="w-3 h-3 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Exportar</span></div>
+            </div>
+          </div>
+          <!-- NPS -->
+          <div id="menu-group-nps" class="border-t border-white/5 pt-4 mt-2">
+            <div onclick="changeView('nps')" class="nav-item-nps p-4 text-gray-400 hover:text-white hover:bg-white/5 rounded-2xl flex items-center gap-4 cursor-pointer font-bold uppercase text-[10px] tracking-[2px] transition-all">
+              <i data-lucide="bar-chart-2" class="w-4 h-4 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Painel NPS</span>
+            </div>
+          </div>
+          <!-- CONFIGURAÇÕES -->
+          <div id="menu-group-configuracoes" class="border-t border-white/5 pt-4 mt-2">
+            <div onclick="changeView('configuracoes')" class="nav-item-configuracoes p-4 text-gray-400 hover:text-white hover:bg-white/5 rounded-2xl flex items-center gap-4 cursor-pointer font-bold uppercase text-[10px] tracking-[2px] transition-all relative">
+              <i data-lucide="settings" class="w-4 h-4 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Configurações</span>
+              <span id="igConnectedDot" class="ml-auto w-2 h-2 rounded-full hidden"></span>
+            </div>
+          </div>
+        </nav>
+        <button class="p-4 text-gray-500 hover:text-red-500 flex items-center gap-4 transition-all font-black uppercase text-[10px] tracking-[3px] mt-auto" title="Brand Hub" onclick="window.open('http://makroengenharia.com.br/brandhub/','_blank')">
+          <i data-lucide="external-link" class="w-4 h-4 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Brand Hub</span>
+        </button>
+      </aside>
+
+      <!-- MAIN -->
+      <main class="flex-1 overflow-y-auto p-4 lg:p-8 pb-28 lg:pb-8 custom-scrollbar relative" id="main-content">
+
+        <!-- VIEW: DASHBOARD ATIVIDADES -->
+        <div id="dashboard-view" class="hidden-view">
+          <div class="space-y-8">
+            <h2 class="text-xl font-black uppercase tracking-widest text-white mb-6">Atividades</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+              <div class="glass-card p-6 flex flex-col items-center text-center"><span class="text-[10px] font-black uppercase opacity-40 tracking-widest mb-2">Total</span><span id="dash-total" class="text-4xl font-black text-white">0</span></div>
+              <div class="glass-card p-6 flex flex-col items-center text-center border-b-4 border-emerald-500"><span class="text-[10px] font-black uppercase opacity-40 tracking-widest mb-2">Concluídas</span><span id="dash-concluidas" class="text-4xl font-black text-emerald-500">0</span></div>
+              <div class="glass-card p-6 flex flex-col items-center text-center border-b-4 border-blue-500"><span class="text-[10px] font-black uppercase opacity-40 tracking-widest mb-2">Pendentes</span><span id="dash-pendentes" class="text-4xl font-black text-blue-500">0</span></div>
+              <div class="glass-card p-6 flex flex-col items-center text-center border-b-4 border-red-500 bg-red-500/5"><span class="text-[10px] font-black uppercase opacity-40 tracking-widest mb-2">Taxa Sucesso</span><span id="dash-rate" class="text-4xl font-black text-red-500">0%</span></div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div class="lg:col-span-2 glass-card overflow-hidden">
+                <div class="p-6 border-b border-white/5 flex items-center justify-between">
+                  <h3 class="font-black text-xs uppercase tracking-widest text-white">Próximas Atividades</h3>
+                  <button onclick="changeView('kanban')" class="text-[10px] font-bold text-red-500 hover:text-red-400 transition">Ver Fluxo</button>
+                </div>
+                <div id="dashboardUpcoming" class="divide-y divide-white/5"></div>
+              </div>
+              <div class="glass-card p-6">
+                <h3 class="font-black text-xs uppercase tracking-widest text-white mb-4">Canais de Distribuição</h3>
+                <div id="dashboardChannels" class="space-y-4"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW: KANBAN -->
+        <div id="kanban-view" class="hidden-view h-full">
+          <div class="flex items-center justify-between mb-3 flex-shrink-0">
+            <h2 class="text-xl font-black uppercase tracking-widest text-white">Fluxo de Trabalho</h2>
+            <div class="flex gap-2">
+              <button onclick="openKanbanColModal()" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all"><i data-lucide="settings-2" class="w-3.5 h-3.5"></i> Colunas</button>
+            </div>
+          </div>
+          <div id="kanban-filters" class="flex flex-wrap gap-2 mb-4 flex-shrink-0"></div>
+          <div id="kanban-board" class="flex gap-4 md:gap-6 overflow-x-auto custom-scrollbar pb-6 items-start" style="height:calc(100vh - 260px); -webkit-overflow-scrolling:touch;"></div>
+        </div>
+
+        <!-- VIEW: CALENDAR -->
+        <div id="calendar-view" class="hidden-view">
+          <div class="flex flex-col lg:flex-row gap-8">
+            <div class="flex-1 glass-card overflow-hidden">
+              <div class="p-4 lg:p-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+                <h2 id="calMonthLabel" class="text-lg lg:text-xl font-black uppercase tracking-widest text-white">Junho 2026</h2>
+                <div class="flex items-center gap-2">
+                  <button onclick="changeMonth(-1)" class="p-2 rounded-lg hover:bg-white/10 border border-transparent hover:border-white/10 transition"><i data-lucide="chevron-left" class="w-5 h-5 text-gray-400"></i></button>
+                  <button onclick="goToday()" class="px-3 py-1.5 text-xs font-bold bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition">Hoje</button>
+                  <button onclick="changeMonth(1)" class="p-2 rounded-lg hover:bg-white/10 border border-transparent hover:border-white/10 transition"><i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i></button>
+                </div>
+              </div>
+              <div class="grid grid-cols-7 border-b border-white/5 text-[10px] font-black uppercase tracking-widest text-gray-500 text-center py-2">
+                <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
+              </div>
+              <div id="calendarGrid" class="grid grid-cols-7 auto-rows-fr"></div>
+            </div>
+            <div class="w-full lg:w-80 glass-card p-6">
+              <h3 id="dailyTitle" class="font-black text-xs uppercase tracking-widest text-white mb-4">Posts do Dia</h3>
+              <div id="dailyPostsList" class="space-y-3"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW: CATEGORIES -->
+        <div id="categories-view" class="hidden-view">
+          <div class="glass-card overflow-hidden">
+            <div class="p-6 border-b border-white/5 flex items-center justify-between">
+              <h3 class="font-black text-xs uppercase tracking-widest text-white">Categorias</h3>
+              <button onclick="openNewCategoryModal()" class="px-4 py-3 bg-red-600 hover:bg-red-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg active:scale-95 transition-all flex items-center gap-2"><i data-lucide="plus" class="w-3 h-3"></i> Nova</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left">
+                <thead class="bg-white/5 text-gray-500 text-[9px] font-black uppercase tracking-widest"><tr><th class="p-5">Nome</th><th class="p-5 text-right">Ações</th></tr></thead>
+                <tbody id="categoriesTableBody" class="divide-y divide-white/5"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW: EXPORT -->
+        <div id="export-view" class="hidden-view">
+          <div class="max-w-md mx-auto glass-card p-8 text-center">
+            <div class="w-16 h-16 bg-red-600/10 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-6"><i data-lucide="download" class="w-8 h-8"></i></div>
+            <h2 class="text-xl font-black uppercase tracking-widest text-white mb-2">Exportar Dados</h2>
+            <p class="text-xs text-gray-400 mb-8">Baixe o backup completo em formato JSON.</p>
+            <button onclick="exportData()" class="w-full py-4 bg-red-600 hover:bg-red-700 text-white font-black uppercase tracking-widest rounded-xl shadow-lg active:scale-95 transition-all">Baixar Backup</button>
+          </div>
+        </div>
+
+        <!-- VIEW: CONFIGURAÇÕES / INSTAGRAM -->
+        <div id="configuracoes-view" class="hidden-view">
+          <div class="max-w-4xl mx-auto space-y-6">
+            <div id="instagramHero" class="glass-card overflow-hidden">
+              <div id="instagramNotConnected" class="p-8 text-center">
+                <div class="w-20 h-20 mx-auto mb-5 rounded-2xl flex items-center justify-center" style="background:linear-gradient(135deg,#833AB4,#FD1D1D,#F77737,#FCAF45)">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                </div>
+                <h2 class="text-xl font-black text-white mb-2">Conectar Instagram</h2>
+                <p class="text-[13px] text-gray-400 max-w-md mx-auto mb-6">Conecte sua conta do Instagram para acessar análises, descobrir os melhores horários e publicar conteúdo pelo painel.</p>
+
+                <!-- PRIMEIRA OPÇÃO: OAuth com Facebook -->
+                <div class="max-w-lg mx-auto mb-6 p-5 rounded-2xl" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06)">
+                  <h3 class="text-[11px] font-black uppercase tracking-widest text-white mb-3">Opção 1: Login com Facebook</h3>
+                  <p class="text-[10px] text-gray-500 mb-4">Você será redirecionado ao Facebook para fazer login e autorizar o acesso. (Requer App Meta)</p>
+                  <button onclick="startInstagramOAuth()" class="w-full px-8 py-4 rounded-xl font-black uppercase text-xs tracking-widest text-white shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3" style="background:linear-gradient(135deg,#833AB4,#FD1D1D)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                    Conectar com Facebook
+                  </button>
+                  <button id="btnConfigAppId" onclick="promptAppId()" class="mt-2 text-[10px] text-blue-400 hover:text-blue-300 font-bold transition">Configurar App ID</button>
+                  <span id="savedAppIdIndicator" class="hidden text-[9px] text-emerald-500 ml-2">● App ID configurado</span>
+                </div>
+
+                <!-- SEGUNDA OPÇÃO: Token manual -->
+                <div class="max-w-lg mx-auto">
+                  <div class="flex items-center gap-2 mb-3 justify-center">
+                    <span class="h-px flex-1" style="background:rgba(255,255,255,0.06)"></span>
+                    <span class="text-[9px] font-black uppercase tracking-widest text-gray-600">ou</span>
+                    <span class="h-px flex-1" style="background:rgba(255,255,255,0.06)"></span>
+                  </div>
+                  <button onclick="document.getElementById('igTokenInput').classList.toggle('hidden')" class="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition-all">Usar Token Manual</button>
+                  <div id="igTokenInput" class="hidden mt-4">
+                    <div class="flex gap-3">
+                      <input id="manualIgToken" class="flex-1 p-3 rounded-xl text-sm font-bold" placeholder="EAABwzLix...">
+                      <button onclick="connectInstagramManual()" class="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg transition-all">Conectar</button>
+                    </div>
+                    <p class="text-[10px] text-gray-500 mt-2">Cole o Access Token gerado no <a href="https://developers.facebook.com/tools/explorer/" target="_blank" class="text-blue-400 hover:text-blue-300">Graph API Explorer</a></p>
+                  </div>
+                </div>
+              </div>
+              <div id="instagramConnected" class="hidden">
+                <!-- Profile Header -->
+                <div class="p-6 border-b border-white/5">
+                  <div class="flex items-center gap-5">
+                    <div id="igProfilePic" class="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-orange-400 flex items-center justify-center text-white font-black text-2xl">?</div>
+                    <div class="flex-1">
+                      <div class="flex items-center gap-3">
+                        <h2 id="igUsername" class="text-lg font-black text-white">@usuário</h2>
+                        <span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 text-[8px] font-black uppercase tracking-widest rounded border border-emerald-500/30">● Conectado</span>
+                      </div>
+                      <p id="igFullName" class="text-[13px] text-gray-400 mt-0.5">Nome da Conta</p>
+                    </div>
+                    <button onclick="disconnectInstagram()" class="px-4 py-2 bg-white/10 hover:bg-red-600 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-white transition-all">Desconectar</button>
+                  </div>
+                  <div class="grid grid-cols-3 gap-4 mt-6">
+                    <div class="text-center p-4 bg-white/5 rounded-xl"><span id="igPostsCount" class="text-2xl font-black text-white">0</span><p class="text-[9px] font-black uppercase tracking-widest text-gray-500 mt-1">Publicações</p></div>
+                    <div class="text-center p-4 bg-white/5 rounded-xl"><span id="igFollowersCount" class="text-2xl font-black text-white">0</span><p class="text-[9px] font-black uppercase tracking-widest text-gray-500 mt-1">Seguidores</p></div>
+                    <div class="text-center p-4 bg-white/5 rounded-xl"><span id="igFollowingCount" class="text-2xl font-black text-white">0</span><p class="text-[9px] font-black uppercase tracking-widest text-gray-500 mt-1">Seguindo</p></div>
+                  </div>
+                </div>
+                <!-- Best Time to Post -->
+                <div class="p-6 border-b border-white/5">
+                  <div class="flex items-center justify-between mb-5">
+                    <div>
+                      <h3 class="text-[13px] font-black uppercase tracking-widest text-white">Melhor Horário para Postar</h3>
+                      <p class="text-[10px] text-gray-500 mt-0.5">Baseado nos insights da sua conta</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="w-3 h-3 rounded" style="background:#059669"></span><span class="text-[9px] text-gray-500 font-bold">Melhor</span>
+                      <span class="w-3 h-3 rounded" style="background:#D97706"></span><span class="text-[9px] text-gray-500 font-bold">Bom</span>
+                      <span class="w-3 h-3 rounded" style="background:#DC2626"></span><span class="text-[9px] text-gray-500 font-bold">Menor</span>
+                    </div>
+                  </div>
+                  <div id="bestTimeGrid" class="overflow-x-auto"></div>
+                </div>
+                <!-- Recent Media -->
+                <div class="p-6">
+                  <h3 class="text-[13px] font-black uppercase tracking-widest text-white mb-4">Mídias Recentes</h3>
+                  <div id="igRecentMedia" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW: NPS -->
+        <div id="nps-view" class="hidden-view">
+          <div id="nps-root"></div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- MOBILE BOTTOM NAV -->
+  <nav id="mobile-bottom-nav" class="fixed bottom-0 left-0 right-0 z-[90] flex items-end justify-center px-4" style="padding-bottom: max(14px, env(safe-area-inset-bottom));">
+    <div class="mob-nav-bar">
+      <button class="mob-tab nav-item-dashboard active" onclick="changeView('dashboard')">
+        <div class="mob-tab-bubble"><i data-lucide="layout-dashboard" class="w-5 h-5"></i></div>
+        <span class="mob-tab-label">Painel</span>
+      </button>
+      <button class="mob-tab nav-item-kanban" onclick="changeView('kanban')">
+        <div class="mob-tab-bubble"><i data-lucide="columns" class="w-5 h-5"></i></div>
+        <span class="mob-tab-label">Board</span>
+      </button>
+      <button class="mob-tab mob-tab-add" onclick="openNewActivity()">
+        <div class="mob-tab-bubble"><i data-lucide="plus" class="w-6 h-6"></i></div>
+      </button>
+      <button class="mob-tab nav-item-calendar" onclick="changeView('calendar')">
+        <div class="mob-tab-bubble"><i data-lucide="calendar-days" class="w-5 h-5"></i></div>
+        <span class="mob-tab-label">Agenda</span>
+      </button>
+      <button class="mob-tab nav-item-nps" onclick="changeView('nps')">
+        <div class="mob-tab-bubble"><i data-lucide="bar-chart-2" class="w-5 h-5"></i></div>
+        <span class="mob-tab-label">NPS</span>
+      </button>
+      <button class="mob-tab nav-item-configuracoes" onclick="changeView('configuracoes')">
+        <div class="mob-tab-bubble"><i data-lucide="settings" class="w-5 h-5"></i></div>
+        <span class="mob-tab-label">Config</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- FIREBASE + ATIVIDADES -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCGemp_OA8savCmLZfX7Us0nmDpdbpv4N0",
+      authDomain: "mytasks-saturday.firebaseapp.com",
+      projectId: "mytasks-saturday",
+      storageBucket: "mytasks-saturday.firebasestorage.app",
+      messagingSenderId: "647554172397",
+      appId: "1:647554172397:web:aac3ef00938ee7cd8f13e4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.fb = { db, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy };
+    window.initActivities();
+  </script>
+
+  <script>
+    // ── ATIVIDADES ──────────────────────────────────────────────────────
+    const STAGES = ['afazer', 'execucao', 'espera', 'validando', 'concluido'];
+    const STAGE_LABELS = { afazer: 'A Fazer', execucao: 'Em Execução', espera: 'Em Espera', validando: 'Validando', concluido: 'Concluído' };
+    const STAGE_COLORS = { afazer: 'text-gray-400 bg-white/5', execucao: 'text-blue-400 bg-blue-500/10', espera: 'text-amber-400 bg-amber-500/10', validando: 'text-purple-400 bg-purple-500/10', concluido: 'text-emerald-400 bg-emerald-500/10' };
+    const CHANNELS = [
+      { id: 'ig', label: 'IG', color: '#E1306C' }, { id: 'fb', label: 'FB', color: '#1877F2' },
+      { id: 'li', label: 'LI', color: '#0A66C2' }, { id: 'site', label: 'Site', color: '#3B82F6' },
+      { id: 'materia', label: 'Blog', color: '#8B5CF6' }
+    ];
+
+    const STAGE_MIGRATION = { criar: 'afazer', revisar: 'validando', aprovar: 'validando' };
+
+    function normalizeStage(stage) {
+      return STAGE_MIGRATION[stage] || stage;
+    }
+
+    let state = { activities: [], categories: [], calDate: new Date(), activityIdCounter: 1, categoryIdCounter: 1, kanbanFilter: 'all' };
+
+    window.initActivities = async () => {
+      try {
+        loadFromFirebase();
+        lucide.createIcons();
+      } catch (e) { showToast("Erro ao carregar dados.", "error"); }
+    };
+
+    function loadFromFirebase() {
+      window.fb.onSnapshot(window.fb.collection(window.fb.db, 'activities'), (actSnap) => {
+        state.activities = []; actSnap.forEach(d => {
+          const a = { ...d.data(), _fbId: d.id };
+          a.stage = normalizeStage(a.stage);
+          state.activities.push(a);
+        });
+        if (state.activities.length) state.activityIdCounter = Math.max(...state.activities.map(a => a.id || 0)) + 1;
+        renderAllActivities();
+      });
+
+      window.fb.onSnapshot(window.fb.collection(window.fb.db, 'categories'), (catSnap) => {
+        state.categories = []; catSnap.forEach(d => state.categories.push({ ...d.data(), _fbId: d.id }));
+        if (state.categories.length === 0) initDefaultCategories().then(() => renderAllActivities());
+        else if (state.categories.length) {
+          state.categoryIdCounter = Math.max(...state.categories.map(c => c.id || 0)) + 1;
+          renderAllActivities();
+        }
+      });
+    }
+
+    async function initDefaultCategories() {
+      const defaults = [
+        { id: 1, nome: 'Editorial', cor: '#3b82f6' },
+        { id: 2, nome: 'Administrativo', cor: '#f59e0b' },
+        { id: 3, nome: 'Design', cor: '#a855f7' },
+      ];
+      for (const cat of defaults) { const d = await window.fb.addDoc(window.fb.collection(window.fb.db, 'categories'), cat); state.categories.push({ ...cat, _fbId: d.id }); }
+      state.categoryIdCounter = 4;
+    }
+
+    function renderAllActivities() {
+      renderDashboard();
+      renderKanban();
+      renderCalendar();
+      renderCategories();
+      refreshCategoryOptions();
+      document.getElementById('actChannels').innerHTML = CHANNELS.map(ch => `
+        <label class="flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-lg cursor-pointer text-[10px] font-bold hover:bg-white/10 transition">
+          <input type="checkbox" value="${ch.id}" class="hub-check"> ${ch.label}
+        </label>
+      `).join('');
+    }
+
+    function renderDashboard() {
+      const done = state.activities.filter(a => a.stage === 'concluido').length;
+      const total = state.activities.length;
+      document.getElementById('dash-total').textContent = total;
+      document.getElementById('dash-concluidas').textContent = done;
+      document.getElementById('dash-pendentes').textContent = total - done;
+      document.getElementById('dash-rate').textContent = total ? Math.round((done / total) * 100) + '%' : '0%';
+
+      const upcoming = [...state.activities].filter(a => a.stage !== 'concluido').sort((a, b) => new Date(a.dataVencimento) - new Date(b.dataVencimento)).slice(0, 5);
+      document.getElementById('dashboardUpcoming').innerHTML = upcoming.length ? upcoming.map(a => {
+        const cat = state.categories.find(c => c.id == a.categoria) || { nome: 'Geral', cor: '#cbd5e1' };
+        return `<div class="p-4 hover:bg-white/5 transition-all cursor-pointer flex items-center justify-between" onclick="openEditActivity(${a.id})">
+          <div class="flex items-center gap-3 flex-1 min-w-0"><div class="w-1.5 h-6 rounded-full flex-shrink-0" style="background-color:${cat.cor}"></div>
+          <div class="min-w-0 flex-1"><h4 class="text-xs font-bold text-white truncate">${esc(a.titulo)}</h4>
+          <div class="flex items-center gap-2 mt-1"><div class="progress-bar-track flex-1"><div class="progress-bar-fill" style="width:${a.progress || 0}%; background:${getProgressColor(a.progress || 0)}"></div></div>
+          <span class="text-[9px] font-bold text-gray-500">${a.progress || 0}%</span></div>
+          <p class="text-[10px] text-gray-500 mt-0.5">Entrega: ${fmtDate(a.dataVencimento)}${a.dataPostagem ? ` · Post: ${fmtDate(a.dataPostagem)}` : ''}</p></div></div>
+          <span class="text-[9px] font-black uppercase ${STAGE_COLORS[a.stage]} px-2 py-1 rounded-full flex-shrink-0 ml-3">${STAGE_LABELS[a.stage]}</span>
+        </div>`;
+      }).join('') : '<div class="p-8 text-center text-xs text-gray-500 font-bold uppercase tracking-widest">Nenhuma pendência.</div>';
+
+      document.getElementById('dashboardChannels').innerHTML = CHANNELS.map(ch => {
+        const count = state.activities.filter(a => a.canais && a.canais.includes(ch.id)).length;
+        const pct = total ? Math.round((count / total) * 100) : 0;
+        return `<div><div class="flex justify-between text-[10px] font-bold text-gray-400 mb-1"><span>${ch.label}</span><span>${count}</span></div>
+        <div class="w-full bg-white/5 h-1.5 rounded-full"><div class="h-full rounded-full transition-all duration-700" style="width:${pct}%; background-color:${ch.color}"></div></div></div>`;
+      }).join('');
+    }
+
+    // ── Dynamic Fields by Category ─────────────────────────────────────
+    function getCategoryType(catName) {
+      const n = (catName || '').toLowerCase();
+      if (n.includes('admin') || n.includes('nota') || n.includes('fiscal') || n.includes('financeiro')) return 'admin';
+      if (n.includes('editorial') || n.includes('conteúdo') || n.includes('conteudo') || n.includes('social') || n.includes('post')) return 'editorial';
+      if (n.includes('design') || n.includes('arte') || n.includes('cria')) return 'design';
+      return 'default';
+    }
+
+    function getExtraInfo(activity, cat) {
+      const type = getCategoryType(cat.nome);
+      const isConteudo = (cat.nome || '').toLowerCase().includes('conteúdo') || (cat.nome || '').toLowerCase().includes('conteudo');
+      const parts = [];
+      if (type === 'admin') {
+        if (activity.notaFiscal) parts.push(`<span class="text-[9px] text-gray-400"><span class="text-gray-600">NF:</span> ${esc(activity.notaFiscal)}</span>`);
+      }
+      if (isConteudo) {
+        if (activity.canais && activity.canais.length) {
+          const chTags = activity.canais.map(chId => { const ch = CHANNELS.find(c => c.id === chId); return ch ? `<span class="px-1.5 py-0.5 rounded text-[7px] font-bold text-white" style="background:${ch.color}">${ch.label}</span>` : ''; }).join(' ');
+          parts.push(chTags);
+        }
+      }
+      return parts.length ? parts.join(' ') : null;
+    }
+
+    function toggleDynamicFields() {
+      const catId = document.getElementById('actCategory').value;
+      const cat = state.categories.find(c => c.id == catId);
+      const type = getCategoryType(cat ? cat.nome : '');
+      const isConteudo = (cat ? cat.nome : '').toLowerCase().includes('conteúdo') || (cat ? cat.nome : '').toLowerCase().includes('conteudo');
+
+      const adminFields = document.getElementById('adminFields');
+      const channelsGroup = document.getElementById('actChannels').parentElement;
+
+      if (adminFields) adminFields.classList.toggle('hidden-view', type !== 'admin');
+      if (channelsGroup) channelsGroup.style.display = isConteudo ? '' : 'none';
+    }
+    window.toggleDynamicFields = toggleDynamicFields;
+
+    function renderKanbanFilters() {
+      const container = document.getElementById('kanban-filters');
+      if (!container) return;
+      const cats = [{ id: 'all', nome: 'Todos', cor: '#fff' }, ...state.categories];
+      container.innerHTML = cats.map(c => {
+        const isActive = state.kanbanFilter === String(c.id);
+        return `<button onclick="setKanbanFilter('${c.id}')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${isActive ? 'text-white' : 'text-gray-500 hover:text-gray-300 bg-white/5 hover:bg-white/10'}" style="${isActive ? `background:${c.cor}22; border:1px solid ${c.cor}55; color:${c.cor}` : 'border:1px solid transparent'}">
+          ${c.id !== 'all' ? `<span class="w-2 h-2 rounded-full" style="background:${c.cor}"></span>` : ''}
+          ${c.nome}
+        </button>`;
+      }).join('');
+    }
+
+    function setKanbanFilter(catId) {
+      state.kanbanFilter = catId;
+      renderKanbanFilters();
+      renderKanban();
+    }
+    window.setKanbanFilter = setKanbanFilter;
+
+    function renderKanban() {
+      renderKanbanFilters();
+      const cols = getUserKanbanCols();
+      const board = document.getElementById('kanban-board');
+      if (!board) return;
+
+      const filteredActivities = state.kanbanFilter === 'all'
+        ? state.activities
+        : state.activities.filter(a => String(a.categoria) === String(state.kanbanFilter));
+
+      const colColors = {
+        gray: { border: 'border-white/5', bg: 'bg-black/20', text: 'text-gray-300', badge: 'bg-white/10 text-gray-400', dot: 'bg-gray-400' },
+        blue: { border: 'border-blue-500/20', bg: 'bg-blue-500/5', text: 'text-blue-400', badge: 'bg-blue-500/20 text-blue-400', dot: 'bg-blue-400' },
+        emerald: { border: 'border-emerald-500/20', bg: 'bg-emerald-500/5', text: 'text-emerald-400', badge: 'bg-emerald-500/20 text-emerald-400', dot: 'bg-emerald-400' },
+        yellow: { border: 'border-yellow-500/20', bg: 'bg-yellow-500/5', text: 'text-yellow-400', badge: 'bg-yellow-500/20 text-yellow-400', dot: 'bg-yellow-400' },
+        red: { border: 'border-red-500/20', bg: 'bg-red-500/5', text: 'text-red-400', badge: 'bg-red-500/20 text-red-400', dot: 'bg-red-400' },
+        purple: { border: 'border-purple-500/20', bg: 'bg-purple-500/5', text: 'text-purple-400', badge: 'bg-purple-500/20 text-purple-400', dot: 'bg-purple-400' },
+      };
+
+      board.innerHTML = cols.map(col => {
+        const c = colColors[col.color] || colColors.gray;
+        const acts = filteredActivities.filter(a => {
+          const s = a.stage || 'afazer';
+          const mapped = STAGE_LABELS[s] || s;
+          return mapped === col.name || s === col.name;
+        });
+        const cards = acts.map(a => {
+          const cat = state.categories.find(c => c.id == a.categoria) || { nome: 'Geral', cor: '#cbd5e1' };
+          const isLast = col.name === cols[cols.length - 1].name;
+          const extraInfo = getExtraInfo(a, cat);
+          const checkDone = (a.checklist || []).filter(i => i.done).length;
+          const checkTotal = (a.checklist || []).length;
+          const prog = a.progress || 0;
+          return `<div id="card-${a.id}" draggable="true" ondragstart="handleDragStart(event,'${a.id}')" ondragend="handleDragEnd('${a.id}')" onclick="openEditActivity(${a.id})" class="bg-[#010816] p-4 rounded-xl border border-white/10 hover:border-white/20 group cursor-pointer animate-fadeup shadow-lg select-none">
+            <div class="pointer-events-none">
+              <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider mb-2" style="background:${cat.cor}18; color:${cat.cor}; border:1px solid ${cat.cor}33">
+                <span class="w-1.5 h-1.5 rounded-full" style="background:${cat.cor}"></span>${cat.nome}
+              </span>
+            </div>
+            <h4 class="text-xs font-bold ${isLast ? 'line-through opacity-50' : 'text-gray-100'} mb-2 pointer-events-none">${esc(a.titulo)}</h4>
+            ${extraInfo ? `<div class="pointer-events-none mb-2">${extraInfo}</div>` : ''}
+            <div class="pointer-events-none mb-2">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-[9px] font-bold text-gray-500">${prog}%</span>
+                ${checkTotal > 0 ? `<span class="text-[9px] font-bold ${checkDone === checkTotal && checkTotal > 0 ? 'text-emerald-400' : 'text-gray-500'}">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="inline -mt-0.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                  ${checkDone}/${checkTotal}
+                </span>` : ''}
+              </div>
+              <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${prog}%; background:${getProgressColor(prog)}"></div></div>
+            </div>
+            <div class="flex items-center justify-between pointer-events-none">
+              <div class="flex flex-col gap-0.5">
+                <span class="text-[9px] text-gray-500 font-medium">Entrega: ${fmtDate(a.dataVencimento)}</span>
+                ${a.dataPostagem ? `<span class="text-[9px] text-blue-400/60 font-medium">Post: ${fmtDate(a.dataPostagem)}</span>` : ''}
+              </div>
+              <div class="flex -space-x-1">${(a.canais || []).map(chId => { const ch = CHANNELS.find(c => c.id === chId); return ch ? `<div class="w-4 h-4 rounded-full border border-[#010816] text-[7px] text-white font-bold flex items-center justify-center" style="background-color:${ch.color}">${ch.label.charAt(0)}</div>` : ''; }).join('')}</div>
+            </div>
+          </div>`;
+        }).join('');
+
+        const domId = 'kc_' + col.name.replace(/\s+/g, '_');
+        return `<div class="flex-1 min-w-[190px] max-w-[260px] flex flex-col max-h-full bg-white/[0.02] rounded-2xl border border-white/5">
+          <div class="p-4 border-b ${c.border} flex justify-between items-center ${c.bg} rounded-t-2xl">
+            <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full ${c.dot}"></span><h3 class="font-black text-xs uppercase tracking-widest ${c.text}">${col.name}</h3></div>
+            <span class="text-[10px] font-black ${c.badge} px-2 py-0.5 rounded">${acts.length}</span>
+          </div>
+          <div id="${domId}" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event,'${col.name}')" class="p-3 space-y-3 overflow-y-auto flex-1 custom-scrollbar min-h-[150px]">${cards}</div>
+        </div>`;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    function renderCalendar() {
+      const grid = document.getElementById('calendarGrid'); grid.innerHTML = '';
+      const y = state.calDate.getFullYear(), m = state.calDate.getMonth();
+      const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+      document.getElementById('calMonthLabel').textContent = `${months[m]} ${y}`;
+      const first = new Date(y, m, 1).getDay(), last = new Date(y, m + 1, 0).getDate(), prevLast = new Date(y, m, 0).getDate();
+
+      // Best days from Instagram analytics
+      let bestDays = [];
+      try {
+        const analytics = JSON.parse(localStorage.getItem('hub_instagram_analytics'));
+        if (analytics) {
+          const dayNames = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+          const dayScores = dayNames.map(d => {
+            const hours = analytics.bestTimeGrid[d] || {};
+            const vals = Object.values(hours);
+            return { day: d, score: vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0 };
+          });
+          dayScores.sort((a,b)=>b.score-a.score);
+          bestDays = dayScores.slice(0, 3).map(d => d.day);
+        }
+      } catch {}
+
+      for (let i = first - 1; i >= 0; i--) grid.appendChild(Object.assign(document.createElement('div'), { className: 'day-cell other-month p-2 border-b border-r border-white/5 text-gray-600 text-[10px]', textContent: prevLast - i }));
+      const today = new Date().toISOString().split('T')[0];
+      const conteudoCat = state.categories.find(c => c.nome === 'Conteúdo');
+      for (let d = 1; d <= last; d++) {
+        const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const dayActs = state.activities.filter(a => a.dataPostagem === dateStr && (conteudoCat && a.categoria == conteudoCat.id));
+        const cell = document.createElement('div');
+        const dayNames = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+        const dateObj = new Date(y, m, d);
+        const isBestDay = bestDays.includes(dayNames[dateObj.getDay()]);
+        cell.className = `day-cell p-2 border-b border-r border-white/5 relative cursor-pointer ${dateStr === today ? 'bg-red-600/10' : isBestDay ? 'bg-emerald-500/5' : 'bg-transparent'}`;
+        cell.onclick = () => showDailyPosts(dateStr);
+        cell.innerHTML = `<span class="text-[10px] font-bold ${dateStr === today ? 'text-red-500' : 'text-gray-400'}">${d}</span>
+          <div class="flex flex-col gap-0.5 mt-1">${dayActs.slice(0, 3).map(() => `<div class="h-1 rounded-full bg-red-500 w-full"></div>`).join('')}</div>`;
+        grid.appendChild(cell);
+      }
+      const total = grid.children.length;
+      for (let i = 1; i <= (42 - total); i++) grid.appendChild(Object.assign(document.createElement('div'), { className: 'day-cell other-month p-2 border-b border-r border-white/5 text-gray-600 text-[10px]', textContent: i }));
+      showDailyPosts(today);
+    }
+
+    function showDailyPosts(dateStr) {
+      document.getElementById('dailyTitle').textContent = `Posts: ${dateStr.split('-').reverse().join('/')}`;
+      const conteudoCat = state.categories.find(c => c.nome === 'Conteúdo');
+      const posts = state.activities.filter(a => a.dataPostagem === dateStr && (conteudoCat && a.categoria == conteudoCat.id));
+      const list = document.getElementById('dailyPostsList');
+
+      // Best time insight for this day
+      const igConnected = !!getIgProfile();
+      let bestTimeHtml = '';
+      if (igConnected) {
+        try {
+          const analytics = JSON.parse(localStorage.getItem('hub_instagram_analytics'));
+          if (analytics) {
+            const dayNames = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+            const d = new Date(dateStr);
+            const dayLabel = dayNames[d.getDay()];
+            const dayScores = analytics.bestTimeGrid[dayLabel] || {};
+            const bestHour = Object.entries(dayScores).sort((a,b)=>b[1]-a[1])[0];
+            if (bestHour) {
+              const h = parseInt(bestHour[0]);
+              const period = h < 12 ? 'manhã' : h < 18 ? 'tarde' : 'noite';
+              bestTimeHtml = `<div class="p-2 mb-3 rounded-lg text-[9px] font-bold flex items-center gap-2" style="background:rgba(5,150,105,0.1);border:1px solid rgba(5,150,105,0.2)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span class="text-emerald-500">Melhor horário: <strong>${bestHour[0]}</strong> (${period}) — engajamento ${bestHour[1]}%</span>
+              </div>`;
+            }
+          }
+        } catch {}
+      }
+
+      list.innerHTML = (bestTimeHtml || '') + (posts.length ? posts.map(a => {
+        const st = getPostStatus(a.id);
+        const stLabel = POST_STATUS[st] || 'Rascunho';
+        const stColor = POST_STATUS_COLORS[st] || POST_STATUS_COLORS.rascunho;
+        const canShowPublish = st === 'rascunho' || st === 'agendado';
+        return `<div class="p-3 bg-white/5 rounded-xl border border-white/5 cursor-pointer hover:bg-white/10 transition" onclick="openEditActivity(${a.id})">
+          <h4 class="text-xs font-bold text-white">${esc(a.titulo)}</h4>
+          <div class="flex justify-between items-center mt-2 text-[8px] font-black uppercase text-gray-500">
+            <span>${STAGE_LABELS[a.stage]}</span>
+            <span class="px-1.5 py-0.5 rounded ${stColor}">${stLabel}</span>
+          </div>
+          <div class="flex items-center gap-2 mt-2 flex-wrap">
+            ${(a.canais || []).map(chId => { const ch = CHANNELS.find(c => c.id === chId); return ch ? `<span class="px-1.5 py-0.5 rounded text-[7px] font-bold text-white" style="background:${ch.color}">${ch.label}</span>` : ''; }).join('')}
+          </div>
+          ${canShowPublish ? `<button onclick="event.stopPropagation();publishNow(${a.id})" class="mt-2 w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-[9px] font-black uppercase tracking-widest rounded-lg transition-all shadow-lg flex items-center justify-center gap-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Publicar no Instagram
+          </button>` : ''}
+        </div>`;
+      }).join('') : '<div class="text-[10px] text-gray-500 italic text-center py-4 font-bold uppercase tracking-widest">Nenhum post agendado.</div>');
+    }
+
+    function renderCategories() {
+      document.getElementById('categoriesTableBody').innerHTML = state.categories.map(c => `<tr class="hover:bg-white/5 transition-colors">
+        <td class="p-5"><div class="flex items-center gap-3"><div class="w-3 h-3 rounded-full" style="background:${c.cor}"></div><span class="text-xs font-bold text-white">${esc(c.nome)}</span></div></td>
+        <td class="p-5 text-right whitespace-nowrap">
+          <button onclick="openEditCategory(${c.id})" class="text-gray-500 hover:text-blue-400 p-2 bg-white/5 hover:bg-blue-500/10 rounded-lg transition mr-1"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+          <button onclick="deleteCategory(${c.id})" class="text-gray-500 hover:text-red-500 p-2 bg-white/5 hover:bg-red-500/10 rounded-lg transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+        </td>
+      </tr>`).join('');
+      lucide.createIcons();
+    }
+
+    // ── CRUD Atividades ─────────────────────────────────────────────────
+    async function saveActivity() {
+      const id = document.getElementById('actId').value, titulo = document.getElementById('actTitle').value;
+      if (!titulo) return showToast("Insira um título.", "error");
+      const data = {
+        id: id ? parseInt(id) : state.activityIdCounter++, titulo,
+        categoria: parseInt(document.getElementById('actCategory').value), descricao: document.getElementById('actDesc').value,
+        stage: document.getElementById('actStage').value, dataVencimento: document.getElementById('actDue').value,
+        dataPostagem: document.getElementById('actPostDate').value || null,
+        canais: Array.from(document.querySelectorAll('#actChannels input:checked')).map(cb => cb.value),
+        notaFiscal: document.getElementById('actNotaFiscal').value || null,
+        valor: document.getElementById('actValor').value || null,
+        progress: currentProgress,
+        checklist: currentChecklist,
+        attachments: currentFiles,
+      };
+      try {
+        if (id) {
+          const idx = state.activities.findIndex(a => a.id == id);
+          await window.fb.updateDoc(window.fb.doc(window.fb.db, 'activities', state.activities[idx]._fbId), data);
+          state.activities[idx] = { ...data, _fbId: state.activities[idx]._fbId };
+        } else {
+          const d = await window.fb.addDoc(window.fb.collection(window.fb.db, 'activities'), data);
+          state.activities.push({ ...data, _fbId: d.id });
+        }
+        closeModal('modalActivity'); renderAllActivities(); showToast("Salvo com sucesso!");
+      } catch (e) { showToast("Erro ao salvar.", "error"); }
+    }
+    window.saveActivity = saveActivity;
+
+    async function updateActivityStage(id, newStage) {
+      const stageMap = { 'Produção': 'criar', 'Revisão': 'revisar', 'Aprovação': 'aprovar', 'Concluído': 'concluido' };
+      const mapped = stageMap[newStage] || newStage;
+      const a = state.activities.find(x => x.id == id); if (!a || a.stage === mapped) return;
+      const old = a.stage; a.stage = mapped;
+      try { await window.fb.updateDoc(window.fb.doc(window.fb.db, 'activities', a._fbId), { stage: mapped }); showToast("Status atualizado!"); }
+      catch (e) { a.stage = old; showToast("Erro ao atualizar.", "error"); }
+      renderAllActivities();
+    }
+
+    async function deleteActivity() {
+      const id = document.getElementById('actId').value; if (!id || !confirm("Excluir atividade?")) return;
+      try {
+        const a = state.activities.find(x => x.id == id);
+        await window.fb.deleteDoc(window.fb.doc(window.fb.db, 'activities', a._fbId));
+        state.activities = state.activities.filter(x => x.id != id);
+        closeModal('modalActivity'); renderAllActivities(); showToast("Excluído.");
+      } catch (e) { showToast("Erro ao excluir.", "error"); }
+    }
+    window.deleteActivity = deleteActivity;
+
+    function openNewCategoryModal() {
+      document.getElementById('catModalTitle').textContent = 'Nova Categoria';
+      document.getElementById('catIdInput').value = '';
+      document.getElementById('catNameInput').value = '';
+      document.getElementById('catColorInput').value = '#3b82f6';
+      document.getElementById('btnDeleteCat').classList.add('hidden-view');
+      openModal('modalCategory');
+    }
+    window.openNewCategoryModal = openNewCategoryModal;
+
+    function openEditCategory(id) {
+      const c = state.categories.find(x => x.id == id); if (!c) return;
+      document.getElementById('catModalTitle').textContent = 'Editar Categoria';
+      document.getElementById('catIdInput').value = c.id;
+      document.getElementById('catNameInput').value = c.nome;
+      document.getElementById('catColorInput').value = c.cor;
+      document.getElementById('btnDeleteCat').classList.remove('hidden-view');
+      openModal('modalCategory');
+    }
+    window.openEditCategory = openEditCategory;
+
+    async function saveCategory() {
+      const id = document.getElementById('catIdInput').value;
+      const nome = document.getElementById('catNameInput').value; if (!nome) return;
+      const cor = document.getElementById('catColorInput').value;
+      try {
+        if (id) {
+          const c = state.categories.find(x => x.id == id);
+          await window.fb.updateDoc(window.fb.doc(window.fb.db, 'categories', c._fbId), { nome, cor });
+          c.nome = nome; c.cor = cor;
+          showToast("Categoria atualizada!");
+        } else {
+          const data = { id: state.categoryIdCounter++, nome, cor };
+          const d = await window.fb.addDoc(window.fb.collection(window.fb.db, 'categories'), data);
+          state.categories.push({ ...data, _fbId: d.id });
+          showToast("Categoria criada!");
+        }
+        closeModal('modalCategory'); renderAllActivities();
+      } catch (e) { showToast("Erro ao salvar.", "error"); }
+    }
+    window.saveCategory = saveCategory;
+
+    async function deleteCategoryFromModal() {
+      const id = document.getElementById('catIdInput').value;
+      if (!id) return;
+      await deleteCategory(id);
+      closeModal('modalCategory');
+    }
+    window.deleteCategoryFromModal = deleteCategoryFromModal;
+
+    async function deleteCategory(id) {
+      if (!confirm("Excluir categoria?")) return;
+      try {
+        const c = state.categories.find(x => x.id == id);
+        await window.fb.deleteDoc(window.fb.doc(window.fb.db, 'categories', c._fbId));
+        state.categories = state.categories.filter(x => x.id != id);
+        renderAllActivities(); showToast("Removida.");
+      } catch (e) { showToast("Erro ao remover.", "error"); }
+    }
+    window.deleteCategory = deleteCategory;
+
+    // ── Modais ──────────────────────────────────────────────────────────
+
+    // Progress
+    let currentProgress = 0;
+
+    function renderProgressSteps() {
+      const container = document.getElementById('progressSteps');
+      if (!container) return;
+      let html = '';
+      for (let i = 0; i <= 10; i++) {
+        const val = i * 10;
+        const isActive = val <= currentProgress;
+        html += `<div class="progress-step${isActive ? ' active' : ''}" style="${isActive ? 'background:' + getProgressColor(val) : ''}" onclick="setProgress(${val})">${val}</div>`;
+      }
+      container.innerHTML = html;
+      document.getElementById('progressLabel').textContent = currentProgress + '%';
+    }
+
+    function getProgressColor(val) {
+      if (val >= 100) return '#10B981';
+      if (val >= 60) return '#3B82F6';
+      if (val >= 30) return '#F59E0B';
+      return '#EF4444';
+    }
+
+    function setProgress(val) {
+      currentProgress = val;
+      renderProgressSteps();
+    }
+    window.setProgress = setProgress;
+
+    // Checklist
+    let currentChecklist = [];
+
+    function renderChecklist() {
+      const container = document.getElementById('checklistItems');
+      if (!container) return;
+      const done = currentChecklist.filter(i => i.done).length;
+      const total = currentChecklist.length;
+      const pct = total ? Math.round((done / total) * 100) : 0;
+
+      document.getElementById('checklistCount').textContent = `${done}/${total}`;
+      document.getElementById('checklistProgressFill').style.width = pct + '%';
+
+      container.innerHTML = currentChecklist.map((item, i) => `
+        <div class="checklist-item">
+          <input type="checkbox" class="checklist-check" ${item.done ? 'checked' : ''} onchange="toggleCheckItem(${i})">
+          <input type="text" class="checklist-text ${item.done ? 'done' : ''}" value="${esc(item.text)}" oninput="currentChecklist[${i}].text=this.value">
+          <span class="checklist-del" onclick="removeCheckItem(${i})">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </span>
+        </div>
+      `).join('');
+    }
+
+    function addChecklistItem() {
+      const input = document.getElementById('newCheckItem');
+      const text = input.value.trim();
+      if (!text) return;
+      currentChecklist.push({ text, done: false });
+      input.value = '';
+      renderChecklist();
+    }
+    window.addChecklistItem = addChecklistItem;
+
+    function toggleCheckItem(i) {
+      currentChecklist[i].done = !currentChecklist[i].done;
+      renderChecklist();
+    }
+    window.toggleCheckItem = toggleCheckItem;
+
+    function removeCheckItem(i) {
+      currentChecklist.splice(i, 1);
+      renderChecklist();
+    }
+    window.removeCheckItem = removeCheckItem;
+
+    // File Attachments
+    let currentFiles = [];
+
+    function handleActFileSelect(input) {
+      const files = Array.from(input.files);
+      files.forEach(file => {
+        if (file.size > 500 * 1024) {
+          showToast(`${file.name} excede 500KB`, "error");
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          currentFiles.push({
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            data: e.target.result
+          });
+          renderFilesList();
+        };
+        reader.readAsDataURL(file);
+      });
+      input.value = '';
+    }
+    window.handleActFileSelect = handleActFileSelect;
+
+    function renderFilesList() {
+      const container = document.getElementById('filesList');
+      if (!container) return;
+      container.innerHTML = currentFiles.map((f, i) => {
+        const sizeKB = Math.round(f.size / 1024);
+        const icon = f.type.includes('image') ? '🖼' : f.type.includes('pdf') ? '📄' : '📎';
+        return `<div class="file-chip">
+          <span>${icon}</span>
+          <span class="file-name" title="${esc(f.name)}">${esc(f.name)}</span>
+          <span class="text-[8px] opacity-40">${sizeKB}KB</span>
+          <span class="file-remove" onclick="removeFile(${i})">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </span>
+        </div>`;
+      }).join('');
+    }
+
+    function removeFile(i) {
+      currentFiles.splice(i, 1);
+      renderFilesList();
+    }
+    window.removeFile = removeFile;
+
+    // Drag & Drop
+    document.addEventListener('DOMContentLoaded', () => {
+      const zone = document.getElementById('fileDropZone');
+      if (zone) {
+        zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('dragover'); });
+        zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+        zone.addEventListener('drop', (e) => {
+          e.preventDefault(); zone.classList.remove('dragover');
+          const dt = e.dataTransfer;
+          if (dt.files.length) handleActFileSelect({ files: dt.files, value: '' });
+        });
+      }
+    });
+
+    function openNewActivity() {
+      document.getElementById('activityModalTitle').textContent = 'Nova Atividade';
+      document.getElementById('actId').value = ''; document.getElementById('actTitle').value = ''; document.getElementById('actDesc').value = '';
+      document.getElementById('actNotaFiscal').value = ''; document.getElementById('actValor').value = '';
+      document.getElementById('btnDeleteAct').classList.add('hidden-view');
+      document.querySelectorAll('#actChannels input').forEach(cb => cb.checked = false);
+      refreshCategoryOptions();
+      if (state.categories.length) setCustomSelectValue('csCategory', state.categories[0].id);
+      setCustomSelectValue('csStage', 'afazer');
+      const today = new Date().toISOString().split('T')[0];
+      setDatePickerValue('dpDue', today);
+      clearDatePicker('dpPost');
+      currentProgress = 0; renderProgressSteps();
+      currentChecklist = []; renderChecklist();
+      currentFiles = []; renderFilesList();
+      toggleDynamicFields();
+      togglePostDate(); openModal('modalActivity');
+    }
+    window.openNewActivity = openNewActivity;
+
+    function openEditActivity(id) {
+      const a = state.activities.find(x => x.id === id); if (!a) return;
+      document.getElementById('activityModalTitle').textContent = 'Editar Atividade';
+      document.getElementById('actId').value = a.id; document.getElementById('actTitle').value = a.titulo; document.getElementById('actDesc').value = a.descricao || '';
+      document.getElementById('btnDeleteAct').classList.remove('hidden-view');
+      document.querySelectorAll('#actChannels input').forEach(cb => cb.checked = (a.canais || []).includes(cb.value));
+      document.getElementById('actNotaFiscal').value = a.notaFiscal || '';
+      document.getElementById('actValor').value = a.valor || '';
+      refreshCategoryOptions();
+      setCustomSelectValue('csCategory', a.categoria);
+      setCustomSelectValue('csStage', a.stage);
+      setDatePickerValue('dpDue', a.dataVencimento || '');
+      setDatePickerValue('dpPost', a.dataPostagem || '');
+      currentProgress = a.progress || 0; renderProgressSteps();
+      currentChecklist = (a.checklist || []).map(i => ({ ...i })); renderChecklist();
+      currentFiles = (a.attachments || []).map(f => ({ ...f })); renderFilesList();
+      toggleDynamicFields();
+      togglePostDate(); openModal('modalActivity');
+    }
+    window.openEditActivity = openEditActivity;
+
+    function openModal(id) { document.getElementById(id).classList.remove('hidden-view'); document.getElementById(id).classList.add('flex'); lucide.createIcons(); }
+    window.openModal = openModal;
+
+    function closeModal(id) {
+      Object.keys(datePickers).forEach(dpId => closeDatePicker(dpId));
+      Object.keys(customSelects).forEach(selId => closeCustomSelect(selId));
+      document.getElementById(id).classList.add('hidden-view');
+      document.getElementById(id).classList.remove('flex');
+    }
+    window.closeModal = closeModal;
+
+    function togglePostDate() {
+      const cat = state.categories.find(c => c.id == document.getElementById('actCategory').value);
+      document.getElementById('postDateGroup').classList.toggle('hidden-view', !(cat && cat.nome === 'Conteúdo'));
+    }
+    window.togglePostDate = togglePostDate;
+
+    // ── Kanban Drag & Drop ──────────────────────────────────────────────
+    function allowDrop(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+    window.allowDrop = allowDrop;
+    function dragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+    window.dragLeave = dragLeave;
+    function handleDragStart(e, id) { e.dataTransfer.setData('actId', id); document.getElementById(`card-${id}`)?.classList.add('dragging'); }
+    window.handleDragStart = handleDragStart;
+    function handleDragEnd(id) { document.getElementById(`card-${id}`)?.classList.remove('dragging'); }
+    window.handleDragEnd = handleDragEnd;
+    async function handleDrop(e, colName) {
+      e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+      const actId = e.dataTransfer.getData('actId'); if (!actId) return;
+      await updateActivityStage(actId, colName);
+    }
+    window.handleDrop = handleDrop;
+
+    // ── Kanban Columns ──────────────────────────────────────────────────
+    const DEFAULT_KANBAN_COLS = [
+      { name: 'A Fazer', color: 'gray' },
+      { name: 'Em Execução', color: 'blue' },
+      { name: 'Em Espera', color: 'yellow' },
+      { name: 'Validando', color: 'purple' },
+      { name: 'Concluído', color: 'emerald' },
+    ];
+
+    function getUserKanbanCols() {
+      try { const raw = localStorage.getItem('makro_hub_kanban_cols'); if (raw) return JSON.parse(raw); } catch (e) {}
+      return DEFAULT_KANBAN_COLS.map(c => ({ ...c }));
+    }
+
+    let editingCols = [];
+    window.openKanbanColModal = () => {
+      editingCols = getUserKanbanCols().map(c => ({ ...c }));
+      renderKanbanColList();
+      document.getElementById('kanban-col-modal').classList.remove('hidden-view');
+      lucide.createIcons();
+    };
+    window.closeKanbanColModal = () => document.getElementById('kanban-col-modal').classList.add('hidden-view');
+
+    function renderKanbanColList() {
+      const colorLabels = { gray: 'Padrão', blue: 'Azul', emerald: 'Verde', yellow: 'Amarelo', red: 'Vermelho', purple: 'Roxo' };
+      const colorDots = { gray: 'bg-gray-400', blue: 'bg-blue-400', emerald: 'bg-emerald-400', yellow: 'bg-yellow-400', red: 'bg-red-400', purple: 'bg-purple-400' };
+      const list = document.getElementById('kanban-col-list');
+      if (!editingCols.length) { list.innerHTML = `<p class="text-xs text-center opacity-30 font-bold uppercase">Nenhuma coluna.</p>`; return; }
+      list.innerHTML = editingCols.map((col, i) => `
+        <div class="flex items-center gap-3 p-3 bg-white/[0.03] rounded-xl border border-white/5 group" draggable="true"
+             ondragstart="window._colDragIdx=${i}" ondragover="event.preventDefault()" ondrop="dropKanbanCol(event,${i})">
+          <div class="cursor-grab text-gray-600 hover:text-gray-400 flex-shrink-0"><i data-lucide="grip-vertical" class="w-4 h-4"></i></div>
+          <span class="w-3 h-3 rounded-full flex-shrink-0 ${colorDots[col.color] || 'bg-gray-400'}"></span>
+          <input type="text" value="${col.name}" class="flex-1 bg-transparent border-none outline-none text-sm font-bold text-white p-0" oninput="editingCols[${i}].name=this.value">
+          <select class="bg-transparent border-none outline-none text-[10px] font-bold text-gray-400 cursor-pointer" onchange="editingCols[${i}].color=this.value;renderKanbanColList()">
+            ${['gray', 'blue', 'emerald', 'yellow', 'red', 'purple'].map(c => `<option value="${c}" class="bg-[#010816]" ${col.color === c ? 'selected' : ''}>${colorLabels[c]}</option>`).join('')}
+          </select>
+          ${editingCols.length > 1 ? `<button onclick="editingCols.splice(${i},1);renderKanbanColList()" class="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-red-500 transition-all flex-shrink-0"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : '<span class="w-4"></span>'}
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    window.dropKanbanCol = (e, toIdx) => {
+      e.preventDefault();
+      const fromIdx = window._colDragIdx;
+      if (fromIdx === undefined || fromIdx === toIdx) return;
+      const [moved] = editingCols.splice(fromIdx, 1);
+      editingCols.splice(toIdx, 0, moved);
+      window._colDragIdx = undefined;
+      renderKanbanColList();
+    };
+
+    window.addKanbanCol = () => {
+      const nameEl = document.getElementById('kanban-col-new-name');
+      const name = nameEl.value.trim();
+      if (!name) { nameEl.focus(); return; }
+      if (editingCols.find(c => c.name.toLowerCase() === name.toLowerCase())) { showToast('Já existe uma coluna com esse nome.', 'error'); return; }
+      editingCols.push({ name, color: document.getElementById('kanban-col-new-color').value });
+      nameEl.value = '';
+      renderKanbanColList();
+    };
+
+    window.saveKanbanCols = () => {
+      document.querySelectorAll('#kanban-col-list input[type=text]').forEach((inp, i) => { if (editingCols[i]) editingCols[i].name = inp.value.trim() || editingCols[i].name; });
+      const valid = editingCols.filter(c => c.name.trim());
+      if (!valid.length) { showToast('Adicione ao menos uma coluna.', 'error'); return; }
+      localStorage.setItem('makro_hub_kanban_cols', JSON.stringify(valid));
+      renderKanban();
+      closeKanbanColModal();
+      showToast('Layout salvo!');
+    };
+
+    // ── Calendar Helpers (Editorial) ─────────────────────────────────────
+    function changeMonth(d) { state.calDate.setMonth(state.calDate.getMonth() + d); renderCalendar(); lucide.createIcons(); }
+    window.changeMonth = changeMonth;
+    function goToday() { state.calDate = new Date(); renderCalendar(); lucide.createIcons(); }
+    window.goToday = goToday;
+
+    // ── Custom Date Picker ──────────────────────────────────────────────
+    const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const WEEKDAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+    const datePickers = {
+      dpDue:   { inputId: 'actDue',   triggerId: 'dpTriggerDue',   value: null, viewDate: new Date(), open: false },
+      dpPost:  { inputId: 'actPostDate', triggerId: 'dpTriggerPost', value: null, viewDate: new Date(), open: false },
+    };
+
+    function toggleDatePicker(dpId) {
+      const dp = datePickers[dpId];
+      if (dp.open) { closeDatePicker(dpId); return; }
+      Object.keys(datePickers).forEach(id => { if (id !== dpId && datePickers[id].open) closeDatePicker(id); });
+      dp.viewDate = dp.value ? new Date(dp.value + 'T12:00:00') : new Date();
+      dp.open = true;
+      renderDatePicker(dpId);
+    }
+    window.toggleDatePicker = toggleDatePicker;
+
+    function closeDatePicker(dpId) {
+      datePickers[dpId].open = false;
+      const dd = document.getElementById(dpId + '_dropdown');
+      if (dd) dd.remove();
+    }
+
+    function clearDatePicker(dpId) {
+      const dp = datePickers[dpId];
+      dp.value = null;
+      document.getElementById(dp.inputId).value = '';
+      const trigger = document.getElementById(dp.triggerId);
+      trigger.classList.remove('has-value');
+      trigger.querySelector('.dp-placeholder').textContent = 'Selecionar data...';
+      trigger.querySelector('.dp-placeholder').style.display = '';
+      closeDatePicker(dpId);
+    }
+    window.clearDatePicker = clearDatePicker;
+
+    function selectDate(dpId, dateStr) {
+      const dp = datePickers[dpId];
+      dp.value = dateStr;
+      document.getElementById(dp.inputId).value = dateStr;
+      const trigger = document.getElementById(dp.triggerId);
+      trigger.classList.add('has-value');
+      const [y, m, d] = dateStr.split('-');
+      trigger.querySelector('.dp-placeholder').textContent = `${d} de ${MONTHS_PT[parseInt(m)-1]} de ${y}`;
+      trigger.querySelector('.dp-placeholder').style.display = '';
+      closeDatePicker(dpId);
+    }
+
+    function renderDatePicker(dpId) {
+      const dp = datePickers[dpId];
+      const wrap = document.getElementById('dpWrap' + dpId.replace('dp', ''));
+      const existing = document.getElementById(dpId + '_dropdown');
+      if (existing) existing.remove();
+
+      const dd = document.createElement('div');
+      dd.id = dpId + '_dropdown';
+      dd.className = 'date-picker-dropdown';
+
+      const y = dp.viewDate.getFullYear(), m = dp.viewDate.getMonth();
+      const firstDay = new Date(y, m, 1).getDay();
+      const daysInMonth = new Date(y, m + 1, 0).getDate();
+      const daysInPrev = new Date(y, m, 0).getDate();
+      const today = new Date().toISOString().split('T')[0];
+
+      let daysHTML = '';
+      // Previous month days
+      for (let i = firstDay - 1; i >= 0; i--) {
+        daysHTML += `<button type="button" class="dp-day other" data-date="${y}-${String(m).padStart(2,'0')}-${String(daysInPrev - i).padStart(2,'0')}">${daysInPrev - i}</button>`;
+      }
+      // Current month days
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const isToday = dateStr === today;
+        const isSelected = dateStr === dp.value;
+        let cls = 'dp-day';
+        if (isToday) cls += ' today';
+        if (isSelected) cls += ' selected';
+        daysHTML += `<button type="button" class="${cls}" data-date="${dateStr}" onclick="selectDate('${dpId}','${dateStr}')">${d}</button>`;
+      }
+      // Next month days
+      const totalCells = firstDay + daysInMonth;
+      const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+      for (let d = 1; d <= remaining; d++) {
+        daysHTML += `<button type="button" class="dp-day other" data-date="${y}-${String(m + 2).padStart(2,'0')}-${String(d).padStart(2,'0')}">${d}</button>`;
+      }
+
+      dd.innerHTML = `
+        <div class="dp-header">
+          <button type="button" onclick="dpNavMonth('${dpId}',-1)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <span class="dp-header-label">${MONTHS_PT[m]} ${y}</span>
+          <button type="button" onclick="dpNavMonth('${dpId}',1)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+        <div class="dp-weekdays">${WEEKDAYS_PT.map(d => `<span>${d}</span>`).join('')}</div>
+        <div class="dp-days">${daysHTML}</div>
+        <button type="button" class="dp-today-btn" onclick="dpGoToday('${dpId}')">Hoje</button>
+      `;
+
+      wrap.appendChild(dd);
+
+      // Click outside to close
+      setTimeout(() => {
+        const handler = (e) => {
+          if (!dd.contains(e.target) && !document.getElementById(dp.triggerId).contains(e.target)) {
+            closeDatePicker(dpId);
+            document.removeEventListener('click', handler);
+          }
+        };
+        document.addEventListener('click', handler);
+      }, 50);
+    }
+
+    function dpNavMonth(dpId, dir) {
+      const dp = datePickers[dpId];
+      dp.viewDate.setMonth(dp.viewDate.getMonth() + dir);
+      renderDatePicker(dpId);
+    }
+    window.dpNavMonth = dpNavMonth;
+
+    function dpGoToday(dpId) {
+      const today = new Date();
+      const dateStr = today.toISOString().split('T')[0];
+      selectDate(dpId, dateStr);
+    }
+    window.dpGoToday = dpGoToday;
+
+    function setDatePickerValue(dpId, dateStr) {
+      if (!dateStr) { clearDatePicker(dpId); return; }
+      const dp = datePickers[dpId];
+      dp.value = dateStr;
+      document.getElementById(dp.inputId).value = dateStr;
+      const trigger = document.getElementById(dp.triggerId);
+      trigger.classList.add('has-value');
+      const [y, m, d] = dateStr.split('-');
+      trigger.querySelector('.dp-placeholder').textContent = `${d} de ${MONTHS_PT[parseInt(m)-1]} de ${y}`;
+    }
+    window.setDatePickerValue = setDatePickerValue;
+
+    // ── Custom Select Dropdowns ─────────────────────────────────────────
+    const STAGE_OPTIONS = [
+      { value: 'afazer',     label: 'A Fazer',      color: '#9CA3AF' },
+      { value: 'execucao',   label: 'Em Execução',  color: '#3B82F6' },
+      { value: 'espera',     label: 'Em Espera',    color: '#F59E0B' },
+      { value: 'validando',  label: 'Validando',    color: '#A855F7' },
+      { value: 'concluido',  label: 'Concluído',    color: '#10B981' },
+    ];
+
+    const customSelects = {
+      csCategory: { triggerId: 'csTriggerCategory', value: null, open: false, options: [], onChange: null },
+      csStage:    { triggerId: 'csTriggerStage',    value: null, open: false, options: STAGE_OPTIONS, onChange: null },
+    };
+
+    function toggleCustomSelect(selId) {
+      const sel = customSelects[selId];
+      if (sel.open) { closeCustomSelect(selId); return; }
+      Object.keys(customSelects).forEach(id => { if (id !== selId && customSelects[id].open) closeCustomSelect(id); });
+      // Also close date pickers
+      Object.keys(datePickers).forEach(id => { if (datePickers[id].open) closeDatePicker(id); });
+      sel.open = true;
+      renderCustomSelect(selId);
+    }
+    window.toggleCustomSelect = toggleCustomSelect;
+
+    function closeCustomSelect(selId) {
+      customSelects[selId].open = false;
+      const trigger = document.getElementById(customSelects[selId].triggerId);
+      trigger.classList.remove('open');
+      const dd = document.getElementById(selId + '_dropdown');
+      if (dd) dd.remove();
+    }
+
+    function selectCustomOption(selId, value) {
+      const sel = customSelects[selId];
+      sel.value = value;
+      const opt = sel.options.find(o => String(o.value) === String(value));
+      const trigger = document.getElementById(sel.triggerId);
+      const label = trigger.querySelector('.cs-label');
+      if (opt) {
+        label.textContent = opt.label;
+        trigger.classList.add('has-value');
+      } else {
+        label.textContent = 'Selecionar...';
+        trigger.classList.remove('has-value');
+      }
+      // Update hidden input
+      if (selId === 'csCategory') document.getElementById('actCategory').value = value;
+      if (selId === 'csStage') document.getElementById('actStage').value = value;
+      closeCustomSelect(selId);
+      // Trigger onChange
+      if (sel.onChange) sel.onChange(value);
+    }
+    window.selectCustomOption = selectCustomOption;
+
+    function renderCustomSelect(selId) {
+      const sel = customSelects[selId];
+      const wrap = document.getElementById('csWrap' + selId.replace('cs', ''));
+      const existing = document.getElementById(selId + '_dropdown');
+      if (existing) existing.remove();
+
+      const trigger = document.getElementById(sel.triggerId);
+      trigger.classList.add('open');
+
+      const dd = document.createElement('div');
+      dd.id = selId + '_dropdown';
+      dd.className = 'custom-select-dropdown';
+
+      dd.innerHTML = sel.options.map(opt => {
+        const isSelected = String(sel.value) === String(opt.value);
+        const dotStyle = opt.color ? `background:${opt.color}` : 'background:rgba(255,255,255,0.2)';
+        return `<button type="button" class="cs-option${isSelected ? ' selected' : ''}" onclick="selectCustomOption('${selId}','${opt.value}')">
+          <span class="cs-dot" style="${dotStyle}"></span>
+          <span>${opt.label}</span>
+          <svg class="cs-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        </button>`;
+      }).join('');
+
+      wrap.appendChild(dd);
+
+      // Click outside to close
+      setTimeout(() => {
+        const handler = (e) => {
+          if (!dd.contains(e.target) && !trigger.contains(e.target)) {
+            closeCustomSelect(selId);
+            document.removeEventListener('click', handler);
+          }
+        };
+        document.addEventListener('click', handler);
+      }, 50);
+    }
+
+    function setCustomSelectValue(selId, value) {
+      const sel = customSelects[selId];
+      sel.value = value;
+      const opt = sel.options.find(o => String(o.value) === String(value));
+      const trigger = document.getElementById(sel.triggerId);
+      const label = trigger.querySelector('.cs-label');
+      if (opt) {
+        label.textContent = opt.label;
+        trigger.classList.add('has-value');
+      } else {
+        label.textContent = 'Selecionar...';
+        trigger.classList.remove('has-value');
+      }
+      if (selId === 'csCategory') document.getElementById('actCategory').value = value;
+      if (selId === 'csStage') document.getElementById('actStage').value = value;
+    }
+    window.setCustomSelectValue = setCustomSelectValue;
+
+    function refreshCategoryOptions() {
+      customSelects.csCategory.options = state.categories.map(c => ({
+        value: c.id, label: c.nome, color: c.cor
+      }));
+      customSelects.csCategory.onChange = () => toggleDynamicFields();
+    }
+
+    // ── Export ──────────────────────────────────────────────────────────
+    function exportData() {
+      const data = { activities: state.activities, categories: state.categories, exportedAt: new Date().toISOString() };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `makro_backup_${new Date().getTime()}.json`; a.click();
+      showToast("Backup iniciado!");
+    }
+    window.exportData = exportData;
+
+    // ── Upload de Planilha ─────────────────────────────────────────────
+    let uploadRows = [];
+
+    const STAGE_MAP_INPUT = {
+      'a fazer': 'afazer', 'afazer': 'afazer', 'a_fazer': 'afazer', 'pendente': 'afazer', 'todo': 'afazer',
+      'execução': 'execucao', 'execucao': 'execucao', 'em execução': 'execucao', 'em execucao': 'execucao', 'em andamento': 'execucao', 'progresso': 'execucao',
+      'espera': 'espera', 'em espera': 'espera', 'bloqueado': 'espera', 'bloqueada': 'espera', 'pendencia': 'espera',
+      'validando': 'validando', 'revisão': 'validando', 'revisao': 'validando', 'em revisão': 'validando', 'aprovação': 'validando', 'aprovacao': 'validando', 'conferindo': 'validando',
+      'concluído': 'concluido', 'concluido': 'concluído', 'finalizado': 'concluido', 'feito': 'concluido', 'done': 'concluido',
+    };
+
+    function normalizeStageInput(val) {
+      if (!val) return 'afazer';
+      const clean = val.toString().trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      return STAGE_MAP_INPUT[clean] || 'afazer';
+    }
+
+    function matchCategory(input) {
+      if (!input) return state.categories[0]?.id || 1;
+      const clean = input.toString().trim().toLowerCase();
+      const found = state.categories.find(c => c.nome.toLowerCase() === clean);
+      if (found) return found.id;
+      const partial = state.categories.find(c => clean.includes(c.nome.toLowerCase()) || c.nome.toLowerCase().includes(clean));
+      return partial ? partial.id : state.categories[0]?.id || 1;
+    }
+
+    function parseDateInput(val) {
+      if (!val) return new Date().toISOString().split('T')[0];
+      const str = val.toString().trim();
+      // DD/MM/YYYY
+      const brMatch = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+      if (brMatch) {
+        let [, d, m, y] = brMatch;
+        if (y.length === 2) y = '20' + y;
+        return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+      }
+      // YYYY-MM-DD
+      const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (isoMatch) return str.substring(0, 10);
+      // Excel serial date
+      const num = parseFloat(str);
+      if (!isNaN(num) && num > 40000) {
+        const d = new Date((num - 25569) * 86400 * 1000);
+        return d.toISOString().split('T')[0];
+      }
+      return new Date().toISOString().split('T')[0];
+    }
+
+    function handleFileUpload(input) {
+      const file = input.files[0];
+      if (!file) return;
+      input.value = '';
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          const json = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+
+          if (json.length < 2) { showToast("Planilha vazia ou sem dados.", "error"); return; }
+
+          // Map rows (skip header)
+          // Expected columns: Data de Entrega | Data Postagem | Categoria | Título | Descrição | Status
+          uploadRows = json.slice(1).filter(r => r.some(cell => cell !== '')).map((row, i) => ({
+            _idx: i,
+            dataEntrega: parseDateInput(row[0]),
+            dataPostagem: row[1] ? parseDateInput(row[1]) : '',
+            categoria: matchCategory(row[2]),
+            titulo: (row[3] || '').toString().trim(),
+            descricao: (row[4] || '').toString().trim(),
+            stage: normalizeStageInput(row[5]),
+            _valid: true,
+          }));
+
+          // Validate
+          uploadRows.forEach(r => {
+            r._valid = r.titulo.length > 0;
+          });
+
+          document.getElementById('uploadFileName').textContent = file.name;
+          renderUploadPreview();
+          openModal('uploadModal');
+        } catch (err) {
+          console.error(err);
+          showToast("Erro ao ler planilha.", "error");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+    window.handleFileUpload = handleFileUpload;
+
+    function renderUploadPreview() {
+      const validCount = uploadRows.filter(r => r._valid).length;
+      const errorCount = uploadRows.filter(r => !r._valid).length;
+
+      document.getElementById('uploadCount').textContent = `${uploadRows.length} itens`;
+      const errEl = document.getElementById('uploadErrors');
+      if (errorCount > 0) {
+        errEl.textContent = `${errorCount} com erro`;
+        errEl.classList.remove('hidden');
+      } else {
+        errEl.classList.add('hidden');
+      }
+
+      const catOptions = state.categories.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+      const stageOptions = STAGE_OPTIONS.map(s => `<option value="${s.value}">${s.label}</option>`).join('');
+
+      document.getElementById('uploadPreviewTable').innerHTML = `
+        <table class="upload-table">
+          <thead>
+            <tr>
+              <th style="width:30px">#</th>
+              <th style="width:110px">Data de Entrega</th>
+              <th style="width:110px">Data Postagem</th>
+              <th style="width:140px">Categoria</th>
+              <th>Título</th>
+              <th>Descrição</th>
+              <th style="width:120px">Status</th>
+              <th style="width:30px"></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${uploadRows.map((r, i) => `
+              <tr class="${r._valid ? '' : 'row-error'}">
+                <td><span class="text-[10px] font-bold ${r._valid ? 'text-gray-600' : 'text-red-500'}">${i + 1}</span></td>
+                <td><input type="date" class="cell-edit" value="${r.dataEntrega}" onchange="uploadRows[${i}].dataEntrega=this.value"></td>
+                <td><input type="date" class="cell-edit" value="${r.dataPostagem || ''}" onchange="uploadRows[${i}].dataPostagem=this.value"></td>
+                <td><select class="cell-select" onchange="uploadRows[${i}].categoria=parseInt(this.value)">${state.categories.map(c => `<option value="${c.id}" ${c.id == r.categoria ? 'selected' : ''}>${c.nome}</option>`).join('')}</select></td>
+                <td><input type="text" class="cell-edit" value="${esc(r.titulo)}" oninput="uploadRows[${i}].titulo=this.value;uploadRows[${i}]._valid=this.value.trim().length>0;updateUploadRow(${i})" placeholder="Obrigatório"></td>
+                <td><input type="text" class="cell-edit" value="${esc(r.descricao)}" oninput="uploadRows[${i}].descricao=this.value"></td>
+                <td><select class="cell-select" onchange="uploadRows[${i}].stage=this.value">${STAGE_OPTIONS.map(s => `<option value="${s.value}" ${s.value === r.stage ? 'selected' : ''}>${s.label}</option>`).join('')}</select></td>
+                <td>${r._valid ? '' : '<span title="Título obrigatório"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EF4136" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+      lucide.createIcons();
+    }
+
+    function updateUploadRow(i) {
+      // Quick visual feedback on row validity
+      const rows = document.querySelectorAll('.upload-table tbody tr');
+      if (rows[i]) {
+        rows[i].classList.toggle('row-error', !uploadRows[i]._valid);
+        const badge = rows[i].querySelector('td:last-child');
+        badge.innerHTML = uploadRows[i]._valid ? '' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EF4136" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+      }
+      const errorCount = uploadRows.filter(r => !r._valid).length;
+      const errEl = document.getElementById('uploadErrors');
+      if (errorCount > 0) { errEl.textContent = `${errorCount} com erro`; errEl.classList.remove('hidden'); }
+      else { errEl.classList.add('hidden'); }
+    }
+    window.updateUploadRow = updateUploadRow;
+
+    async function confirmUpload() {
+      const toUpload = uploadRows.filter(r => r._valid);
+      if (!toUpload.length) { showToast("Nenhum item válido para enviar.", "error"); return; }
+
+      const btn = document.getElementById('btnConfirmUpload');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Enviando...';
+
+      let success = 0, errors = 0;
+      for (const r of toUpload) {
+        try {
+          const data = {
+            id: state.activityIdCounter++,
+            titulo: r.titulo,
+            descricao: r.descricao,
+            categoria: r.categoria,
+            stage: r.stage,
+            dataVencimento: r.dataEntrega,
+            dataPostagem: r.dataPostagem || null,
+            canais: [],
+            notaFiscal: null,
+            valor: null,
+          };
+          const d = await window.fb.addDoc(window.fb.collection(window.fb.db, 'activities'), data);
+          state.activities.push({ ...data, _fbId: d.id });
+          success++;
+        } catch (e) { errors++; }
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> Confirmar Upload';
+      lucide.createIcons();
+
+      closeUploadModal();
+      renderAllActivities();
+      showToast(`${success} atividades importadas${errors ? `, ${errors} erros` : ''}.`);
+    }
+    window.confirmUpload = confirmUpload;
+
+    function closeUploadModal() {
+      uploadRows = [];
+      closeModal('uploadModal');
+    }
+    window.closeUploadModal = closeUploadModal;
+
+    // ── Helpers ─────────────────────────────────────────────────────────
+    function esc(t) { return t ? t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : ''; }
+    function fmtDate(s) { if (!s) return ''; const p = s.split('-'); return `${p[2]}/${p[1]}`; }
+  </script>
+
+  <!-- NAVIGATION + SIDEBAR LOGIC -->
+  <script>
+    const ALL_VIEWS = ['dashboard', 'kanban', 'calendar', 'categories', 'export', 'configuracoes', 'nps'];
+
+    function changeView(view) {
+      ALL_VIEWS.forEach(v => {
+        const el = document.getElementById(`${v}-view`);
+        if (el) { el.classList.add('hidden-view'); el.removeAttribute('style'); }
+      });
+      const target = document.getElementById(`${view}-view`);
+      if (target) { target.classList.remove('hidden-view'); }
+
+      // Sidebar active
+      document.querySelectorAll('[class*="nav-item-"]').forEach(n => {
+        if (n.closest('#mobile-bottom-nav')) return;
+        n.className = n.className.replace(/bg-red-600\/10|text-red-500|hover:text-red-500/g, '').trim();
+        if (!n.className.includes('text-gray-500')) n.className += ' text-gray-500 hover:text-white';
+      });
+      document.querySelectorAll(`.nav-item-${view}`).forEach(n => {
+        if (n.closest('#mobile-bottom-nav')) return;
+        n.className = n.className.replace(/text-gray-500|hover:text-white/g, '').trim();
+        n.className += ' bg-red-600/10 text-red-500 hover:text-red-500';
+      });
+
+      // Mobile nav
+      document.querySelectorAll('#mobile-bottom-nav .mob-tab').forEach(t => t.classList.remove('active'));
+      const mobBtn = document.querySelector(`#mobile-bottom-nav .nav-item-${view}`);
+      if (mobBtn) mobBtn.classList.add('active');
+
+      // Header title
+      const title = document.getElementById('header-title');
+      const btn = document.getElementById('btn-header-add');
+      const titles = {
+        dashboard: '<i data-lucide="layout-dashboard" class="inline w-4 h-4 mr-2 text-red-500"></i> Dashboard',
+        kanban: '<i data-lucide="columns" class="inline w-4 h-4 mr-2 text-red-500"></i> Fluxo de Trabalho',
+        calendar: '<i data-lucide="calendar-days" class="inline w-4 h-4 mr-2 text-red-500"></i> Calendário Editorial',
+        categories: '<i data-lucide="tags" class="inline w-4 h-4 mr-2 text-red-500"></i> Categorias',
+        export: '<i data-lucide="download" class="inline w-4 h-4 mr-2 text-red-500"></i> Exportar Dados',
+        configuracoes: '<i data-lucide="settings" class="inline w-4 h-4 mr-2 text-red-500"></i> Configurações',
+        nps: '<i data-lucide="bar-chart-2" class="inline w-4 h-4 mr-2 text-red-500"></i> Quality & NPS'
+      };
+      title.innerHTML = titles[view] || titles.dashboard;
+
+      if (view === 'nps' || view === 'configuracoes') btn.classList.add('hidden-view');
+      else btn.classList.remove('hidden-view');
+
+      if (view !== 'nps' && view !== 'configuracoes') renderAllActivities();
+      if (view === 'configuracoes') renderConfiguracoes();
+      // Instagram connection dot
+      const dot = document.getElementById('igConnectedDot');
+      if (dot) { dot.style.display = getIgProfile() ? 'block' : 'none'; dot.style.background = '#10B981'; dot.style.boxShadow = '0 0 6px rgba(16,185,129,0.5)'; }
+      if (window.lucide) lucide.createIcons();
+
+      // Recharts precisa de resize quando a view NPS fica visível
+      if (view === 'nps') {
+        setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
+      }
+    }
+    window.changeView = changeView;
+
+    // ── INSTAGRAM — META GRAPH API REAL ────────────────────────────────
+    const DAYS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    const HOURS = Array.from({length:24},(_,i)=>`${String(i).padStart(2,'0')}:00`);
+    const IG_API_BASE = 'https://graph.facebook.com/v18.0';
+
+    function getIgProfile() {
+      try { return JSON.parse(localStorage.getItem('hub_instagram_profile') || 'null'); } catch { return null; }
+    }
+    function setIgProfile(data) {
+      localStorage.setItem('hub_instagram_profile', JSON.stringify(data));
+    }
+    function clearIgProfile() {
+      localStorage.removeItem('hub_instagram_profile');
+      localStorage.removeItem('hub_instagram_analytics');
+      localStorage.removeItem('hub_instagram_token');
+      localStorage.removeItem('hub_instagram_igid');
+    }
+
+    function getIgToken() { return localStorage.getItem('hub_instagram_token') || ''; }
+    function setIgToken(t) { localStorage.setItem('hub_instagram_token', t); }
+    function getIgUserId() { return localStorage.getItem('hub_instagram_igid') || ''; }
+    function setIgUserId(id) { localStorage.setItem('hub_instagram_igid', id); }
+
+    // ── REAL API CALLS ─────────────────────────────────────────────────
+    async function callGraphApi(path, params = {}) {
+      const token = getIgToken();
+      if (!token) throw new Error('Sem token');
+      const p = new URLSearchParams({ access_token: token, ...params });
+      const url = `${IG_API_BASE}${path}?${p}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message || 'Erro da API');
+      return data;
+    }
+
+    async function fetchIgProfileFromApi() {
+      const igId = getIgUserId();
+      if (!igId) throw new Error('ID da conta Instagram não configurado');
+      const data = await callGraphApi(`/${igId}`, {
+        fields: 'username,name,followers_count,follows_count,media_count,profile_picture_url'
+      });
+      return {
+        username: data.username || '',
+        fullName: data.name || data.username || '',
+        followers: data.followers_count || 0,
+        following: data.follows_count || 0,
+        posts: data.media_count || 0,
+        profilePic: data.profile_picture_url || null
+      };
+    }
+
+    async function fetchIgMediaFromApi() {
+      const igId = getIgUserId();
+      const data = await callGraphApi(`/${igId}/media`, {
+        fields: 'id,caption,media_type,media_url,like_count,comments_count,timestamp,thumbnail_url',
+        limit: '12'
+      });
+      return (data.data || []).map(m => ({
+        id: m.id,
+        type: m.media_type || 'IMAGE',
+        caption: (m.caption || '').slice(0, 80),
+        likes: m.like_count || 0,
+        comments: m.comments_count || 0,
+        timestamp: m.timestamp || new Date().toISOString(),
+        mediaUrl: m.media_url || m.thumbnail_url || '',
+        thumbnailColor: ['#833AB4','#FD1D1D','#F77737','#FCAF45','#405DE6','#5851DB'][Math.floor(Math.random()*6)]
+      }));
+    }
+
+    async function fetchIgInsights() {
+      const igId = getIgUserId();
+      try {
+        const data = await callGraphApi(`/${igId}/insights`, {
+          metric: 'impressions,reach,engagement,profile_views',
+          period: 'days_28'
+        });
+        return data.data || [];
+      } catch { return []; }
+    }
+
+    function calculateBestTimes(insights, profile) {
+      // Baseado em dados reais de alcance + padrões gerais do Instagram
+      const followers = profile.followers || 1000;
+      const engagement = followers > 0 ? Math.round((insights.find(i=>i.name==='engagement')?.values?.[0]?.value || followers*0.03) / followers * 100) : 3;
+      const grid = {};
+      DAYS.forEach((d,di)=>{
+        grid[d] = {};
+        HOURS.forEach(h=>{
+          const hour = parseInt(h);
+          let score = 25 + Math.min(engagement * 8, 30);
+          if (hour >= 7 && hour <= 9) score += 20;
+          if (hour >= 11 && hour <= 13) score += 30;
+          if (hour >= 17 && hour <= 19) score += 25;
+          if (hour >= 20 && hour <= 22) score += 20;
+          if (hour >= 23 || hour <= 5) score -= 25;
+          if (di >= 2 && di <= 4) score += 12;
+          if (di === 0 || di === 6) score -= 8;
+          score = Math.max(5, Math.min(100, Math.round(score)));
+          grid[d][hour] = score;
+        });
+      });
+      return grid;
+    }
+
+    // ── CONNECT / DISCONNECT ───────────────────────────────────────────
+    async function connectInstagramManual() {
+      const tokenInput = document.getElementById('manualIgToken');
+      const token = tokenInput?.value?.trim();
+      if (!token) { showToast('Insira um Access Token do Meta.','error'); return; }
+
+      showToast('Conectando ao Meta Graph API...');
+      try {
+        // 1. Testar token e obter informações do usuário/páginas
+        const meData = await callGraphApi('/me/accounts', { fields: 'name,id,instagram_business_account,access_token' });
+        const pages = meData.data || [];
+
+        if (pages.length === 0) {
+          showToast('Token válido, mas nenhuma página encontrada.','error');
+          return;
+        }
+
+        // 2. Procurar página com Instagram Business Account
+        let igPage = pages.find(p => p.instagram_business_account);
+        if (!igPage) {
+          showToast('Nenhuma página com Instagram Business encontrada.','error');
+          return;
+        }
+
+        const igAccountId = igPage.instagram_business_account.id;
+        setIgToken(token);
+        setIgUserId(igAccountId);
+
+        // 3. Buscar perfil real
+        const profile = await fetchIgProfileFromApi();
+        profile._token = token;
+        profile._pageId = igPage.id;
+        setIgProfile(profile);
+
+        // 4. Buscar mídias reais
+        let recentMedia = [];
+        try { recentMedia = await fetchIgMediaFromApi(); } catch {}
+
+        // 5. Buscar insights reais
+        let insights = [];
+        try { insights = await fetchIgInsights(); } catch {}
+
+        // 6. Calcular best times com dados reais
+        const bestTimeGrid = calculateBestTimes(insights, profile);
+
+        const analytics = {
+          followers: profile.followers,
+          following: profile.following,
+          posts: profile.posts,
+          engagement: profile.followers > 0 ? Math.round((insights.find(i=>i.name==='engagement')?.values?.[0]?.value || 0) / profile.followers * 100) : 0,
+          bestTimeGrid,
+          recentMedia
+        };
+        localStorage.setItem('hub_instagram_analytics', JSON.stringify(analytics));
+        renderConfiguracoes();
+        showToast(`Instagram @${profile.username} conectado!`);
+      } catch (e) {
+        console.error('Erro conexão Instagram:', e);
+        showToast(`Erro: ${e.message}`, 'error');
+      }
+    }
+    window.connectInstagramManual = connectInstagramManual;
+
+    function promptAppId() {
+      const current = localStorage.getItem('hub_meta_app_id');
+      const id = prompt('Digite seu App ID do Meta (Facebook Developers):', current || '');
+      if (!id) return;
+      localStorage.setItem('hub_meta_app_id', id.trim());
+      updateAppIdIndicator();
+      showToast('App ID salvo!');
+    }
+    window.promptAppId = promptAppId;
+
+    function updateAppIdIndicator() {
+      const el = document.getElementById('savedAppIdIndicator');
+      if (el) { el.classList.toggle('hidden', !localStorage.getItem('hub_meta_app_id')); }
+    }
+
+    function startInstagramOAuth() {
+      let appId = localStorage.getItem('hub_meta_app_id');
+      if (!appId) {
+        appId = prompt('Qual seu App ID do Meta (Facebook Developers)?\n\nPrecisa criar um app em https://developers.facebook.com');
+        if (!appId) return;
+        localStorage.setItem('hub_meta_app_id', appId.trim());
+        updateAppIdIndicator();
+      }
+      const redirectUri = window.location.href.split('#')[0].split('?')[0];
+
+      // Verificar se está rodando em file:// - não funciona com OAuth
+      if (redirectUri.startsWith('file://')) {
+        showToast('OAuth não funciona em file://. Use http-server ou token manual.', 'error');
+        return;
+      }
+
+      const scope = 'instagram_basic,instagram_content_publish,pages_read_engagement,pages_show_list';
+      const oauthUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=token&state=hub_oauth`;
+      showToast('Redirecionando para Facebook...');
+      setTimeout(() => { window.location.href = oauthUrl; }, 500);
+    }
+    window.startInstagramOAuth = startInstagramOAuth;
+
+    // Auto-detect OAuth response (token na URL #access_token=...)
+    (function checkOAuthResponse() {
+      const hash = window.location.hash;
+      if (hash && hash.includes('access_token=') && hash.includes('state=hub_oauth')) {
+        const params = new URLSearchParams(hash.replace('#', '?'));
+        const token = params.get('access_token');
+        if (token) {
+          const el = document.getElementById('manualIgToken');
+          if (el) el.value = token;
+          history.replaceState(null, '', window.location.pathname + window.location.search);
+          showToast('Token capturado! Conectando...');
+          setTimeout(() => connectInstagramManual(), 300);
+        }
+      }
+      // Update App ID indicator on load
+      setTimeout(updateAppIdIndicator, 500);
+    })();
+
+    function disconnectInstagram() {
+      clearIgProfile();
+      renderConfiguracoes();
+      showToast('Instagram desconectado.');
+    }
+    window.disconnectInstagram = disconnectInstagram;
+
+    // ── PUBLISH REAL ───────────────────────────────────────────────────
+    async function publishNow(activityId) {
+      const token = getIgToken();
+      const igId = getIgUserId();
+      const profile = getIgProfile();
+
+      if (!token || !igId || !profile) {
+        showToast('Conecte o Instagram primeiro!','error');
+        return;
+      }
+
+      const activity = state.activities.find(a => a.id == activityId);
+      if (!activity) { showToast('Atividade não encontrada.','error'); return; }
+
+      setPostStatus(activityId, 'publicando');
+      renderCalendar();
+      renderKanban();
+
+      const caption = `${activity.titulo}${activity.descricao ? '\n\n' + activity.descricao : ''}\n\n#makroengenharia`;
+
+      // Publicar via Instagram Content Publishing API
+      // Passo 1: Criar media container
+      // Para IMAGE: POST /{ig-user-id}/media?image_url=URL&caption=caption
+      // Para VIDEO: POST /{ig-user-id}/media?video_url=URL&caption=caption&media_type=VIDEO
+      // Passo 2: POST /{ig-user-id}/media_publish?creation_id=CONTAINER_ID
+
+      // Sem imagem, simulamos publicação (API real exige URL de mídia)
+      const isRealPublish = activity.attachments && activity.attachments.length > 0;
+
+      if (isRealPublish) {
+        try {
+          const attach = activity.attachments[0];
+          const mediaType = attach.type?.startsWith('video') ? 'VIDEO' : 'IMAGE';
+          const mediaUrl = attach.data; // base64 - precisaria de um servidor para hospedar
+
+          // Nota: Para publicação REAL, a imagem precisa estar em uma URL pública
+          // O base64 não funciona diretamente com a Graph API
+          showToast('Mídia detectada. A API Graph exige URL pública.', 'error');
+          showToast('Publicando apenas texto (sem mídia)...');
+
+          // Fallback: criar container só com caption (apenas para teste)
+          const containerRes = await callGraphApi(`/${igId}/media`, {
+            caption: caption,
+            media_type: 'IMAGE',
+            image_url: 'https://via.placeholder.com/1080x1080.png?text=Makro+Engenharia'
+          });
+
+          if (containerRes.id) {
+            await callGraphApi(`/${igId}/media_publish`, { creation_id: containerRes.id });
+          }
+          setPostStatus(activityId, 'publicado');
+          showToast('Post publicado no Instagram!');
+        } catch (e) {
+          console.error('Erro publicação:', e);
+          setPostStatus(activityId, 'erro');
+          showToast(`Erro: ${e.message}`, 'error');
+        }
+      } else {
+        // Sem mídia - modo texto apenas (cria container com placeholder)
+        try {
+          const containerRes = await callGraphApi(`/${igId}/media`, {
+            caption: caption,
+            media_type: 'IMAGE',
+            image_url: 'https://via.placeholder.com/1080x1080.png?text=Makro+Engenharia'
+          });
+          if (containerRes.id) {
+            const publishRes = await callGraphApi(`/${igId}/media_publish`, { creation_id: containerRes.id });
+            if (publishRes.id) {
+              setPostStatus(activityId, 'publicado');
+              showToast('Post publicado no Instagram!');
+            }
+          }
+        } catch (e) {
+          console.error('Erro publicação:', e);
+          setPostStatus(activityId, 'erro');
+          showToast(`Erro: ${e.message}`, 'error');
+        }
+      }
+
+      renderCalendar();
+      renderKanban();
+    }
+    window.publishNow = publishNow;
+
+    // ── BEST TIME GRID ─────────────────────────────────────────────────
+    function renderBestTimeGrid(analytics) {
+      const container = document.getElementById('bestTimeGrid');
+      if (!container) return;
+      const grid = analytics.bestTimeGrid;
+      let html = '<table class="w-full text-center border-collapse"><thead><tr><th class="p-1 text-[8px] font-black uppercase tracking-wider text-gray-500 w-10"></th>';
+      HOURS.forEach(h => {
+        const hInt = parseInt(h);
+        html += `<th class="p-1 text-[7px] font-black uppercase tracking-wider text-gray-500 ${hInt % 4 === 0 ? '' : 'opacity-30'}">${h}</th>`;
+      });
+      html += '</tr></thead><tbody>';
+      DAYS.forEach(d => {
+        html += `<tr><td class="p-1 text-[9px] font-black uppercase tracking-wider text-gray-400 text-left">${d}</td>`;
+        HOURS.forEach(h => {
+          const score = grid[d]?.[parseInt(h)] || 50;
+          let color;
+          if (score >= 75) color = '#059669';
+          else if (score >= 55) color = '#65A30D';
+          else if (score >= 40) color = '#D97706';
+          else if (score >= 25) color = '#EA580C';
+          else color = '#DC2626';
+          const opacity = Math.max(0.3, score / 100);
+          html += `<td class="p-0.5"><div class="w-full h-5 rounded" style="background:${color};opacity:${opacity}" title="${d} ${h}: ${score}%"></div></td>`;
+        });
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    // ── RENDER ─────────────────────────────────────────────────────────
+    async function renderConfiguracoes() {
+      const profile = getIgProfile();
+      const notConnected = document.getElementById('instagramNotConnected');
+      const connected = document.getElementById('instagramConnected');
+      if (!notConnected || !connected) return;
+
+      if (!profile) {
+        notConnected.classList.remove('hidden');
+        connected.classList.add('hidden');
+        return;
+      }
+
+      notConnected.classList.add('hidden');
+      connected.classList.remove('hidden');
+
+      const initial = profile.username ? profile.username.charAt(0).toUpperCase() : '?';
+      const picEl = document.getElementById('igProfilePic');
+      if (profile.profilePic) {
+        picEl.style.background = 'transparent';
+        picEl.innerHTML = `<img src="${profile.profilePic}" class="w-full h-full rounded-2xl object-cover">`;
+      } else {
+        picEl.style.background = 'linear-gradient(135deg,#833AB4,#FD1D1D)';
+        picEl.textContent = initial;
+      }
+      document.getElementById('igUsername').textContent = '@' + (profile.username || 'usuário');
+      document.getElementById('igFullName').textContent = profile.fullName || '';
+
+      // Refresh analytics from API (async, não bloqueia)
+      let analytics;
+      try { analytics = JSON.parse(localStorage.getItem('hub_instagram_analytics')); } catch {}
+
+      if (!analytics) {
+        analytics = {
+          followers: profile.followers, following: profile.following, posts: profile.posts,
+          engagement: 0, bestTimeGrid: calculateBestTimes([], profile), recentMedia: []
+        };
+        localStorage.setItem('hub_instagram_analytics', JSON.stringify(analytics));
+      }
+
+      document.getElementById('igPostsCount').textContent = (analytics.posts || 0).toLocaleString();
+      document.getElementById('igFollowersCount').textContent = (analytics.followers || 0).toLocaleString();
+      document.getElementById('igFollowingCount').textContent = (analytics.following || 0).toLocaleString();
+
+      renderBestTimeGrid(analytics);
+
+      const mediaContainer = document.getElementById('igRecentMedia');
+      if (mediaContainer) {
+        const media = analytics.recentMedia || [];
+        if (media.length > 0) {
+          mediaContainer.innerHTML = media.map(m => {
+            const isVideo = m.type === 'VIDEO';
+            const hasImg = m.mediaUrl && (m.mediaUrl.startsWith('http'));
+            return `<div class="aspect-square rounded-xl overflow-hidden relative cursor-pointer hover:opacity-80 transition group" style="background:${m.thumbnailColor || '#333'}22;border:1px solid rgba(255,255,255,0.05)">
+              ${hasImg ? `<img src="${m.mediaUrl}" class="w-full h-full object-cover" />` :
+              `<div class="w-full h-full flex items-center justify-center" style="background:${m.thumbnailColor || '#333'}33">
+                <div class="text-center">${isVideo ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>' : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>'}</div>
+              </div>`}
+              <div class="absolute bottom-1 left-1 right-1 flex justify-between text-[8px] font-bold text-white px-1.5 py-0.5 rounded" style="background:rgba(0,0,0,0.5)">
+                <span>❤ ${m.likes}</span><span>💬 ${m.comments}</span>
+              </div>
+            </div>`;
+          }).join('');
+        } else {
+          mediaContainer.innerHTML = '<div class="col-span-full text-center text-[10px] text-gray-500 py-8">Nenhuma mídia encontrada. As mídias aparecerão aqui após conectar o Instagram.</div>';
+        }
+      }
+
+      // Refresh data from API in background
+      refreshIgData();
+    }
+
+    async function refreshIgData() {
+      try {
+        const profile = await fetchIgProfileFromApi();
+        const token = getIgToken();
+        if (token && profile.username) {
+          profile._token = token;
+          setIgProfile(profile);
+          const [recentMedia, insights] = await Promise.all([
+            fetchIgMediaFromApi().catch(()=>[]),
+            fetchIgInsights().catch(()=>[])
+          ]);
+          const bestTimeGrid = calculateBestTimes(insights, profile);
+          const analytics = {
+            followers: profile.followers, following: profile.following, posts: profile.posts,
+            engagement: profile.followers > 0 ? Math.round((insights.find(i=>i.name==='engagement')?.values?.[0]?.value || 0) / profile.followers * 100) : 0,
+            bestTimeGrid, recentMedia
+          };
+          localStorage.setItem('hub_instagram_analytics', JSON.stringify(analytics));
+          renderConfiguracoes();
+        }
+      } catch (e) {
+        console.log('Refresh Instagram data failed (offline or token expired):', e.message);
+      }
+    }
+    function expandSidebar() {
+      const s = document.getElementById('desktop-sidebar');
+      const texts = document.querySelectorAll('.sidebar-text');
+      if (s.classList.contains('w-[84px]')) {
+        s.classList.replace('w-[84px]', 'w-64');
+        s.classList.replace('px-3', 'px-6');
+        setTimeout(() => texts.forEach(t => t.classList.remove('hidden-view')), 150);
+        const icon = document.getElementById('sidebar-toggle-icon');
+        if (icon) icon.setAttribute('data-lucide', 'chevron-left');
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+    window.expandSidebar = expandSidebar;
+
+    function collapseSidebar() {
+      const s = document.getElementById('desktop-sidebar');
+      const texts = document.querySelectorAll('.sidebar-text');
+      if (s.classList.contains('w-64')) {
+        s.classList.replace('w-64', 'w-[84px]');
+        s.classList.replace('px-6', 'px-3');
+        texts.forEach(t => t.classList.add('hidden-view'));
+        ['desktop-atividades'].forEach(menuId => {
+          const menu = document.getElementById(menuId);
+          const menuIcon = document.getElementById(`icon-${menuId}`);
+          if (menu && !menu.classList.contains('hidden')) { menu.classList.add('hidden'); if (menuIcon) menuIcon.style.transform = 'rotate(-90deg)'; }
+        });
+        const icon = document.getElementById('sidebar-toggle-icon');
+        if (icon) icon.setAttribute('data-lucide', 'chevron-right');
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+    window.collapseSidebar = collapseSidebar;
+
+    function toggleDesktopSidebar() {
+      const s = document.getElementById('desktop-sidebar');
+      if (s.classList.contains('w-64')) collapseSidebar(); else expandSidebar();
+    }
+    window.toggleDesktopSidebar = toggleDesktopSidebar;
+
+    function toggleSubMenu(menuId) {
+      const sidebar = document.getElementById('desktop-sidebar');
+      if (sidebar?.classList.contains('w-[84px]')) expandSidebar();
+      const menu = document.getElementById(menuId), icon = document.getElementById(`icon-${menuId}`);
+      if (!menu) return;
+      if (menu.classList.contains('hidden') || menu.classList.contains('hidden-view')) { menu.classList.remove('hidden', 'hidden-view'); if (icon) icon.style.transform = 'rotate(0deg)'; }
+      else { menu.classList.add('hidden'); if (icon) icon.style.transform = 'rotate(-90deg)'; }
+    }
+    window.toggleSubMenu = toggleSubMenu;
+
+    // ── Toast ───────────────────────────────────────────────────────────
+    function showToast(msg, type = 'success') {
+      const t = document.createElement('div');
+      t.className = `p-4 rounded-xl bg-[#010816] border ${type === 'error' ? 'border-red-500 text-red-400' : 'border-emerald-500 text-emerald-400'} animate-fadeup shadow-2xl text-[10px] font-black uppercase tracking-widest z-[200]`;
+      t.innerText = msg;
+      document.getElementById('toast-container').appendChild(t);
+      setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
+    }
+    window.showToast = showToast;
+
+    // ── Init ────────────────────────────────────────────────────────────
+    function hideLoader() {
+      const l = document.getElementById('global-loader');
+      l.classList.add('opacity-0');
+      setTimeout(() => l.classList.add('hidden-view'), 500);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        hideLoader();
+        changeView('dashboard');
+        // IG connection dot
+        const dot = document.getElementById('igConnectedDot');
+        if (dot) { dot.style.display = getIgProfile() ? 'block' : 'none'; dot.style.background = '#10B981'; dot.style.boxShadow = '0 0 6px rgba(16,185,129,0.5)'; }
+      }, 800);
+    });
+  </script>
+
+  <!-- NPS MODULE (React) -->
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef } = React;
+    const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine, LabelList } = window.Recharts;
+
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw68DmuS_sDfZ2ozpG5bX3JQITYO2_nFdXwe9lPFD7rPE0wfxpSjV6uvxmsp0fOyHH1/exec';
+    const COLORS = { critica: '#EF4136', aperfeicoamento: '#FDB913', qualidade: '#56C174', excelencia: '#00A650', textMuted: 'rgba(255,255,255,0.4)' };
+
+    const getNPSColor = (score) => { if (score >= 75) return COLORS.excelencia; if (score >= 50) return COLORS.qualidade; if (score >= 0) return COLORS.aperfeicoamento; return COLORS.critica; };
+    const getNPSZone = (score) => { if (score >= 75) return { label: 'Excelência', cls: 'zona-excelencia' }; if (score >= 50) return { label: 'Qualidade', cls: 'zona-qualidade' }; if (score >= 0) return { label: 'Aperfeiçoamento', cls: 'zona-aperfeicoamento' }; return { label: 'Crítico', cls: 'zona-critica' }; };
+
+    const VALID_MONTH_REGEX = /^(Jan|Fev|Mar|Abr|Mai|Jun|Jul|Ago|Set|Out|Nov|Dez)\s\d{2}(\s-\sN\/A)?$/i;
+    const MONTH_ORDER = { 'Jan':1,'Fev':2,'Mar':3,'Abr':4,'Mai':5,'Jun':6,'Jul':7,'Ago':8,'Set':9,'Out':10,'Nov':11,'Dez':12 };
+    const sortMonthsChronologically = (months) => [...months].sort((a, b) => { const [mA, yA] = a.split(' '); const [mB, yB] = b.split(' '); const fyA = parseInt(yA) > 50 ? 1900+parseInt(yA) : 2000+parseInt(yA); const fyB = parseInt(yB) > 50 ? 1900+parseInt(yB) : 2000+parseInt(yB); return fyA !== fyB ? fyA - fyB : (MONTH_ORDER[mA]||0) - (MONTH_ORDER[mB]||0); });
+    const groupMonthsByYear = (months) => { const grouped = {}; months.forEach(m => { const [, y] = m.split(' '); const fy = parseInt(y) > 50 ? 1900+parseInt(y) : 2000+parseInt(y); if (!grouped[fy]) grouped[fy] = []; grouped[fy].push(m); }); return grouped; };
+    const calcNPS = (rows) => { const total = rows.length; if (!total) return { nps: 0, p: 0, det: 0, neutros: 0, total: 0 }; const p = rows.filter(x => x.nota >= 9).length; const det = rows.filter(x => x.nota <= 6).length; return { total, p, det, neutros: total-p-det, nps: Math.round(((p-det)/total)*100) }; };
+
+    const Icon = ({ name, size = 18, className = "" }) => {
+      const ref = useRef(null);
+      useEffect(() => { if (window.lucide && ref.current) { ref.current.innerHTML = ''; const i = document.createElement('i'); i.setAttribute('data-lucide', name.replace(/([a-z])([A-Z])/g,'$1-$2').toLowerCase()); ref.current.appendChild(i); window.lucide.createIcons({ attrs:{ width:size, height:size, class:className, 'stroke-width':2 } }); } }, [name, size, className]);
+      return <span ref={ref} className="inline-flex items-center justify-center leading-none"></span>;
+    };
+
+    const TrendBadge = ({ current, previous }) => { if (previous === null || previous === undefined) return null; const diff = current - previous; if (diff > 0) return <span className="trend-up text-xs font-black ml-2">↑ +{diff} vs mês ant.</span>; if (diff < 0) return <span className="trend-down text-xs font-black ml-2">↓ {diff} vs mês ant.</span>; return <span className="trend-flat text-xs font-black ml-2">→ Estável</span>; };
+
+    const CustomBarTooltip = ({ active, payload }) => { if (!active || !payload?.length) return null; const d = payload[0].payload; const zone = getNPSZone(d.score); return ( <div className="bg-[#010816] border border-white/20 rounded-2xl p-4 text-xs shadow-2xl min-w-[160px]"> <p className="font-black text-white mb-2 uppercase">{d.mes}</p> <p className="font-black text-2xl mb-1" style={{ color: getNPSColor(d.score) }}>{d.score}</p> <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${zone.cls}`}>{zone.label}</span> <div className="mt-3 space-y-1 text-[10px] opacity-70 text-white"> <p><span style={{color:COLORS.excelencia}}>▲</span> {d.p} promotores</p> <p><span style={{color:COLORS.aperfeicoamento}}>◆</span> {d.neutros} neutros</p> <p><span style={{color:COLORS.critica}}>▼</span> {d.det} detratores</p> <p className="border-t border-white/10 pt-1 mt-1">Σ {d.total} respostas</p> </div> </div> ); };
+
+    const PromoterBar = ({ p, neutros, det, total }) => { if (!total) return null; const pw = ((p / total) * 100).toFixed(1); const nw = ((neutros / total) * 100).toFixed(1); const dw = ((det / total) * 100).toFixed(1); return ( <div className="bg-white/5 border border-white/10 rounded-[24px] p-5"> <h4 className="text-[10px] font-black uppercase opacity-40 mb-3 tracking-widest">Distribuição das Respostas</h4> <div className="flex h-5 rounded-full overflow-hidden gap-0.5"> {p > 0 && <div style={{ width:`${pw}%`, background: COLORS.excelencia }} className="transition-all duration-700 rounded-l-full"/>} {neutros > 0 && <div style={{ width:`${nw}%`, background: COLORS.aperfeicoamento }} className="transition-all duration-700"/>} {det > 0 && <div style={{ width:`${dw}%`, background: COLORS.critica }} className="transition-all duration-700 rounded-r-full"/>} </div> <div className="flex justify-between mt-2 text-[9px] font-black uppercase"> <span style={{ color: COLORS.excelencia }}>▲ {pw}% Promotores</span> <span style={{ color: COLORS.aperfeicoamento }}>◆ {nw}% Neutros</span> <span style={{ color: COLORS.critica }}>▼ {dw}% Detratores</span> </div> </div> ); };
+
+    const HorizontalNPSChart = ({ data, dimension, label }) => {
+      const [isExpanded, setIsExpanded] = useState(false);
+      const items = useMemo(() => { const keys = [...new Set(data.map(d => d[dimension]))].filter(Boolean); return keys.map(k => { const rows = data.filter(d => d[dimension] === k); return { name: k, ...calcNPS(rows) }; }).sort((a,b) => b.nps - a.nps); }, [data, dimension]);
+      if (!items.length) return null;
+      const INITIAL_COUNT = 5;
+      const hasMore = items.length > INITIAL_COUNT;
+      const displayedItems = isExpanded ? items : items.slice(0, INITIAL_COUNT);
+      return (
+        <div className="bg-white/5 border border-white/10 rounded-[30px] p-6 flex flex-col h-full">
+          <h4 className="text-[10px] font-black uppercase opacity-40 mb-4 tracking-widest flex-shrink-0">NPS por {label}</h4>
+          <div className="space-y-3 flex-1">
+            {displayedItems.map((item, i) => { const zone = getNPSZone(item.nps); const barW = Math.max(4, ((item.nps + 100) / 200) * 100); return (
+              <div key={i} className="animate-fadeup" style={{ animationDelay: `${i*30}ms` }}>
+                <div className="flex justify-between items-center mb-1"><span className="text-xs font-bold uppercase truncate max-w-[60%]" title={item.name}>{item.name}</span><div className="flex items-center gap-2"><span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${zone.cls}`}>{zone.label}</span><span className="text-sm font-black" style={{ color: getNPSColor(item.nps) }}>{item.nps}</span></div></div>
+                <div className="h-2 bg-white/5 rounded-full overflow-hidden"><div className="h-full rounded-full transition-all duration-700" style={{ width: `${barW}%`, background: getNPSColor(item.nps) }}/></div>
+                <div className="flex gap-3 mt-1 text-[9px] opacity-40 font-bold"><span>▲ {item.p} prom.</span><span>◆ {item.neutros} neut.</span><span>▼ {item.det} detr.</span><span>Σ {item.total}</span></div>
+              </div>
+            ); })}
+          </div>
+          {hasMore && <button onClick={() => setIsExpanded(!isExpanded)} className="mt-4 pt-4 border-t border-white/5 w-full flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-widest text-blue-400 opacity-60 hover:opacity-100 hover:bg-white/5 rounded-xl transition-all">{isExpanded ? 'Ver Menos' : `Ver Mais (${items.length - INITIAL_COUNT})`}<Icon name={isExpanded ? 'ChevronUp' : 'ChevronDown'} size={14} /></button>}
+        </div>
+      );
+    };
+
+    const NPSApp = () => {
+      const [view, setView] = useState('loading');
+      const [rawData, setRawData] = useState([]);
+      const [contractsList, setContractsList] = useState([]);
+      const [filters, setFilters] = useState({ mes:'Ano 26', unidade:'Todas', estrategico:'Todos', empresa:'Todas', cliente:'Todos', contrato:'Todos', verNA: false });
+      const [selectedMonthInChart, setSelectedMonthInChart] = useState(null);
+      const [exportMenuOpen, setExportMenuOpen] = useState(false);
+      const [searchText, setSearchText] = useState('');
+      const [currentPage, setCurrentPage] = useState(1);
+      const [errorMsg, setErrorMsg] = useState('');
+      const PAGE_SIZE = 10;
+
+      const data = useMemo(() => {
+        const contratoLookup = {};
+        contractsList.forEach(c => {
+          if (c.numero && c.exibicao) contratoLookup[String(c.numero).trim()] = c.exibicao;
+        });
+        return rawData
+          .filter(d => d.mes && VALID_MONTH_REGEX.test(d.mes))
+          .map(d => {
+            let u = d.unidade || "";
+            if (u.toUpperCase() === "WIND") u = "Wind";
+            const numKey = String(d.numContrato || d.contrato || '').trim();
+            const contratoExibicao = contratoLookup[numKey] || d.contrato || numKey;
+            const cliente = (d.cliente || '').toString().normalize('NFC').trim().replace(/\s+/g, ' ');
+            return { ...d, unidade: u, contratoExibicao, cliente };
+          })
+          .filter(d => d.unidade && d.unidade.toUpperCase() !== "SEMINOVOS");
+      }, [rawData, contractsList]);
+
+      useEffect(() => {
+        let cancelled = false;
+        const timeout = setTimeout(() => {
+          fetch(`${SCRIPT_URL}?action=login&user=weverson&pass=Wf023240`)
+          .then(r => {
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            return r.json();
+          })
+          .then(res => {
+            if (cancelled) return;
+            if (res.result === "success") {
+              let baseDados = res.metrics?.baseDados || [];
+              let listaContratos = res.metrics?.listaContratos || [];
+              setRawData(baseDados);
+              setContractsList(listaContratos);
+              setErrorMsg('');
+            } else {
+              setErrorMsg('Login negado pela API.');
+            }
+            setView('dashboard');
+          })
+          .catch(err => {
+            if (cancelled) return;
+            console.error('NPS Fetch Error:', err);
+            setErrorMsg(`Erro ao carregar NPS: ${err.message}`);
+            setView('dashboard');
+          });
+        }, 500);
+        return () => { cancelled = true; clearTimeout(timeout); };
+      }, []);
+
+      useEffect(() => { setSelectedMonthInChart(null); }, [filters.mes]);
+      useEffect(() => { setCurrentPage(1); }, [filters, searchText, selectedMonthInChart]);
+
+      const getCategory = (d) => {
+        const padronizar = (str) => (str || '').toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+        const colClass = padronizar(d.classificacao);
+        if (colClass === 'WIND') return 'Wind';
+        if (colClass === 'PETRORECONCAVO' || colClass === 'PETRO' || colClass === 'POTIGUAR') return 'Petroreconcavo';
+        if (colClass === 'VALE') return 'Vale';
+        if (colClass === 'ARCELORMITTAL') return 'ArcelorMittal';
+        return 'Outros';
+      };
+
+      const stats = useMemo(() => {
+        const filtered = data.filter(d => {
+          const isNA = d.mes.includes(' - N/A');
+          const cleanMes = d.mes.replace(' - N/A', '');
+          if (isNA && !filters.verNA) return false;
+          let matchMes = false;
+          if (selectedMonthInChart) { matchMes = cleanMes === selectedMonthInChart.replace(' - N/A', ''); }
+          else { if (filters.mes === 'Todos') matchMes = true; else if (filters.mes.startsWith('Ano ')) { const y = filters.mes.replace('Ano ',''); matchMes = cleanMes.endsWith(y); } else { matchMes = cleanMes === filters.mes; } }
+          const matchEstrategico = filters.estrategico === 'Todos' || getCategory(d) === filters.estrategico;
+          const matchEmpresa = filters.empresa === 'Todas' || d.empresa === filters.empresa;
+           return matchMes && matchEstrategico && matchEmpresa && (filters.unidade === 'Todas' || d.unidade === filters.unidade) && (filters.cliente === 'Todos' || d.cliente === filters.cliente) && (filters.contrato === 'Todos' || d.contratoExibicao === filters.contrato);
+        });
+        const { total, p, det, neutros, nps } = calcNPS(filtered);
+        return { total, p, det, neutros, nps, filtered };
+      }, [data, filters, selectedMonthInChart]);
+
+      const monthlyNpsData = useMemo(() => {
+        const baseFilteredData = data.filter(d => { const isNA = d.mes.includes(' - N/A'); if (isNA && !filters.verNA) return false; const matchEstrategico = filters.estrategico === 'Todos' || getCategory(d) === filters.estrategico; const matchEmpresa = filters.empresa === 'Todas' || d.empresa === filters.empresa; return matchEstrategico && matchEmpresa && (filters.unidade === 'Todas' || d.unidade === filters.unidade) && (filters.cliente === 'Todos' || d.cliente === filters.cliente) && (filters.contrato === 'Todos' || d.contratoExibicao === filters.contrato); });
+        let monthsToShow = [...new Set(baseFilteredData.map(r => r.mes.replace(' - N/A', '')))].filter(Boolean);
+        if (filters.mes !== 'Todos') { if (filters.mes.startsWith('Ano ')) { const y = filters.mes.replace('Ano ',''); monthsToShow = monthsToShow.filter(m => m.endsWith(y)); } else { monthsToShow = monthsToShow.filter(m => m === filters.mes); } }
+        return sortMonthsChronologically(monthsToShow).map(m => { const rows = baseFilteredData.filter(x => x.mes.replace(' - N/A', '') === m); const { nps, p, det, neutros, total } = calcNPS(rows); return { mes:m, score:nps, p, det, neutros, total }; });
+      }, [data, filters]);
+
+      const handleBarClick = (d) => { if (d?.activePayload?.[0]?.payload?.mes) { const m = d.activePayload[0].payload.mes; setSelectedMonthInChart(prev => prev === m ? null : m); } };
+      const tableData = useMemo(() => { const reversed = stats.filtered.slice().reverse(); if (!searchText.trim()) return reversed; const q = searchText.toLowerCase(); return reversed.filter(r => (r.cliente || '').toLowerCase().includes(q) || (r.contratoExibicao || '').toLowerCase().includes(q) || (r.feedback || '').toLowerCase().includes(q) || String(r.nota).includes(q)); }, [stats.filtered, searchText]);
+      const totalPages = Math.max(1, Math.ceil(tableData.length / PAGE_SIZE)); const pagedData = tableData.slice((currentPage-1)*PAGE_SIZE, currentPage*PAGE_SIZE);
+
+      const handleExport = (type) => { setExportMenuOpen(false); const dataToExport = type === 'all' ? data : stats.filtered; const csvRows = [['Mês','Contrato','Cliente','Unidade','Nota','Feedback','Data Resposta'], ...dataToExport.map(d => [d.mes, d.contratoExibicao, d.cliente, d.unidade, d.nota, d.feedback, d.data])]; const uri = "data:text/csv;charset=utf-8," + csvRows.map(e => e.join(",")).join("\n"); const link = document.createElement("a"); link.setAttribute("href", encodeURI(uri)); link.setAttribute("download", "Export_NPS_Makro.csv"); link.click(); };
+
+      if (view === 'loading') return <div className="flex h-full items-center justify-center pt-20"><div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div></div>;
+
+      return (
+        <div className="animate-fadeup text-white pb-20">
+          <div className="space-y-8 animate-slide">
+            {errorMsg && (
+              <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex items-center gap-3">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EF4136" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span className="text-xs font-bold text-red-400">{errorMsg}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center">
+              <div><h2 className="text-2xl font-black uppercase tracking-widest text-white">Dashboard NPS</h2></div>
+              <div className="flex gap-2">
+                <div className="relative">
+                  <button onClick={() => setExportMenuOpen(!exportMenuOpen)} className="p-3 bg-green-600/10 text-green-500 border border-green-600/20 rounded-2xl font-bold text-xs hover:bg-green-600/20 transition-all"><Icon name="FileSpreadsheet" size={18}/></button>
+                  {exportMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 rounded-2xl bg-[#010816] border border-white/10 shadow-2xl z-50 overflow-hidden">
+                      <button onClick={() => handleExport('filtered')} className="w-full text-left p-4 text-[10px] font-bold uppercase hover:bg-white/5 transition flex items-center gap-2 border-b border-white/5"><Icon name="Filter" size={14} className="text-green-500"/> Exportar Filtrado</button>
+                      <button onClick={() => handleExport('all')} className="w-full text-left p-4 text-[10px] font-bold uppercase hover:bg-white/5 transition flex items-center gap-2"><Icon name="Download" size={14} className="text-blue-500"/> Exportar Tudo</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* FILTROS */}
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-4 bg-white/5 p-6 rounded-[30px] border border-white/10">
+              <div>
+                <div className="flex justify-between items-center ml-2 mb-1">
+                  <label className="text-[10px] font-bold opacity-30 uppercase text-white">Mês</label>
+                  <label className="flex items-center gap-1.5 cursor-pointer group">
+                    <input type="checkbox" checked={filters.verNA} onChange={e => setFilters({...filters, verNA: e.target.checked})} className="w-3 h-3 rounded bg-white/5 border-white/10 checked:bg-red-600 transition-all cursor-pointer"/>
+                    <span className="text-[8px] font-black opacity-30 group-hover:opacity-60 transition-opacity uppercase text-white tracking-tighter">Incluir N/A</span>
+                  </label>
+                </div>
+                <select className="w-full bg-[#010816] border border-white/10 p-3 rounded-xl outline-none text-xs text-white cursor-pointer" value={filters.mes} onChange={e=>setFilters({...filters, mes:e.target.value})}>
+                  <option value="Todos">Todos os Períodos</option>
+                  {Object.entries(groupMonthsByYear(sortMonthsChronologically([...new Set(data.map(d=>d.mes.replace(' - N/A', '')))].filter(Boolean)))).map(([y,ms])=>(
+                    <optgroup key={y} label={y}><option value={`Ano ${y.slice(-2)}`}>Todo o Ano {y}</option>{ms.map(m=><option key={m} value={m}>{m}</option>)}</optgroup>
+                  ))}
+                </select>
+              </div>
+              <div><label className="text-[10px] font-bold opacity-30 uppercase ml-2 mb-1 block text-white">Unidade</label><select className="w-full bg-[#010816] border border-white/10 p-3 rounded-xl outline-none text-xs text-white cursor-pointer" value={filters.unidade} onChange={e=>setFilters({...filters, unidade:e.target.value, estrategico:'Todos', cliente:'Todos', contrato:'Todos'})}><option value="Todas">Todas</option>{[...new Set(data.map(d=>d.unidade))].filter(v => v && v !== "Não Definida").sort().map(v=><option key={v} value={v}>{v}</option>)}</select></div>
+              <div><label className="text-[10px] font-bold opacity-30 uppercase ml-2 mb-1 block text-blue-400">Estratégico</label><select className="w-full bg-[#010816] border border-blue-500/30 p-3 rounded-xl outline-none text-xs text-white cursor-pointer" value={filters.estrategico} onChange={e=>setFilters({...filters, estrategico:e.target.value, cliente:'Todos', contrato:'Todos'})}><option value="Todos">Todos</option><option value="ArcelorMittal">ArcelorMittal</option><option value="Vale">Vale</option><option value="Petroreconcavo">Petroreconcavo</option><option value="Wind">Wind</option><option value="Outros">Outros</option></select></div>
+              <div><label className="text-[10px] font-bold opacity-30 uppercase ml-2 mb-1 block text-purple-400">Empresa</label><select className="w-full bg-[#010816] border border-purple-500/30 p-3 rounded-xl outline-none text-xs text-white cursor-pointer" value={filters.empresa} onChange={e=>setFilters({...filters, empresa:e.target.value, cliente:'Todos', contrato:'Todos'})}><option value="Todas">MKE + MKT</option><option value="MKE">MKE (Engenharia)</option><option value="MKT">MKT (Transportes)</option></select></div>
+              <div><label className="text-[10px] font-bold opacity-30 uppercase ml-2 mb-1 block text-white">Cliente</label><select className="w-full bg-[#010816] border border-white/10 p-3 rounded-xl outline-none text-xs text-white cursor-pointer" value={filters.cliente} onChange={e=>setFilters({...filters, cliente:e.target.value, contrato:'Todos'})}><option value="Todos">Todos</option>{[...new Set(data.filter(d => (filters.unidade==='Todas' || d.unidade===filters.unidade) && (filters.estrategico==='Todos' || getCategory(d)===filters.estrategico) && (filters.empresa==='Todas' || d.empresa===filters.empresa)).map(d=>d.cliente))].filter(Boolean).sort().map(v=><option key={v} value={v}>{v}</option>)}</select></div>
+              <div><label className="text-[10px] font-bold opacity-30 uppercase ml-2 mb-1 block text-white">Contrato</label><select className="w-full bg-[#010816] border border-white/10 p-3 rounded-xl outline-none text-xs text-white cursor-pointer" value={filters.contrato} onChange={e=>setFilters({...filters, contrato:e.target.value})}><option value="Todos">Todos</option>{[...new Set(data.filter(d => (filters.unidade==='Todas' || d.unidade===filters.unidade) && (filters.estrategico==='Todos' || getCategory(d)===filters.estrategico) && (filters.empresa==='Todas' || d.empresa===filters.empresa) && (filters.cliente==='Todos' || d.cliente===filters.cliente)).map(d=>d.contratoExibicao))].filter(Boolean).sort().map(v=><option key={v} value={v}>{v}</option>)}</select></div>
+            </div>
+
+            {/* KPIs */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {[{l:'Total Respostas',v:stats.total,c:'white'},{l:'Promotores',v:stats.p,c:COLORS.excelencia},{l:'Neutros',v:stats.neutros,c:COLORS.aperfeicoamento},{l:'Detratores',v:stats.det,c:COLORS.critica},{l:'NPS Score',v:stats.nps,c:getNPSColor(stats.nps),h:true}].map((s,i)=>(
+                <div key={i} className={`p-6 rounded-3xl border ${s.h?'bg-white/10 border-white/30':'bg-white/5 border-white/10'} text-center`}>
+                  <span className="text-[10px] font-bold opacity-40 uppercase block mb-1 text-white">{s.l}</span><span className="text-3xl font-black" style={{color:s.c}}>{s.v}</span>
+                  {s.h && <div className="mt-2"><span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${getNPSZone(stats.nps).cls}`}>{getNPSZone(stats.nps).label}</span></div>}
+                </div>
+              ))}
+            </div>
+
+            <PromoterBar p={stats.p} neutros={stats.neutros} det={stats.det} total={stats.total}/>
+
+            {/* CHART */}
+            <div className="bg-white/5 p-8 rounded-[40px] border border-white/10 h-[480px]">
+              <div className="mb-4 flex justify-between items-center flex-wrap gap-2">
+                <div><h4 className="text-xs font-bold uppercase opacity-40 text-white">Série Histórica NPS</h4>{!selectedMonthInChart && <p className="text-[10px] opacity-30 mt-1 chart-hint">Clique na barra para filtrar</p>}{selectedMonthInChart && <p className="text-[10px] text-red-500 font-bold mt-1 animate-pulse">Filtrando: <strong>{selectedMonthInChart}</strong></p>}</div>
+                <div className="flex gap-4 flex-wrap">{[{c:COLORS.excelencia,l:'EXCELÊNCIA ≥75'},{c:COLORS.qualidade,l:'QUALIDADE ≥50'},{c:COLORS.aperfeicoamento,l:'APERFEIÇOAMENTO ≥0'},{c:COLORS.critica,l:'CRÍTICO <0'}].map(({c,l})=><div key={l} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{background:c}}/><span className="text-[8px] font-bold opacity-40">{l}</span></div>)}</div>
+              </div>
+              <ResponsiveContainer width="100%" height="85%">
+                <BarChart key={JSON.stringify(filters)} data={monthlyNpsData} onClick={handleBarClick} style={{cursor:'pointer'}}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff10"/><XAxis dataKey="mes" stroke="#cccccc" fontSize={10}/><YAxis stroke="#cccccc" fontSize={10} domain={[-100,100]} ticks={[-100,-50,0,50,75,100]}/>
+                  <Tooltip content={<CustomBarTooltip/>} cursor={{fill:'rgba(255,255,255,0.05)'}}/>
+                  <ReferenceLine y={0} stroke="#ffffff30" strokeDasharray="0"/><ReferenceLine y={50} stroke={COLORS.qualidade+'50'} strokeDasharray="4 4" label={{ value:'50 — Qualidade', position:'insideTopLeft', fill:COLORS.qualidade, fontSize:9, fontWeight:'bold' }}/><ReferenceLine y={75} stroke={COLORS.excelencia+'50'} strokeDasharray="4 4" label={{ value:'75 — Excelência', position:'insideTopLeft', fill:COLORS.excelencia, fontSize:9, fontWeight:'bold' }}/>
+                  <Bar dataKey="score" radius={[8,8,0,0]}>{monthlyNpsData.map((e,i)=><Cell key={i} fill={getNPSColor(e.score)} fillOpacity={selectedMonthInChart&&selectedMonthInChart!==e.mes?0.3:1} stroke={selectedMonthInChart===e.mes?'#fff':'none'} strokeWidth={2}/>)}<LabelList dataKey="score" position="top" fill="#cccccc" fontSize={10} fontWeight="bold"/></Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <HorizontalNPSChart data={stats.filtered} dimension="cliente" label="Cliente"/>
+              <HorizontalNPSChart data={stats.filtered} dimension="unidade" label="Unidade"/>
+            </div>
+
+            {/* TABELA */}
+            <div className="bg-white/5 border border-white/10 rounded-[40px] overflow-hidden">
+              <div className="p-6 border-b border-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                <div><h4 className="text-xs font-bold uppercase opacity-40">Respostas Recentes</h4><span className="text-[10px] font-bold opacity-30">{tableData.length} registros</span></div>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 opacity-30"><Icon name="Search" size={14}/></span>
+                  <input value={searchText} onChange={e=>setSearchText(e.target.value)} placeholder="Buscar..." className="bg-white/5 border border-white/10 rounded-xl pl-8 pr-4 py-2 text-xs text-white outline-none focus:ring-2 ring-red-600 w-64 transition-all"/>
+                  {searchText && <button onClick={()=>setSearchText('')} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-40 hover:opacity-100 transition"><Icon name="X" size={12}/></button>}
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead><tr className="bg-white/5 text-red-500 font-bold uppercase tracking-widest"><th className="p-5">Mês</th><th className="p-5">Contrato</th><th className="p-5">Cliente</th><th className="p-5 text-center">Nota</th><th className="p-5">Zona</th><th className="p-5">Comentário</th></tr></thead>
+                  <tbody className="divide-y divide-white/5">
+                    {pagedData.length === 0 && <tr><td colSpan={6} className="p-10 text-center opacity-30 text-xs font-bold uppercase">Nenhum registro</td></tr>}
+                    {pagedData.map((r, i) => { const zone = getNPSZone(r.nota); return (
+                      <tr key={i} className="hover:bg-white/5 transition-all text-white">
+                        <td className="p-5 opacity-40">{r.mes}</td>
+                        <td className="p-5 font-bold text-blue-400">{r.contratoExibicao}</td>
+                        <td className="p-5 uppercase">{r.cliente}</td>
+                        <td className="p-5 text-center"><span className="px-3 py-1 rounded-full text-[10px] font-bold" style={{ background: getNPSColor(r.nota) + '20', color: getNPSColor(r.nota) }}>{r.nota}</span></td>
+                        <td className="p-5"><span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${zone.cls}`}>{zone.label}</span></td>
+                        <td className="p-5 opacity-60 max-w-xs truncate">{r.feedback || 'Sem comentário'}</td>
+                      </tr>
+                    ); })}
+                  </tbody>
+                </table>
+              </div>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between px-6 py-4 border-t border-white/5">
+                  <span className="text-[10px] font-bold opacity-30">Página {currentPage} de {totalPages}</span>
+                  <div className="flex gap-1">
+                    <button disabled={currentPage===1} onClick={()=>setCurrentPage(1)} className="px-3 py-1 rounded-lg text-[10px] font-bold bg-white/5 hover:bg-white/10 disabled:opacity-20 transition">«</button>
+                    <button disabled={currentPage===1} onClick={()=>setCurrentPage(p=>p-1)} className="px-3 py-1 rounded-lg text-[10px] font-bold bg-white/5 hover:bg-white/10 disabled:opacity-20 transition">‹</button>
+                    {Array.from({length:Math.min(5,totalPages)},(_,i) => { let p=currentPage-2+i; if(p<1)p=i+1; if(p>totalPages)p=totalPages-(4-i); if(p<1||p>totalPages)return null; return <button key={p} onClick={()=>setCurrentPage(p)} className={`px-3 py-1 rounded-lg text-[10px] font-bold transition ${currentPage===p?'bg-red-600 text-white':'bg-white/5 hover:bg-white/10'}`}>{p}</button>; })}
+                    <button disabled={currentPage===totalPages} onClick={()=>setCurrentPage(p=>p+1)} className="px-3 py-1 rounded-lg text-[10px] font-bold bg-white/5 hover:bg-white/10 disabled:opacity-20 transition">›</button>
+                    <button disabled={currentPage===totalPages} onClick={()=>setCurrentPage(totalPages)} className="px-3 py-1 rounded-lg text-[10px] font-bold bg-white/5 hover:bg-white/10 disabled:opacity-20 transition">»</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    class NPSErrorBoundary extends React.Component {
+      constructor(props) { super(props); this.state = { hasError: false, error: null }; }
+      static getDerivedStateFromError(error) { return { hasError: true, error }; }
+      componentDidCatch(error, info) { console.error('NPS React Error:', error, info); }
+      render() {
+        if (this.state.hasError) {
+          return React.createElement('div', { className: 'p-8 text-center' },
+            React.createElement('div', { className: 'bg-red-500/10 border border-red-500/30 rounded-2xl p-6 inline-block' },
+              React.createElement('p', { className: 'text-red-400 font-bold text-sm mb-2' }, 'Erro no módulo NPS'),
+              React.createElement('p', { className: 'text-red-400/60 text-xs' }, this.state.error?.message || 'Erro desconhecido'),
+              React.createElement('button', { onClick: () => this.setState({ hasError: false, error: null }), className: 'mt-4 px-4 py-2 bg-red-600 text-white text-xs font-bold rounded-lg' }, 'Tentar novamente')
+            )
+          );
+        }
+        return this.props.children;
+      }
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('nps-root'));
+    root.render(React.createElement(NPSErrorBoundary, null, React.createElement(NPSApp)));
+  </script>
+
+</body>
+</html>
