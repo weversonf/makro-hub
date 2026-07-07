@@ -682,11 +682,11 @@
         </div>
         <button onclick="closeImageEditor()" class="p-2 text-[var(--ink-3)] hover:text-[var(--ink)] bg-[var(--surface)] hover:bg-red-600 rounded-lg transition"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
-      <div class="flex-1 overflow-auto custom-scrollbar p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
+      <div class="flex-1 overflow-y-auto lg:overflow-hidden custom-scrollbar p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
         <!-- Canvas/Preview -->
-        <div class="flex flex-col gap-3">
-          <div id="imgEditorDrop" class="relative rounded-2xl border-2 border-dashed border-[var(--border-strong)] flex items-center justify-center overflow-hidden bg-[var(--surface)]" style="aspect-ratio:1/1; min-height:300px;">
-            <canvas id="imgEditorCanvas" class="hidden max-w-full max-h-full" style="touch-action:none;"></canvas>
+        <div class="flex flex-col gap-3 min-h-0">
+          <div id="imgEditorDrop" class="relative rounded-2xl border-2 border-dashed border-[var(--border-strong)] flex items-center justify-center overflow-hidden bg-[var(--surface)] mx-auto" style="aspect-ratio:4/5; height:min(68vh, calc(95vh - 200px)); width:auto;">
+            <canvas id="imgEditorCanvas" class="hidden max-h-full max-w-full" style="touch-action:none;"></canvas>
             <div id="imgEditorPlaceholder" class="text-center px-6">
               <i data-lucide="image-up" class="w-10 h-10 text-[var(--ink-3)] mx-auto mb-3"></i>
               <p class="text-sm font-semibold text-[var(--ink-2)]">Arraste uma imagem aqui</p>
@@ -697,7 +697,7 @@
           <p class="text-[10px] text-[var(--ink-3)] text-center">Arraste a imagem para reposicionar • Scroll para zoom</p>
         </div>
         <!-- Controles -->
-        <div class="flex flex-col gap-5">
+        <div class="flex flex-col gap-5 min-h-0 lg:overflow-y-auto custom-scrollbar">
           <div>
             <label class="text-[10px] font-black uppercase tracking-widest text-[var(--ink-3)] mb-2 block">Moldura Makro</label>
             <div class="grid grid-cols-2 gap-2">
@@ -2711,7 +2711,7 @@
       if (!ieState.img) { canvas.classList.add('hidden'); iePlaceholder().classList.remove('hidden'); return; }
       canvas.classList.remove('hidden'); iePlaceholder().classList.add('hidden');
       const ctx = canvas.getContext('2d');
-      const W = 1080, H = 1080;
+      const W = 1080, H = 1350;
       canvas.width = W; canvas.height = H;
       ctx.clearRect(0, 0, W, H);
       ctx.fillStyle = '#0f172a';
@@ -2726,7 +2726,12 @@
       const dy = (H - drawH) / 2 + ieState.y;
       ctx.drawImage(img, dx, dy, drawW, drawH);
       ctx.restore();
-      if (ieState.frame) { ctx.drawImage(ieState.frame, 0, 0, W, H); }
+      if (ieState.frame) {
+        const f = ieState.frame, fr = f.width / f.height, cr = W / H;
+        let fw, fh;
+        if (fr > cr) { fh = H; fw = f.width * (H / f.height); } else { fw = W; fh = f.height * (W / f.width); }
+        ctx.drawImage(f, (W - fw) / 2, (H - fh) / 2, fw, fh);
+      }
     }
 
     function loadEditorImage(file) {
