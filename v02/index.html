@@ -689,10 +689,10 @@
           <input type="text" id="header-search" class="w-full py-2 pl-9 pr-3 rounded-full text-xs font-medium" placeholder="Pesquisar atividade..." oninput="handleHeaderSearch(this.value)">
         </div>
       </div>
-      <div className="flex items-center gap-3">
-        <button id="btn-user-menu" class="w-10 h-10 rounded-full bg-[var(--surface-2)] hover:bg-[var(--surface-3)] flex items-center justify-center overflow-hidden transition-all" title="Conta" onclick="auth.signOut()">
+      <div class="flex items-center gap-3">
+        <button id="btn-user-menu" class="w-10 h-10 rounded-full bg-[var(--surface-2)] hover:bg-[var(--surface-3)] flex items-center justify-center overflow-hidden transition-all" title="Sair" onclick="auth.signOut()">
           <img id="user-avatar" src="" alt="" class="w-full h-full object-cover hidden" referrerPolicy="no-referrer">
-          <i data-lucide="user" id="user-icon" class="w-4 h-4 text-[var(--ink-3)]"></i>
+          <i data-lucide="log-out" id="user-icon" class="w-4 h-4 text-[var(--ink-3)]"></i>
         </button>
         <button onclick="toggleTheme()" id="theme-toggle" class="w-10 h-10 rounded-full bg-[var(--surface-2)] hover:bg-[var(--surface-3)] text-[var(--ink)] flex items-center justify-center transition-all" title="Alternar tema">
           <i data-lucide="sun" class="w-4 h-4"></i>
