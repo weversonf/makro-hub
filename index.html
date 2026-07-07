@@ -22,6 +22,10 @@
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
   <style>
     :root {
       --makro-red: #ED1C24;
@@ -398,6 +402,13 @@
     .mob-tab.active .mob-tab-bubble i { color: #fff; }
     .mob-tab.active .mob-tab-label { color: var(--makro-red-bright); }
 
+    /* Image Editor */
+    #imgEditorDrop.dragover { border-color: var(--makro-red); background: var(--brand-soft); }
+    .frame-btn.ring-red-500 { ring-color: var(--makro-red); }
+    input[type=range] { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 4px; background: var(--surface-3); outline: none; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--makro-red); cursor: pointer; box-shadow: 0 2px 6px rgba(237,28,36,0.4); }
+    input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--makro-red); cursor: pointer; border: none; }
+
     /* Gantt View */
     .gantt-grid { position: relative; }
     .gantt-cell { border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); min-height: 44px; display: flex; align-items: center; }
@@ -657,8 +668,94 @@
     </div>
   </div>
 
+  <!-- MODAL EDITOR DE IMAGEM -->
+  <div id="imageEditorModal" class="hidden-view fixed inset-0 bg-black/85 backdrop-blur-md z-[160] flex items-center justify-center p-0 lg:p-4">
+    <div class="absolute inset-0" onclick="closeImageEditor()"></div>
+    <div class="bg-[var(--bg)] border border-[var(--border-strong)] w-full max-w-6xl rounded-t-3xl lg:rounded-3xl shadow-2xl z-10 overflow-hidden animate-fadeup flex flex-col max-h-[95vh]">
+      <div class="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between bg-[var(--surface)]">
+        <div class="flex items-center gap-3">
+          <i data-lucide="image-plus" class="text-red-400 w-5 h-5"></i>
+          <div>
+            <h2 class="text-lg font-extrabold tracking-tight text-[var(--ink)]">Editor de Imagens</h2>
+            <p class="text-xs text-[var(--ink-3)] font-medium mt-0.5">Ajuste a foto e aplique a moldura institucional Makro</p>
+          </div>
+        </div>
+        <button onclick="closeImageEditor()" class="p-2 text-[var(--ink-3)] hover:text-[var(--ink)] bg-[var(--surface)] hover:bg-red-600 rounded-lg transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div class="flex-1 overflow-auto custom-scrollbar p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
+        <!-- Canvas/Preview -->
+        <div class="flex flex-col gap-3">
+          <div id="imgEditorDrop" class="relative rounded-2xl border-2 border-dashed border-[var(--border-strong)] flex items-center justify-center overflow-hidden bg-[var(--surface)]" style="aspect-ratio:1/1; min-height:300px;">
+            <canvas id="imgEditorCanvas" class="hidden max-w-full max-h-full" style="touch-action:none;"></canvas>
+            <div id="imgEditorPlaceholder" class="text-center px-6">
+              <i data-lucide="image-up" class="w-10 h-10 text-[var(--ink-3)] mx-auto mb-3"></i>
+              <p class="text-sm font-semibold text-[var(--ink-2)]">Arraste uma imagem aqui</p>
+              <p class="text-xs text-[var(--ink-3)] mt-1">ou clique para selecionar</p>
+              <input type="file" id="imgEditorFile" accept="image/*" class="hidden">
+            </div>
+          </div>
+          <p class="text-[10px] text-[var(--ink-3)] text-center">Arraste a imagem para reposicionar • Scroll para zoom</p>
+        </div>
+        <!-- Controles -->
+        <div class="flex flex-col gap-5">
+          <div>
+            <label class="text-[10px] font-black uppercase tracking-widest text-[var(--ink-3)] mb-2 block">Moldura Makro</label>
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="selectFrame(null)" id="frame-none-btn" class="frame-btn ring-2 ring-red-500 rounded-xl p-2 bg-[var(--surface)] transition">
+                <div class="aspect-square rounded-lg bg-[var(--surface-2)] flex items-center justify-center text-[10px] font-bold text-[var(--ink-3)]">Nenhuma</div>
+              </button>
+              <button onclick="selectFrame('molduras/ASS_01.png')" id="frame-01-btn" class="frame-btn rounded-xl p-2 bg-[var(--surface)] ring-1 ring-[var(--border)] transition">
+                <img src="molduras/ASS_01.png" class="aspect-square w-full object-contain rounded-lg" alt="Moldura 1">
+              </button>
+              <button onclick="selectFrame('molduras/ASS_02.png')" id="frame-02-btn" class="frame-btn rounded-xl p-2 bg-[var(--surface)] ring-1 ring-[var(--border)] transition col-span-2">
+                <img src="molduras/ASS_02.png" class="aspect-square w-full object-contain rounded-lg" alt="Moldura 2">
+              </button>
+            </div>
+          </div>
+          <div class="flex flex-col gap-4">
+            <div>
+              <div class="flex justify-between mb-1.5"><label class="text-[10px] font-black uppercase tracking-widest text-[var(--ink-3)]">Zoom</label><span id="zoomVal" class="text-[10px] font-bold text-[var(--ink-2)]">100%</span></div>
+              <input type="range" id="ieZoom" min="50" max="300" value="100" class="w-full">
+            </div>
+            <div>
+              <div class="flex justify-between mb-1.5"><label class="text-[10px] font-black uppercase tracking-widest text-[var(--ink-3)]">Brilho</label><span id="brightVal" class="text-[10px] font-bold text-[var(--ink-2)]">100%</span></div>
+              <input type="range" id="ieBrightness" min="50" max="150" value="100" class="w-full">
+            </div>
+            <div>
+              <div class="flex justify-between mb-1.5"><label class="text-[10px] font-black uppercase tracking-widest text-[var(--ink-3)]">Saturação</label><span id="satVal" class="text-[10px] font-bold text-[var(--ink-2)]">100%</span></div>
+              <input type="range" id="ieSaturation" min="0" max="200" value="100" class="w-full">
+            </div>
+            <div>
+              <div class="flex justify-between mb-1.5"><label class="text-[10px] font-black uppercase tracking-widest text-[var(--ink-3)]">Nitidez</label><span id="contrastVal" class="text-[10px] font-bold text-[var(--ink-2)]">100%</span></div>
+              <input type="range" id="ieContrast" min="50" max="200" value="100" class="w-full">
+            </div>
+          </div>
+          <button onclick="resetImageEditor()" class="text-xs font-semibold text-[var(--ink-3)] hover:text-[var(--ink)] py-2 rounded-lg hover:bg-[var(--surface)] transition flex items-center justify-center gap-2"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Resetar</button>
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-[var(--border)] flex items-center justify-between bg-[var(--surface)]">
+        <p class="text-[10px] text-[var(--ink-3)]">A foto ajustada + moldura será mesclada em alta resolução</p>
+        <button onclick="exportImageEditor()" class="px-6 py-2.5 bg-red-600 hover:bg-red-700 shadow-lg shadow-red-600/25 text-white text-xs font-bold rounded-xl transition-all active:scale-95 flex items-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> Exportar imagem</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOGIN OVERLAY -->
+  <div id="auth-gate" class="fixed inset-0 z-[200] bg-[var(--bg)] flex items-center justify-center p-4">
+    <div class="text-center max-w-sm w-full">
+      <div class="text-6xl mb-4">⏱️</div>
+      <h1 class="text-2xl font-black uppercase tracking-tight mb-2">Makro Hub</h1>
+      <p class="text-sm opacity-50 mb-8">Faca login para acessar</p>
+      <button id="btn-google-login" class="w-full py-4 bg-red-600 hover:bg-red-700 rounded-2xl text-sm font-bold text-white transition flex items-center justify-center gap-3 shadow-lg shadow-red-600/25 active:scale-95">
+        <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="white" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="white" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="white" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="white" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Entrar com Google
+      </button>
+      <div id="auth-error" class="mt-4 text-xs text-red-400 hidden"></div>
+    </div>
+  </div>
+
   <!-- APP -->
-  <div id="app-view" class="h-screen w-full flex flex-col bg-[var(--bg)]">
+  <div id="app-view" class="h-screen w-full flex flex-col bg-[var(--bg)]" style="display:none">
 
     <!-- HEADER -->
     <header class="app-header h-20 flex-shrink-0 border-b border-[var(--border)] flex items-center justify-between px-6 lg:px-8 bg-[var(--bg-elev)]/80 backdrop-blur-xl z-40">
@@ -672,6 +769,10 @@
         </div>
       </div>
       <div class="flex items-center gap-3">
+        <button id="btn-user-menu" class="w-10 h-10 rounded-full bg-[var(--surface-2)] hover:bg-[var(--surface-3)] flex items-center justify-center overflow-hidden transition-all" title="Sair" onclick="auth.signOut()">
+          <img id="user-avatar" src="" alt="" class="w-full h-full object-cover hidden" referrerPolicy="no-referrer">
+          <i data-lucide="log-out" id="user-icon" class="w-4 h-4 text-[var(--ink-3)]"></i>
+        </button>
         <button onclick="toggleTheme()" id="theme-toggle" class="w-10 h-10 rounded-full bg-[var(--surface-2)] hover:bg-[var(--surface-3)] text-[var(--ink)] flex items-center justify-center transition-all" title="Alternar tema">
           <i data-lucide="sun" class="w-4 h-4"></i>
         </button>
@@ -710,6 +811,12 @@
           <div id="menu-group-nps" class="border-t border-[var(--border)] pt-4 mt-2">
             <div onclick="changeView('nps')" class="nav-item-nps px-3 py-2 text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)] rounded-full flex items-center gap-3 cursor-pointer font-semibold text-xs transition-all">
               <i data-lucide="bar-chart-2" class="w-4 h-4 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Painel NPS</span>
+            </div>
+          </div>
+          <!-- BANCO DE HORAS -->
+          <div id="menu-group-banco-horas" class="border-t border-[var(--border)] pt-4 mt-2">
+            <div onclick="changeView('banco-horas')" class="nav-item-banco-horas px-3 py-2 text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)] rounded-full flex items-center gap-3 cursor-pointer font-semibold text-xs transition-all">
+              <i data-lucide="clock" class="w-4 h-4 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Banco de Horas</span>
             </div>
           </div>
           <!-- CONFIGURAÇÕES -->
@@ -791,6 +898,7 @@
             </div>
             <div class="w-full lg:w-80 glass-card p-6">
               <h3 id="dailyTitle" class="font-bold text-sm text-[var(--ink)] mb-4">Posts do Dia</h3>
+              <button onclick="openImageEditor()" class="w-full mb-4 px-4 py-3 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-3)] border border-[var(--border-strong)] text-[var(--ink)] text-xs font-semibold transition-all flex items-center justify-center gap-2"><i data-lucide="image-plus" class="w-4 h-4 text-red-400"></i> Editor de Imagens</button>
               <div id="dailyPostsList" class="space-y-3"></div>
             </div>
           </div>
@@ -963,6 +1071,11 @@
           <div id="nps-root"></div>
         </div>
 
+        <!-- VIEW: BANCO DE HORAS -->
+        <div id="banco-horas-view" class="hidden-view">
+          <div id="banco-horas-root"></div>
+        </div>
+
       </main>
     </div>
   </div>
@@ -997,11 +1110,8 @@
     </div>
   </nav>
 
-  <!-- FIREBASE + ATIVIDADES -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
+  <!-- FIREBASE + ATIVIDADES (compat SDK shared) -->
+  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyCGemp_OA8savCmLZfX7Us0nmDpdbpv4N0",
       authDomain: "mytasks-saturday.firebaseapp.com",
@@ -1010,12 +1120,63 @@
       messagingSenderId: "647554172397",
       appId: "1:647554172397:web:aac3ef00938ee7cd8f13e4"
     };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    const googleProvider = new firebase.auth.GoogleAuthProvider();
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    window.fb = {
+      db,
+      collection: (_, path) => db.collection(path),
+      addDoc: (collRef, data) => collRef.add(data),
+      getDocs: (collRef) => collRef.get(),
+      updateDoc: (docRef, data) => docRef.update(data),
+      deleteDoc: (docRef) => docRef.delete(),
+      doc: (_, path) => db.doc(path),
+      onSnapshot: (ref, cb) => ref.onSnapshot(cb),
+      query: (ref) => ref,
+      orderBy: (field, dir) => ({ field, dir }),
+      auth,
+      googleProvider,
+    };
+    window.fbConfig = firebaseConfig;
 
-    window.fb = { db, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy };
-    window.initActivities();
+    // Auth gate
+    const authGate = document.getElementById('auth-gate');
+    const appView = document.getElementById('app-view');
+    const btnLogin = document.getElementById('btn-google-login');
+    const authError = document.getElementById('auth-error');
+
+    btnLogin.addEventListener('click', () => {
+      auth.signInWithPopup(googleProvider).catch(e => {
+        authError.textContent = 'Erro: ' + e.message;
+        authError.classList.remove('hidden');
+      });
+    });
+
+    auth.onAuthStateChanged((user) => {
+      const avatar = document.getElementById('user-avatar');
+      const userIcon = document.getElementById('user-icon');
+      if (user) {
+        authGate.style.display = 'none';
+        appView.style.display = '';
+        if (avatar && user.photoURL) {
+          avatar.src = user.photoURL;
+          avatar.classList.remove('hidden');
+          if (userIcon) userIcon.classList.add('hidden');
+        }
+        if (!window._appInit) {
+          window._appInit = true;
+          window.initActivities();
+        }
+        lucide.createIcons();
+      } else {
+        authGate.style.display = '';
+        appView.style.display = 'none';
+        if (avatar) avatar.classList.add('hidden');
+        if (userIcon) userIcon.classList.remove('hidden');
+      }
+    });
   </script>
 
   <script>
@@ -1028,6 +1189,10 @@
       { id: 'li', label: 'LI', color: '#0A66C2' }, { id: 'site', label: 'Site', color: '#3B82F6' },
       { id: 'materia', label: 'Blog', color: '#8B5CF6' }
     ];
+
+    const POST_STATUS = { rascunho: 'Rascunho', agendado: 'Agendado', publicado: 'Publicado', erro: 'Erro' };
+    const POST_STATUS_COLORS = { rascunho: 'bg-gray-500/20 text-gray-400', agendado: 'bg-blue-500/20 text-blue-400', publicado: 'bg-green-500/20 text-green-400', erro: 'bg-red-500/20 text-red-400' };
+    function getPostStatus(aid) { return 'rascunho'; }
 
     const STAGE_MIGRATION = { criar: 'afazer', revisar: 'validando', aprovar: 'validando' };
 
@@ -1044,8 +1209,66 @@
       } catch (e) { showToast("Erro ao carregar dados.", "error"); }
     };
 
+    function userPath(path) {
+      const uid = auth.currentUser?.uid;
+      if(!uid) return window.fb.collection(window.fb.db, path);
+      const ref = window.fb.db.collection('users').doc(uid);
+      if(path) return ref.collection(path);
+      return ref;
+    }
+
+    function userDoc(collectionName, docId) {
+      return userPath(collectionName).doc(docId);
+    }
+
+    async function migrateIfNeeded() {
+      const uid = auth.currentUser?.uid;
+      if(!uid) return;
+      const migrated = localStorage.getItem('migrated_' + uid);
+      if(migrated) return;
+
+      try {
+        const rootActs = await window.fb.collection(window.fb.db, 'activities').get();
+        const userActs = await userPath('activities').get();
+        const rootCats = await window.fb.collection(window.fb.db, 'categories').get();
+        const userCats = await userPath('categories').get();
+        
+        const msg = 'Raiz: ' + rootActs.size + ' atividades, ' + rootCats.size + ' categorias | Usuario: ' + userActs.size + ' atividades, ' + userCats.size + ' categorias';
+        console.log(msg);
+        showToast(msg, 'info');
+
+        if(!rootActs.empty && userActs.empty) {
+          const batch = window.fb.db.batch();
+          rootActs.forEach(d => {
+            const ref = userPath('activities').doc(d.id);
+            batch.set(ref, d.data());
+          });
+          await batch.commit();
+          showToast(rootActs.size + ' atividades migradas!', 'success');
+        }
+
+        if(!rootCats.empty && userCats.empty) {
+          const batch = window.fb.db.batch();
+          rootCats.forEach(d => {
+            const ref = userPath('categories').doc(d.id);
+            batch.set(ref, d.data());
+          });
+          await batch.commit();
+          showToast(rootCats.size + ' categorias migradas!', 'success');
+        }
+      } catch(e) {
+        console.error('Migration error:', e);
+        showToast('Erro na migracao: ' + e.message, 'error');
+      }
+
+      localStorage.setItem('migrated_' + uid, '1');
+    }
+
     function loadFromFirebase() {
-      window.fb.onSnapshot(window.fb.collection(window.fb.db, 'activities'), (actSnap) => {
+      // Migration: copy root data to user path once
+      migrateIfNeeded();
+      
+      window.fb.onSnapshot(userPath('activities'), (actSnap) => {
         state.activities = []; actSnap.forEach(d => {
           const a = { ...d.data(), _fbId: d.id };
           a.stage = normalizeStage(a.stage);
@@ -1055,7 +1278,7 @@
         renderAllActivities();
       });
 
-      window.fb.onSnapshot(window.fb.collection(window.fb.db, 'categories'), (catSnap) => {
+      window.fb.onSnapshot(userPath('categories'), (catSnap) => {
         state.categories = []; catSnap.forEach(d => state.categories.push({ ...d.data(), _fbId: d.id }));
         if (state.categories.length === 0) initDefaultCategories().then(() => renderAllActivities());
         else if (state.categories.length) {
@@ -1071,7 +1294,7 @@
         { id: 2, nome: 'Administrativo', cor: '#f59e0b' },
         { id: 3, nome: 'Design', cor: '#a855f7' },
       ];
-      for (const cat of defaults) { const d = await window.fb.addDoc(window.fb.collection(window.fb.db, 'categories'), cat); state.categories.push({ ...cat, _fbId: d.id }); }
+      for (const cat of defaults) { const d = await window.fb.addDoc(userPath('categories'), cat); state.categories.push({ ...cat, _fbId: d.id }); }
       state.categoryIdCounter = 4;
     }
 
@@ -1375,10 +1598,10 @@
       try {
         if (id) {
           const idx = state.activities.findIndex(a => a.id == id);
-          await window.fb.updateDoc(window.fb.doc(window.fb.db, 'activities', state.activities[idx]._fbId), data);
+          await window.fb.updateDoc(userDoc('activities', state.activities[idx]._fbId), data);
           state.activities[idx] = { ...data, _fbId: state.activities[idx]._fbId };
         } else {
-          const d = await window.fb.addDoc(window.fb.collection(window.fb.db, 'activities'), data);
+          const d = await window.fb.addDoc(userPath('activities'), data);
           state.activities.push({ ...data, _fbId: d.id });
         }
         closeModal('modalActivity'); renderAllActivities(); showToast("Salvo com sucesso!");
@@ -1396,7 +1619,7 @@
       try {
         const update = { stage: mapped };
         if (mapped === 'concluido') update.progress = 100;
-        await window.fb.updateDoc(window.fb.doc(window.fb.db, 'activities', a._fbId), update);
+        await window.fb.updateDoc(userDoc('activities', a._fbId), update);
         showToast(mapped === 'concluido' ? "Concluído! Progresso em 100%." : "Status atualizado!");
       }
       catch (e) { a.stage = old.stage; a.progress = old.progress; showToast("Erro ao atualizar.", "error"); }
@@ -1407,7 +1630,7 @@
       const id = document.getElementById('actId').value; if (!id || !confirm("Excluir atividade?")) return;
       try {
         const a = state.activities.find(x => x.id == id);
-        await window.fb.deleteDoc(window.fb.doc(window.fb.db, 'activities', a._fbId));
+        await window.fb.deleteDoc(userDoc('activities', a._fbId));
         state.activities = state.activities.filter(x => x.id != id);
         closeModal('modalActivity'); renderAllActivities(); showToast("Excluído.");
       } catch (e) { showToast("Erro ao excluir.", "error"); }
@@ -1442,12 +1665,12 @@
       try {
         if (id) {
           const c = state.categories.find(x => x.id == id);
-          await window.fb.updateDoc(window.fb.doc(window.fb.db, 'categories', c._fbId), { nome, cor });
+          await window.fb.updateDoc(userDoc('categories', c._fbId), { nome, cor });
           c.nome = nome; c.cor = cor;
           showToast("Categoria atualizada!");
         } else {
           const data = { id: state.categoryIdCounter++, nome, cor };
-          const d = await window.fb.addDoc(window.fb.collection(window.fb.db, 'categories'), data);
+          const d = await window.fb.addDoc(userPath('categories'), data);
           state.categories.push({ ...data, _fbId: d.id });
           showToast("Categoria criada!");
         }
@@ -1468,7 +1691,7 @@
       if (!confirm("Excluir categoria?")) return;
       try {
         const c = state.categories.find(x => x.id == id);
-        await window.fb.deleteDoc(window.fb.doc(window.fb.db, 'categories', c._fbId));
+        await window.fb.deleteDoc(userDoc('categories', c._fbId));
         state.categories = state.categories.filter(x => x.id != id);
         renderAllActivities(); showToast("Removida.");
       } catch (e) { showToast("Erro ao remover.", "error"); }
@@ -2367,7 +2590,7 @@
             notaFiscal: null,
             valor: null,
           };
-          const d = await window.fb.addDoc(window.fb.collection(window.fb.db, 'activities'), data);
+          const d = await window.fb.addDoc(userPath('activities'), data);
           state.activities.push({ ...data, _fbId: d.id });
           success++;
         } catch (e) { errors++; }
@@ -2396,7 +2619,7 @@
 
   <!-- NAVIGATION + SIDEBAR LOGIC -->
   <script>
-    const ALL_VIEWS = ['dashboard', 'kanban', 'calendar', 'categories', 'search', 'gantt', 'configuracoes', 'nps'];
+    const ALL_VIEWS = ['dashboard', 'kanban', 'calendar', 'categories', 'search', 'gantt', 'configuracoes', 'nps', 'banco-horas'];
 
     function changeView(view) {
       ALL_VIEWS.forEach(v => {
@@ -2434,7 +2657,8 @@
         search: '<i data-lucide="search" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Pesquisar',
         gantt: '<i data-lucide="gantt-chart" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Cronograma',
         configuracoes: '<i data-lucide="settings" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Configurações',
-        nps: '<i data-lucide="bar-chart-2" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Quality & NPS'
+        nps: '<i data-lucide="bar-chart-2" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Quality & NPS',
+        'banco-horas': '<i data-lucide="clock" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Banco de Horas'
       };
       title.innerHTML = titles[view] || titles.dashboard;
 
@@ -2456,6 +2680,119 @@
       }
     }
     window.changeView = changeView;
+
+    // ── Image Editor (Calendário) ───────────────────────────────────────
+    let ieState = { img: null, frame: null, frameUrl: null, scale: 1, x: 0, y: 0, brightness: 100, saturation: 100, contrast: 100, dragging: false, lastX: 0, lastY: 0 };
+    const ieCanvas = () => document.getElementById('imgEditorCanvas');
+    const iePlaceholder = () => document.getElementById('imgEditorPlaceholder');
+
+    function openImageEditor() {
+      document.getElementById('imageEditorModal').classList.remove('hidden-view');
+      lucide.createIcons();
+    }
+    window.openImageEditor = openImageEditor;
+    function closeImageEditor() { document.getElementById('imageEditorModal').classList.add('hidden-view'); }
+    window.closeImageEditor = closeImageEditor;
+
+    function resetImageEditor() {
+      ieState = { img: null, frame: ieState.frame, frameUrl: ieState.frameUrl, scale: 1, x: 0, y: 0, brightness: 100, saturation: 100, contrast: 100, dragging: false, lastX: 0, lastY: 0 };
+      const z = document.getElementById('ieZoom'), b = document.getElementById('ieBrightness'), s = document.getElementById('ieSaturation'), c = document.getElementById('ieContrast');
+      z.value = 100; b.value = 100; s.value = 100; c.value = 100;
+      document.getElementById('zoomVal').textContent = '100%';
+      document.getElementById('brightVal').textContent = '100%';
+      document.getElementById('satVal').textContent = '100%';
+      document.getElementById('contrastVal').textContent = '100%';
+      drawEditor();
+    }
+    window.resetImageEditor = resetImageEditor;
+
+    function drawEditor() {
+      const canvas = ieCanvas();
+      if (!ieState.img) { canvas.classList.add('hidden'); iePlaceholder().classList.remove('hidden'); return; }
+      canvas.classList.remove('hidden'); iePlaceholder().classList.add('hidden');
+      const ctx = canvas.getContext('2d');
+      const W = 1080, H = 1080;
+      canvas.width = W; canvas.height = H;
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, W, H);
+      ctx.save();
+      ctx.filter = `brightness(${ieState.brightness}%) saturate(${ieState.saturation}%) contrast(${ieState.contrast}%)`;
+      const img = ieState.img;
+      const baseScale = Math.max(W / img.width, H / img.height) * ieState.scale;
+      const drawW = img.width * baseScale;
+      const drawH = img.height * baseScale;
+      const dx = (W - drawW) / 2 + ieState.x;
+      const dy = (H - drawH) / 2 + ieState.y;
+      ctx.drawImage(img, dx, dy, drawW, drawH);
+      ctx.restore();
+      if (ieState.frame) { ctx.drawImage(ieState.frame, 0, 0, W, H); }
+    }
+
+    function loadEditorImage(file) {
+      if (!file || !file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => { ieState.img = img; ieState.x = 0; ieState.y = 0; ieState.scale = 1; document.getElementById('ieZoom').value = 100; document.getElementById('zoomVal').textContent = '100%'; drawEditor(); };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function selectFrame(url) {
+      document.querySelectorAll('.frame-btn').forEach(b => { b.classList.remove('ring-2','ring-red-500'); b.classList.add('ring-1','ring-[var(--border)]'); });
+      const btn = url === 'molduras/ASS_01.png' ? document.getElementById('frame-01-btn') : url === 'molduras/ASS_02.png' ? document.getElementById('frame-02-btn') : document.getElementById('frame-none-btn');
+      btn.classList.add('ring-2','ring-red-500'); btn.classList.remove('ring-1','ring-[var(--border)]');
+      if (!url) { ieState.frame = null; ieState.frameUrl = null; drawEditor(); return; }
+      const img = new Image();
+      img.onload = () => { ieState.frame = img; ieState.frameUrl = url; drawEditor(); };
+      img.src = url;
+    }
+    window.selectFrame = selectFrame;
+
+    function exportImageEditor() {
+      if (!ieState.img) { showToast('Selecione uma imagem primeiro.', 'error'); return; }
+      const canvas = ieCanvas();
+      const link = document.createElement('a');
+      link.download = `makro_post_${Date.now()}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      showToast('Imagem exportada!');
+    }
+    window.exportImageEditor = exportImageEditor;
+
+    (function initEditorEvents() {
+      const drop = document.getElementById('imgEditorDrop');
+      const fileInput = document.getElementById('imgEditorFile');
+      if (!drop || !fileInput) return;
+      drop.addEventListener('click', (e) => { if (e.target.tagName !== 'INPUT') fileInput.click(); });
+      fileInput.addEventListener('change', (e) => { if (e.target.files[0]) loadEditorImage(e.target.files[0]); });
+      drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('dragover'); });
+      drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
+      drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('dragover'); if (e.dataTransfer.files[0]) loadEditorImage(e.dataTransfer.files[0]); });
+      const canvas = ieCanvas();
+      const startDrag = (clientX, clientY) => { ieState.dragging = true; ieState.lastX = clientX; ieState.lastY = clientY; };
+      const moveDrag = (clientX, clientY) => { if (!ieState.dragging) return; ieState.x += clientX - ieState.lastX; ieState.y += clientY - ieState.lastY; ieState.lastX = clientX; ieState.lastY = clientY; drawEditor(); };
+      const endDrag = () => { ieState.dragging = false; };
+      canvas.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
+      window.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY));
+      window.addEventListener('mouseup', endDrag);
+      canvas.addEventListener('touchstart', (e) => { if (e.touches[0]) startDrag(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+      canvas.addEventListener('touchmove', (e) => { if (e.touches[0]) { e.preventDefault(); moveDrag(e.touches[0].clientX, e.touches[0].clientY); } }, { passive: false });
+      canvas.addEventListener('touchend', endDrag);
+      canvas.addEventListener('wheel', (e) => { e.preventDefault(); const delta = e.deltaY > 0 ? -5 : 5; let v = parseInt(document.getElementById('ieZoom').value) + delta; v = Math.max(50, Math.min(300, v)); document.getElementById('ieZoom').value = v; document.getElementById('zoomVal').textContent = v + '%'; ieState.scale = v / 100; drawEditor(); }, { passive: false });
+      ['ieZoom','ieBrightness','ieSaturation','ieContrast'].forEach(id => {
+        document.getElementById(id).addEventListener('input', (e) => {
+          const v = parseInt(e.target.value);
+          if (id === 'ieZoom') { ieState.scale = v / 100; document.getElementById('zoomVal').textContent = v + '%'; }
+          if (id === 'ieBrightness') { ieState.brightness = v; document.getElementById('brightVal').textContent = v + '%'; }
+          if (id === 'ieSaturation') { ieState.saturation = v; document.getElementById('satVal').textContent = v + '%'; }
+          if (id === 'ieContrast') { ieState.contrast = v; document.getElementById('contrastVal').textContent = v + '%'; }
+          drawEditor();
+        });
+      });
+    })();
 
     // ── Theme Toggle ────────────────────────────────────────────────────
     function initTheme() {
@@ -3308,6 +3645,340 @@
 
     const root = ReactDOM.createRoot(document.getElementById('nps-root'));
     root.render(React.createElement(NPSErrorBoundary, null, React.createElement(NPSApp)));
+  </script>
+
+  <!-- BANCO DE HORAS MODULE (uses shared Firebase) -->
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+    const bhDb = window.fb.db;
+    const bhAuth = window.fb.auth;
+    const bhProvider = window.fb.googleProvider;
+
+    const BH_ICONS = {
+      dashboard: <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>,
+      clock: <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+      fire: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>,
+      gift: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>,
+      edit: <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+      trash: <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
+      zap: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+      trophy: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>,
+    };
+
+    const BH_LEVELS = [
+      { name: 'Estagiario', minXP: 0, icon: '🌱' },
+      { name: 'Junior', minXP: 50, icon: '🔵' },
+      { name: 'Pleno', minXP: 150, icon: '⚡' },
+      { name: 'Senior', minXP: 300, icon: '🔥' },
+      { name: 'Lead', minXP: 500, icon: '💎' },
+      { name: 'Manager', minXP: 800, icon: '👑' },
+      { name: 'Diretor', minXP: 1200, icon: '🏆' },
+    ];
+
+    const BH_ACHIEVEMENTS = [
+      { id: 'first_ponto', name: 'Primeiro Ponto', icon: '⏰', check: (s) => s.totalPontos >= 1 },
+      { id: 'week_streak', name: 'Sequencia de 5', icon: '🔥', check: (s) => s.streak >= 5 },
+      { id: 'balance_10', name: 'Saldo +10h', icon: '⭐', check: (s) => s.totalBalance >= 10 },
+      { id: 'balance_44', name: 'Dia de Folga!', icon: '🎉', check: (s) => s.totalBalance >= 44 },
+    ];
+
+    const BH_DIAS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
+
+    function BancoHorasApp() {
+      const [user, setUser] = useState(null);
+      const [authLoading, setAuthLoading] = useState(true);
+      const defaultConfig = { salario: 0, entrada: '07:50', saida: '17:38', horasAlmoco: 1, diasSemana: [1,2,3,4,5], saldoInicialMin: 0 };
+      const [config, setConfig] = useState(defaultConfig);
+      const [registros, setRegistros] = useState([]);
+      const [manualRecords, setManualRecords] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [bhTab, setBhTab] = useState('dashboard');
+      const [filterMonth, setFilterMonth] = useState(() => new Date().toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}).toUpperCase());
+      const [pontoDate, setPontoDate] = useState(() => new Date().toISOString().split('T')[0]);
+      const [pontoEntrada, setPontoEntrada] = useState('');
+      const [pontoSaida, setPontoSaida] = useState('');
+      const [manualRef, setManualRef] = useState('');
+      const [manualHrs, setManualHrs] = useState('');
+      const [manualTipo, setManualTipo] = useState('negativo');
+
+      useEffect(() => {
+        const unsub = bhAuth.onAuthStateChanged(u => { setUser(u); setAuthLoading(false); });
+        return unsub;
+      }, []);
+
+      const getUserRef = () => user ? bhDb.collection('users').doc(user.uid) : null;
+
+      useEffect(() => {
+        if(!user) { setLoading(false); return; }
+        const load = async () => {
+          try {
+            const ref = getUserRef();
+            const cfg = await ref.collection('config').doc('main').get();
+            if(cfg.exists) setConfig({...defaultConfig, ...cfg.data()});
+            const reg = await ref.collection('registros').orderBy('date','desc').get();
+            setRegistros(reg.docs.map(d => ({...d.data(), id: d.id})));
+            const man = await ref.collection('manual').get();
+            setManualRecords(man.docs.map(d => ({...d.data(), id: d.id})));
+          } catch(e) { console.error(e); }
+          setLoading(false);
+        };
+        load();
+      }, [user]);
+
+      useEffect(() => { if(!loading && user) getUserRef().collection('config').doc('main').set(config); }, [config, loading, user]);
+
+      const parseTime = t => { if(!t||!t.includes(':')) return 0; const [h,m] = t.split(':').map(Number); return (h||0)+((m||0)/60); };
+      const fmtTime = dec => { const s=dec<0?'-':''; const a=Math.abs(dec); const h=Math.floor(a); const m=Math.round((a-h)*60); return `${s}${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`; };
+      const expectedHours = parseTime(config.saida) - parseTime(config.entrada) - (config.horasAlmoco||0);
+      const isWorkDay = d => { const dt = new Date(d+'T12:00:00'); return config.diasSemana.includes(dt.getDay()); };
+      const getMonthKey = d => { const dt = new Date(d+'T12:00:00'); return dt.toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}).toUpperCase(); };
+      const allMonths = useMemo(() => Array.from({length:12},(_,i) => new Date(new Date().getFullYear(),i,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}).toUpperCase()),[]);
+
+      const stats = useMemo(() => {
+        const si = (config.saldoInicialMin||0)/60;
+        let tb=si, xp=0, tp=registros.length, tm=manualRecords.length, st=0, cs=0, pw=0, ee=null;
+        [...registros].sort((a,b)=>a.date.localeCompare(b.date)).forEach(r => {
+          if(r.entrada&&r.saida&&isWorkDay(r.date)) {
+            const w=parseTime(r.saida)-parseTime(r.entrada)-(config.horasAlmoco||0), d=w-expectedHours;
+            tb+=d; if(d>0){cs++;xp+=Math.round(d*10)}else cs=0; if(cs>st)st=cs; if(w>=expectedHours)pw++; if(!ee||r.entrada<ee)ee=r.entrada;
+          }
+        });
+        manualRecords.forEach(r => { tb+=r.tipo==='positivo'?r.decimal:-r.decimal; xp+=r.tipo==='positivo'?Math.round(r.decimal*5):0; });
+        xp+=tp*5;
+        const lv=[...BH_LEVELS].reverse().find(l=>xp>=l.minXP)||BH_LEVELS[0];
+        const nl=BH_LEVELS[BH_LEVELS.indexOf(lv)+1];
+        const xpP=nl?((xp-lv.minXP)/(nl.minXP-lv.minXP))*100:100;
+        const dpf=expectedHours>0?Math.ceil(expectedHours):8;
+        const fp=tb>=dpf?Math.floor(tb/dpf):0;
+        const hpp=tb>=0?dpf-(tb%dpf):dpf+tb;
+        return {totalBalance:tb,totalXP:xp,totalPontos:tp,streak:st,currentStreak:cs,level:lv,nextLevel:nl,xpProgress:xpP,folgasPossiveis:fp,horasParaProxFolga:hpp,diasParaFolga:dpf};
+      },[registros,manualRecords,config]);
+
+      const filteredTime = useMemo(() => registros.filter(r=>getMonthKey(r.date)===filterMonth).sort((a,b)=>b.date.localeCompare(a.date)),[registros,filterMonth]);
+      const filteredManual = useMemo(() => manualRecords.filter(r=>r.ref===filterMonth),[manualRecords,filterMonth]);
+      const monthBalance = useMemo(() => {
+        let b=0;
+        filteredTime.forEach(r=>{if(r.entrada&&r.saida&&isWorkDay(r.date))b+=(parseTime(r.saida)-parseTime(r.entrada)-(config.horasAlmoco||0))-expectedHours});
+        filteredManual.forEach(r=>{b+=r.tipo==='positivo'?r.decimal:-r.decimal});
+        return b;
+      },[filteredTime,filteredManual,config]);
+
+      const handleSavePonto = () => {
+        if(!pontoDate) return;
+        const w=(pontoEntrada&&pontoSaida)?parseTime(pontoSaida)-parseTime(pontoEntrada)-(config.horasAlmoco||0):0;
+        const d=w-expectedHours, ss=`${d>=0?'+':'-'}${fmtTime(Math.abs(d))}`;
+        const rec={date:pontoDate,entrada:pontoEntrada,saida:pontoSaida,saldo:ss};
+        const ex=registros.find(r=>r.date===pontoDate);
+        setRegistros(ex?registros.map(r=>r.date===pontoDate?rec:r):[...registros,rec]);
+        getUserRef().collection('registros').doc(pontoDate).set(rec,{merge:true});
+        setPontoEntrada('');setPontoSaida('');setPontoDate(new Date().toISOString().split('T')[0]);
+      };
+      const handleDeletePonto = d => { if(confirm('Excluir?')){setRegistros(registros.filter(r=>r.date!==d));getUserRef().collection('registros').doc(d).delete();} };
+      const handleSaveManual = () => {
+        if(!manualRef||!manualHrs) return;
+        const rec={id:Date.now(),ref:manualRef,hrsStr:manualHrs,tipo:manualTipo,decimal:parseTime(manualHrs)};
+        setManualRecords([...manualRecords,rec]);
+        getUserRef().collection('manual').doc(String(rec.id)).set(rec);
+        setManualRef('');setManualHrs('');setManualTipo('negativo');
+      };
+      const handleDeleteManual = id => { if(confirm('Excluir?')){setManualRecords(manualRecords.filter(r=>r.id!==id));getUserRef().collection('manual').doc(String(id)).delete();} };
+
+      if(authLoading) return <div className="flex items-center justify-center h-64"><div className="text-2xl animate-pulse">⏳</div></div>;
+      if(!user) return (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="text-4xl mb-3">⏱️</div>
+            <p className="text-sm opacity-50 mb-4">Faça login para acessar o Banco de Horas</p>
+            <button onClick={()=>bhAuth.signInWithPopup(bhProvider)} className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-xl text-sm font-bold text-white transition">Entrar com Google</button>
+          </div>
+        </div>
+      );
+      if(loading) return <div className="flex items-center justify-center h-64"><div className="text-2xl animate-pulse">⏳</div></div>;
+
+      const tips = [];
+      if(stats.folgasPossiveis>=1) tips.push({icon:'🎉',text:`Saldo para ${stats.folgasPossiveis} folga(s)!`});
+      if(stats.totalBalance>0&&stats.horasParaProxFolga<=4) tips.push({icon:'🎯',text:`Faltam ${fmtTime(stats.horasParaProxFolga)} para 1 folga!`});
+      if(stats.streak>=3) tips.push({icon:'🔥',text:`${stats.streak} dias positivos!`});
+      if(stats.totalBalance<-5) tips.push({icon:'⚡',text:`Saldo ${fmtTime(stats.totalBalance)}. Repor horas!`});
+      if(!tips.length) tips.push({icon:'✨',text:'Tudo certo!'});
+
+      return (
+        <div className="space-y-4">
+          <div className="flex items-center gap-1 text-xs overflow-x-auto pb-1">
+            {[{id:'dashboard',label:'Home'},{id:'ponto',label:'Ponto'},{id:'historico',label:'Historico'},{id:'banco',label:'Banco'},{id:'ajustes',label:'Ajustes'}].map(t => (
+              <button key={t.id} onClick={()=>setBhTab(t.id)} className={`px-3 py-1.5 rounded-lg font-bold uppercase whitespace-nowrap transition ${bhTab===t.id?'bg-red-600/20 text-red-400':'text-[var(--ink-3)] hover:text-[var(--ink)]'}`}>{t.label}</button>
+            ))}
+          </div>
+
+          {bhTab==='dashboard' && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)] text-center">
+                  <div className="text-[10px] uppercase opacity-40 mb-1">Saldo</div>
+                  <div className={`text-xl font-black ${stats.totalBalance>=0?'text-green-500':'text-red-500'}`}>{stats.totalBalance>=0?'+':''}{fmtTime(stats.totalBalance)}</div>
+                </div>
+                <div className="p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)] text-center">
+                  <div className="text-[10px] uppercase opacity-40 mb-1">Sequencia</div>
+                  <div className="flex items-center justify-center gap-1">{BH_ICONS.fire}<span className="text-xl font-black text-orange-400">{stats.currentStreak}</span></div>
+                </div>
+                <div className="p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)] text-center">
+                  <div className="text-[10px] uppercase opacity-40 mb-1">Folgas</div>
+                  <div className="flex items-center justify-center gap-1">{BH_ICONS.gift}<span className="text-xl font-black text-yellow-400">{stats.folgasPossiveis}</span></div>
+                </div>
+              </div>
+              <div className="p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
+                <div className="flex items-center gap-2 mb-2">{BH_ICONS.trophy}<span className="text-xs font-bold opacity-50">{stats.level.icon} {stats.level.name} | {stats.totalXP} XP</span></div>
+                <div className="h-2 bg-white/10 rounded-full overflow-hidden"><div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-purple-400 transition-all" style={{width:`${Math.min(stats.xpProgress,100)}%`}}></div></div>
+              </div>
+              {tips.map((t,i) => <div key={i} className="p-3 rounded-xl bg-[var(--surface)] border border-[var(--border)] flex items-center gap-2"><span>{t.icon}</span><span className="text-sm">{t.text}</span></div>)}
+            </div>
+          )}
+
+          {bhTab==='ponto' && (
+            <div className="space-y-4">
+              <div className="flex gap-2 overflow-x-auto pb-1">{allMonths.map(m=><button key={m} onClick={()=>setFilterMonth(m)} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase whitespace-nowrap transition ${filterMonth===m?'bg-white/10 text-white':'text-[var(--ink-3)]'}`}>{m}</button>)}</div>
+              <div className={`p-4 rounded-2xl ${monthBalance>=0?'bg-green-900/20 border border-green-800/30':'bg-red-900/20 border border-red-800/30'}`}>
+                <div className="text-[10px] uppercase opacity-50">Saldo do Mes</div>
+                <div className={`text-2xl font-black ${monthBalance>=0?'text-green-400':'text-red-400'}`}>{monthBalance>=0?'+':''}{fmtTime(monthBalance)}</div>
+              </div>
+              <div className="p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
+                <div className="text-[10px] font-bold uppercase opacity-50 mb-3">Registrar Ponto</div>
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  <input type="date" value={pontoDate} onChange={e=>setPontoDate(e.target.value)} className="p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-xs font-bold outline-none" />
+                  <input type="time" value={pontoEntrada} onChange={e=>setPontoEntrada(e.target.value)} className="p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-xs font-bold text-center outline-none" />
+                  <input type="time" value={pontoSaida} onChange={e=>setPontoSaida(e.target.value)} className="p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-xs font-bold text-center outline-none" />
+                </div>
+                <button onClick={handleSavePonto} className="w-full py-3 bg-red-600 hover:bg-red-700 rounded-xl text-xs font-bold text-white uppercase transition">Salvar</button>
+              </div>
+              <div className="rounded-2xl bg-[var(--surface)] border border-[var(--border)] overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-[var(--surface-2)] text-[10px] font-bold uppercase opacity-40"><tr><th className="p-3 text-left">Data</th><th className="p-3">Ent</th><th className="p-3">Sai</th><th className="p-3">Saldo</th><th className="p-3"></th></tr></thead>
+                  <tbody>
+                    {filteredTime.map(r => {
+                      const d=new Date(r.date+'T12:00:00');
+                      return <tr key={r.date} className="border-t border-[var(--border)]">
+                        <td className="p-3 font-bold">{d.getDate().toString().padStart(2,'0')} <span className="text-[10px] opacity-40">{BH_DIAS[d.getDay()]}</span></td>
+                        <td className="p-3 text-center font-mono text-xs">{r.entrada||'--:--'}</td>
+                        <td className="p-3 text-center font-mono text-xs">{r.saida||'--:--'}</td>
+                        <td className={`p-3 text-center font-bold text-xs ${r.saldo?.startsWith('+')?'text-green-500':'text-red-500'}`}>{r.saldo||'--'}</td>
+                        <td className="p-3"><button onClick={()=>handleDeletePonto(r.date)} className="text-red-500 opacity-50 hover:opacity-100">{BH_ICONS.trash}</button></td>
+                      </tr>;
+                    })}
+                    {!filteredTime.length && <tr><td colSpan="5" className="p-6 text-center text-xs opacity-30">Nenhum registro</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {bhTab==='historico' && (
+            <div className="space-y-4">
+              <div className="flex gap-2 overflow-x-auto pb-1">{allMonths.map(m=><button key={m} onClick={()=>setFilterMonth(m)} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase whitespace-nowrap transition ${filterMonth===m?'bg-white/10 text-white':'text-[var(--ink-3)]'}`}>{m}</button>)}</div>
+              <div className={`p-4 rounded-2xl ${monthBalance>=0?'bg-green-900/20 border border-green-800/30':'bg-red-900/20 border border-red-800/30'}`}>
+                <div className="text-[10px] uppercase opacity-50">Historico - {filterMonth}</div>
+                <div className={`text-2xl font-black ${monthBalance>=0?'text-green-400':'text-red-400'}`}>{monthBalance>=0?'+':''}{fmtTime(monthBalance)}</div>
+              </div>
+              {filteredTime.length>0 && (
+                <div className="rounded-2xl bg-[var(--surface)] border border-[var(--border)] overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-[var(--surface-2)] text-[10px] font-bold uppercase opacity-40"><tr><th className="p-3 text-left">Data</th><th className="p-3">Ent</th><th className="p-3">Sai</th><th className="p-3">Saldo</th></tr></thead>
+                    <tbody>
+                      {[...filteredTime].sort((a,b)=>a.date.localeCompare(b.date)).map(r => {
+                        const d=new Date(r.date+'T12:00:00');
+                        return <tr key={r.date} className="border-t border-[var(--border)]">
+                          <td className="p-3 font-bold">{d.getDate().toString().padStart(2,'0')} <span className="text-[10px] opacity-40">{BH_DIAS[d.getDay()]}</span></td>
+                          <td className="p-3 text-center font-mono text-xs">{r.entrada||'--:--'}</td>
+                          <td className="p-3 text-center font-mono text-xs">{r.saida||'--:--'}</td>
+                          <td className={`p-3 text-center font-bold text-xs ${r.saldo?.startsWith('+')?'text-green-500':'text-red-500'}`}>{r.saldo||'--'}</td>
+                        </tr>;
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {filteredManual.length>0 && (
+                <div className="rounded-2xl bg-[var(--surface)] border border-[var(--border)] overflow-hidden">
+                  <div className="p-3 text-[10px] font-bold uppercase opacity-50">Lancamentos Manuais</div>
+                  <table className="w-full text-sm">
+                    <tbody>
+                      {filteredManual.map(r => <tr key={r.id} className="border-t border-[var(--border)]">
+                        <td className="p-3"><span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${r.tipo==='positivo'?'bg-green-900/40 text-green-400':'bg-red-900/40 text-red-400'}`}>{r.tipo==='positivo'?'+ Pos':'- Neg'}</span></td>
+                        <td className={`p-3 text-right font-bold ${r.tipo==='positivo'?'text-green-500':'text-red-500'}`}>{r.tipo==='positivo'?'+':'-'}{r.hrsStr}</td>
+                      </tr>)}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {!filteredTime.length && !filteredManual.length && <div className="p-8 text-center text-sm opacity-30 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">Nenhum registro em {filterMonth}</div>}
+            </div>
+          )}
+
+          {bhTab==='banco' && (
+            <div className="space-y-4">
+              <div className="flex gap-2 overflow-x-auto pb-1">{allMonths.map(m=><button key={m} onClick={()=>setFilterMonth(m)} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase whitespace-nowrap transition ${filterMonth===m?'bg-white/10 text-white':'text-[var(--ink-3)]'}`}>{m}</button>)}</div>
+              <div className="p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
+                <div className="text-[10px] font-bold uppercase opacity-50 mb-3">Lancamento Manual</div>
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  <select value={manualRef} onChange={e=>setManualRef(e.target.value)} className="p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-xs font-bold outline-none"><option value="">Ref.</option>{allMonths.map(m=><option key={m}>{m}</option>)}</select>
+                  <button onClick={()=>setManualTipo(manualTipo==='positivo'?'negativo':'positivo')} className={`p-2.5 rounded-xl border border-[var(--border)] text-[10px] font-bold uppercase transition ${manualTipo==='negativo'?'bg-red-900/30 text-red-400':'bg-green-900/30 text-green-400'}`}>{manualTipo==='positivo'?'+ Pos':'- Neg'}</button>
+                  <input type="text" placeholder="00:00" value={manualHrs} onChange={e=>setManualHrs(e.target.value)} className="p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-xs text-center outline-none" />
+                </div>
+                <button onClick={handleSaveManual} className="w-full py-3 bg-red-600 hover:bg-red-700 rounded-xl text-xs font-bold text-white uppercase transition">Adicionar</button>
+              </div>
+              <div className="rounded-2xl bg-[var(--surface)] border border-[var(--border)] overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-[var(--surface-2)] text-[10px] font-bold uppercase opacity-40"><tr><th className="p-3 text-left">Ref</th><th className="p-3">Horas</th><th className="p-3"></th></tr></thead>
+                  <tbody>
+                    {[...filteredManual].reverse().map(r => <tr key={r.id} className="border-t border-[var(--border)]">
+                      <td className="p-3 font-bold">{r.ref}</td>
+                      <td className={`p-3 text-center font-bold ${r.tipo==='positivo'?'text-green-500':'text-red-500'}`}>{r.tipo==='positivo'?'+':'-'}{r.hrsStr}</td>
+                      <td className="p-3"><button onClick={()=>handleDeleteManual(r.id)} className="text-red-500 opacity-50 hover:opacity-100">{BH_ICONS.trash}</button></td>
+                    </tr>)}
+                    {!filteredManual.length && <tr><td colSpan="3" className="p-6 text-center text-xs opacity-30">Nenhum lancamento</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {bhTab==='ajustes' && (
+            <div className="space-y-4">
+              <div className="p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)] space-y-3">
+                <div className="text-[10px] font-bold uppercase opacity-50">Salario Base</div>
+                <input type="number" value={config.salario} onChange={e=>setConfig({...config,salario:parseFloat(e.target.value)||0})} className="w-full p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-lg font-bold outline-none" />
+                <div className="text-xs opacity-40">Valor hora: R$ {(config.salario/220).toFixed(2)}</div>
+              </div>
+              <div className="p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)] space-y-3">
+                <div className="text-[10px] font-bold uppercase opacity-50">Carga Horaria</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div><label className="text-[9px] uppercase opacity-40 mb-1 block">Entrada</label><input type="time" value={config.entrada} onChange={e=>setConfig({...config,entrada:e.target.value})} className="w-full p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] font-bold outline-none" /></div>
+                  <div><label className="text-[9px] uppercase opacity-40 mb-1 block">Saida</label><input type="time" value={config.saida} onChange={e=>setConfig({...config,saida:e.target.value})} className="w-full p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] font-bold outline-none" /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div><label className="text-[9px] uppercase opacity-40 mb-1 block">Almoco (h)</label><input type="number" step="0.5" value={config.horasAlmoco} onChange={e=>setConfig({...config,horasAlmoco:parseFloat(e.target.value)||0})} className="w-full p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] font-bold outline-none" /></div>
+                  <div><label className="text-[9px] uppercase opacity-40 mb-1 block">Saldo Inicial (min)</label><input type="number" value={config.saldoInicialMin} onChange={e=>setConfig({...config,saldoInicialMin:parseInt(e.target.value)||0})} className="w-full p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] font-bold outline-none" /></div>
+                </div>
+                <div className="text-xs opacity-40">Jornada: {fmtTime(expectedHours)} por dia</div>
+                <div>
+                  <label className="text-[9px] uppercase opacity-40 mb-2 block">Dias de Trabalho</label>
+                  <div className="flex gap-1">
+                    {BH_DIAS.map((n,i) => <button key={i} onClick={()=>{const d=config.diasSemana.includes(i)?config.diasSemana.filter(x=>x!==i):[...config.diasSemana,i].sort();setConfig({...config,diasSemana:d})}} className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase transition ${config.diasSemana.includes(i)?'bg-red-600/30 text-red-400 border border-red-800':'bg-[var(--surface-2)] text-[var(--ink-3)] border border-transparent'}`}>{n}</button>)}
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                  <span className="text-xs opacity-60">Firebase conectado</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('banco-horas-root')).render(<BancoHorasApp />);
   </script>
 
 </body>
