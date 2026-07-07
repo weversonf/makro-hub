@@ -1277,10 +1277,9 @@
 
       for (let i = first - 1; i >= 0; i--) grid.appendChild(Object.assign(document.createElement('div'), { className: 'day-cell other-month p-2 border-b border-r border-[var(--border)] text-[var(--ink-3)] text-[10px]', textContent: prevLast - i }));
       const today = new Date().toISOString().split('T')[0];
-      const conteudoCat = state.categories.find(c => c.nome === 'Conteúdo');
       for (let d = 1; d <= last; d++) {
         const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        const dayActs = state.activities.filter(a => a.dataPostagem === dateStr && (conteudoCat && a.categoria == conteudoCat.id));
+        const dayActs = state.activities.filter(a => a.dataPostagem === dateStr);
         const cell = document.createElement('div');
         const dayNames = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
         const dateObj = new Date(y, m, d);
@@ -1288,7 +1287,7 @@
         cell.className = `day-cell p-2 border-b border-r border-[var(--border)] relative cursor-pointer ${dateStr === today ? 'bg-red-600/10' : isBestDay ? 'bg-emerald-500/5' : 'bg-transparent'}`;
         cell.onclick = () => showDailyPosts(dateStr);
         cell.innerHTML = `<span class="text-[10px] font-bold ${dateStr === today ? 'text-red-500' : 'text-[var(--ink-2)]'}">${d}</span>
-          <div class="flex flex-col gap-0.5 mt-1">${dayActs.slice(0, 3).map(() => `<div class="h-1 rounded-full bg-red-500 w-full"></div>`).join('')}</div>`;
+          <div class="flex flex-col gap-0.5 mt-1">${dayActs.slice(0, 3).map(a => { const cat = state.categories.find(c => c.id == a.categoria); const cor = cat?.cor || '#ef4444'; return `<div class="h-1 rounded-full w-full" style="background:${cor}"></div>`; }).join('')}</div>`;
         grid.appendChild(cell);
       }
       const total = grid.children.length;
@@ -1298,8 +1297,7 @@
 
     function showDailyPosts(dateStr) {
       document.getElementById('dailyTitle').textContent = `Posts: ${dateStr.split('-').reverse().join('/')}`;
-      const conteudoCat = state.categories.find(c => c.nome === 'Conteúdo');
-      const posts = state.activities.filter(a => a.dataPostagem === dateStr && (conteudoCat && a.categoria == conteudoCat.id));
+      const posts = state.activities.filter(a => a.dataPostagem === dateStr);
       const list = document.getElementById('dailyPostsList');
 
       // Best time insight for this day
