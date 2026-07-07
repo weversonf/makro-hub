@@ -700,17 +700,9 @@
         <div class="flex flex-col gap-5 min-h-0 lg:overflow-y-auto custom-scrollbar">
           <div>
             <label class="text-[10px] font-black uppercase tracking-widest text-[var(--ink-3)] mb-2 block">Moldura Makro</label>
-            <div class="grid grid-cols-2 gap-2">
-              <button onclick="selectFrame(null)" id="frame-none-btn" class="frame-btn ring-2 ring-red-500 rounded-xl p-2 bg-[var(--surface)] transition">
-                <div class="aspect-square rounded-lg bg-[var(--surface-2)] flex items-center justify-center text-[10px] font-bold text-[var(--ink-3)]">Nenhuma</div>
-              </button>
-              <button onclick="selectFrame('molduras/ASS_01.png')" id="frame-01-btn" class="frame-btn rounded-xl p-2 bg-[var(--surface)] ring-1 ring-[var(--border)] transition">
-                <img src="molduras/ASS_01.png" class="aspect-square w-full object-contain rounded-lg" alt="Moldura 1">
-              </button>
-              <button onclick="selectFrame('molduras/ASS_02.png')" id="frame-02-btn" class="frame-btn rounded-xl p-2 bg-[var(--surface)] ring-1 ring-[var(--border)] transition col-span-2">
-                <img src="molduras/ASS_02.png" class="aspect-square w-full object-contain rounded-lg" alt="Moldura 2">
-              </button>
-            </div>
+            <button onclick="toggleFrame()" id="frame-toggle-btn" class="w-full py-3 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-3)] border border-[var(--border)] text-[var(--ink)] text-xs font-semibold transition-all flex items-center justify-center gap-2">
+              <span id="frameToggleLabel">Moldura 1 (ASS_01)</span>
+            </button>
           </div>
           <div class="flex flex-col gap-4">
             <div>
@@ -2745,16 +2737,25 @@
       reader.readAsDataURL(file);
     }
 
-    function selectFrame(url) {
-      document.querySelectorAll('.frame-btn').forEach(b => { b.classList.remove('ring-2','ring-red-500'); b.classList.add('ring-1','ring-[var(--border)]'); });
-      const btn = url === 'molduras/ASS_01.png' ? document.getElementById('frame-01-btn') : url === 'molduras/ASS_02.png' ? document.getElementById('frame-02-btn') : document.getElementById('frame-none-btn');
-      btn.classList.add('ring-2','ring-red-500'); btn.classList.remove('ring-1','ring-[var(--border)]');
+    const FRAMES = [null, 'molduras/ASS_01.png', 'molduras/ASS_02.png'];
+    const FRAME_LABELS = ['Nenhuma', 'Moldura 1 (ASS_01)', 'Moldura 2 (ASS_02)'];
+
+    function applyFrame(url) {
       if (!url) { ieState.frame = null; ieState.frameUrl = null; drawEditor(); return; }
+      if (ieState.frameUrl === url) return;
       const img = new Image();
       img.onload = () => { ieState.frame = img; ieState.frameUrl = url; drawEditor(); };
       img.src = url;
     }
-    window.selectFrame = selectFrame;
+
+    function toggleFrame() {
+      const cur = FRAMES.indexOf(ieState.frameUrl);
+      const nextIdx = (cur + 1) % FRAMES.length;
+      ieState.frameUrl = FRAMES[nextIdx];
+      document.getElementById('frameToggleLabel').textContent = FRAME_LABELS[nextIdx];
+      applyFrame(FRAMES[nextIdx]);
+    }
+    window.toggleFrame = toggleFrame;
 
     function exportImageEditor() {
       if (!ieState.img) { showToast('Selecione uma imagem primeiro.', 'error'); return; }
