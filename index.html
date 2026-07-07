@@ -1012,11 +1012,8 @@
     </div>
   </nav>
 
-  <!-- FIREBASE + ATIVIDADES -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
+  <!-- FIREBASE + ATIVIDADES (compat SDK shared) -->
+  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyCGemp_OA8savCmLZfX7Us0nmDpdbpv4N0",
       authDomain: "mytasks-saturday.firebaseapp.com",
@@ -1025,11 +1022,25 @@
       messagingSenderId: "647554172397",
       appId: "1:647554172397:web:aac3ef00938ee7cd8f13e4"
     };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    const googleProvider = new firebase.auth.GoogleAuthProvider();
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    window.fb = { db, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy };
+    window.fb = {
+      db,
+      collection: (_, path) => db.collection(path),
+      addDoc: (collRef, data) => collRef.add(data),
+      getDocs: (collRef) => collRef.get(),
+      updateDoc: (docRef, data) => docRef.update(data),
+      deleteDoc: (docRef) => docRef.delete(),
+      doc: (_, path) => db.doc(path),
+      onSnapshot: (ref, cb) => ref.onSnapshot(cb),
+      query: (ref) => ref,
+      orderBy: (field, dir) => ({ field, dir }),
+      auth,
+      googleProvider,
+    };
     window.fbConfig = firebaseConfig;
     window.initActivities();
   </script>
@@ -3327,16 +3338,12 @@
     root.render(React.createElement(NPSErrorBoundary, null, React.createElement(NPSApp)));
   </script>
 
-  <!-- BANCO DE HORAS MODULE -->
+  <!-- BANCO DE HORAS MODULE (uses shared Firebase) -->
   <script type="text/babel">
     const { useState, useEffect, useMemo } = React;
-
-    // Initialize compat Firebase for Banco de Horas
-    let bhApp;
-    try { bhApp = firebase.app('banco-horas'); } catch(e) { bhApp = firebase.initializeApp(window.fbConfig, 'banco-horas'); }
-    const bhDb = bhApp.firestore();
-    const bhAuth = bhApp.auth();
-    const bhProvider = new firebase.auth.GoogleAuthProvider();
+    const bhDb = window.fb.db;
+    const bhAuth = window.fb.auth;
+    const bhProvider = window.fb.googleProvider;
 
     const BH_ICONS = {
       dashboard: <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>,
