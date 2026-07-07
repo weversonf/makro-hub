@@ -701,7 +701,7 @@
           <div>
             <label class="text-[10px] font-black uppercase tracking-widest text-[var(--ink-3)] mb-2 block">Moldura Makro</label>
             <button onclick="toggleFrame()" id="frame-toggle-btn" class="w-full py-3 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-3)] border border-[var(--border)] text-[var(--ink)] text-xs font-semibold transition-all flex items-center justify-center gap-2">
-              <span id="frameToggleLabel">Moldura 1 (ASS_01)</span>
+              <span id="frameToggleLabel">Nenhuma</span>
             </button>
           </div>
           <div class="flex flex-col gap-4">
@@ -2742,16 +2742,17 @@
 
     function applyFrame(url) {
       if (!url) { ieState.frame = null; ieState.frameUrl = null; drawEditor(); return; }
-      if (ieState.frameUrl === url) return;
+      if (ieState.frame && ieState.frameUrl === url) { drawEditor(); return; }
       const img = new Image();
+      img.crossOrigin = 'anonymous';
       img.onload = () => { ieState.frame = img; ieState.frameUrl = url; drawEditor(); };
+      img.onerror = () => { console.warn('Frame load failed:', url); showToast('Erro ao carregar moldura.', 'error'); };
       img.src = url;
     }
 
     function toggleFrame() {
       const cur = FRAMES.indexOf(ieState.frameUrl);
       const nextIdx = (cur + 1) % FRAMES.length;
-      ieState.frameUrl = FRAMES[nextIdx];
       document.getElementById('frameToggleLabel').textContent = FRAME_LABELS[nextIdx];
       applyFrame(FRAMES[nextIdx]);
     }
