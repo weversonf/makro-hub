@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Makro Hub</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Montserrat:wght@400;500;700;900&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
 
@@ -23,19 +23,77 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
-    :root { --makro-red: #ED1C24; --makro-bg: #010816; --makro-card: rgba(255,255,255,0.05); }
-    body { background-color: var(--makro-bg); color: #f1f5f9; font-family: 'Montserrat', sans-serif; margin: 0; }
-    .glass-card { background: var(--makro-card); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); border-radius: 1.5rem; }
+    :root {
+      --makro-red: #ED1C24;
+      --makro-red-bright: #ff3b41;
+      --r-sm: 10px;
+      --r: 14px;
+      --r-lg: 18px;
+      --ease: cubic-bezier(0.16,1,0.3,1);
+      /* Clean (light) default */
+      --bg: #f8fafc;
+      --bg-elev: #ffffff;
+      --surface: rgba(15,23,42,0.03);
+      --surface-2: rgba(15,23,42,0.06);
+      --surface-3: rgba(15,23,42,0.10);
+      --surface-4: rgba(15,23,42,0.14);
+      --border: rgba(15,23,42,0.10);
+      --border-strong: rgba(15,23,42,0.20);
+      --ink: #0f172a;
+      --ink-2: #475569;
+      --ink-3: #64748b;
+      --brand-soft: rgba(237,28,36,0.10);
+      --shadow: rgba(15,23,42,0.08);
+    }
+    [data-theme="noir"] {
+      --bg: #0f172a;
+      --bg-elev: #1e293b;
+      --surface: rgba(255,255,255,0.04);
+      --surface-2: rgba(255,255,255,0.08);
+      --surface-3: rgba(255,255,255,0.12);
+      --surface-4: rgba(255,255,255,0.16);
+      --border: rgba(255,255,255,0.08);
+      --border-strong: rgba(255,255,255,0.18);
+      --ink: #f1f5f9;
+      --ink-2: #94a3b8;
+      --ink-3: #64748b;
+      --brand-soft: rgba(237,28,36,0.15);
+      --shadow: rgba(0,0,0,0.35);
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--ink);
+      font-family: 'Inter', 'Montserrat', system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      margin: 0;
+      -webkit-font-smoothing: antialiased;
+      letter-spacing: -0.006em;
+      transition: background-color 0.3s var(--ease), color 0.3s var(--ease);
+    }
+    h1, h2, h3 { text-wrap: balance; color: var(--ink); }
+    p { text-wrap: pretty; }
+    ::selection { background: rgba(237,28,36,0.30); color: #fff; }
+    .glass-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      transition: border-color 0.25s var(--ease), background 0.25s var(--ease);
+    }
+    .glass-card:hover { border-color: var(--border-strong); }
     .hidden-view { display: none !important; }
     ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 10px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--makro-red); }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--makro-red); background-clip: padding-box; }
     .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-    .animate-fadeup { animation: fadeUp 0.4s ease forwards; }
-    @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
-    .animate-slide { animation: slideIn 0.3s ease forwards; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fadeup { animation: fadeUp 0.5s var(--ease) forwards; }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: translateX(0); } }
+    .animate-slide { animation: slideIn 0.35s var(--ease) forwards; }
+    @media (prefers-reduced-motion: reduce) {
+      .animate-fadeup, .animate-slide { animation: none; }
+    }
 
     /* Kanban */
     .dragging { opacity: 0.4; transform: scale(0.95); }
@@ -44,45 +102,57 @@
     .touch-drag-ghost { position: fixed; pointer-events: none; z-index: 9999; opacity: 0.85; transform: rotate(2deg) scale(1.03); box-shadow: 0 20px 60px rgba(0,0,0,0.6); transition: none; }
 
     /* Forms */
-    input, select, textarea { background: rgba(255,255,255,0.05) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; outline: none !important; transition: all 0.3s; }
-    input:focus, select:focus, textarea:focus { border-color: var(--makro-red) !important; box-shadow: 0 0 0 2px rgba(237,28,36,0.2); }
-    select option, select optgroup { background-color: #010816 !important; color: #ffffff !important; }
-    input[type=range] { -webkit-appearance: none; background: rgba(255,255,255,0.1) !important; height: 6px; border-radius: 4px; border: none !important; padding: 0 !important; }
-    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 18px; width: 18px; border-radius: 50%; background: var(--makro-red); cursor: pointer; box-shadow: 0 0 10px rgba(237,28,36,0.5); }
-    input[type="checkbox"].hub-check { appearance: none; background-color: rgba(255,255,255,0.1); margin: 0; width: 1.15em; height: 1.15em; border-radius: 0.25em; display: grid; place-content: center; cursor: pointer; }
-    input[type="checkbox"].hub-check::before { content: ""; width: 0.65em; height: 0.65em; transform: scale(0); transition: 120ms transform ease-in-out; box-shadow: inset 1em 1em white; transform-origin: center; clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%); }
+    input, select, textarea {
+      background: var(--surface-2) !important;
+      border: 1px solid var(--border) !important;
+      color: var(--ink) !important;
+      outline: none !important;
+      border-radius: var(--r-sm);
+      transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease), background 0.2s var(--ease);
+    }
+    input::placeholder, textarea::placeholder { color: var(--ink-3) !important; }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--makro-red) !important;
+      box-shadow: 0 0 0 3px rgba(237,28,36,0.16);
+      background: var(--surface-3) !important;
+    }
+    select option, select optgroup { background-color: var(--bg-elev) !important; color: var(--ink) !important; }
+    input[type=range] { -webkit-appearance: none; background: var(--surface-3) !important; height: 6px; border-radius: 4px; border: none !important; padding: 0 !important; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 18px; width: 18px; border-radius: 50%; background: var(--makro-red); cursor: pointer; box-shadow: 0 0 0 4px rgba(237,28,36,0.18); }
+    input[type="checkbox"].hub-check { appearance: none; background-color: var(--surface-2); margin: 0; width: 1.15em; height: 1.15em; border-radius: 0.3em; display: grid; place-content: center; cursor: pointer; border: 1px solid var(--border-strong); transition: 0.15s var(--ease); }
+    input[type="checkbox"].hub-check::before { content: ""; width: 0.65em; height: 0.65em; transform: scale(0); transition: 120ms transform ease-in-out; box-shadow: inset 1em 1em var(--ink); transform-origin: center; clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%); }
     input[type="checkbox"].hub-check:checked { background-color: var(--makro-red); border-color: var(--makro-red) !important; }
     input[type="checkbox"].hub-check:checked::before { transform: scale(1); }
 
     /* Calendar editorial */
     .day-cell { min-height: 80px; transition: all 0.2s; }
-    .day-cell:hover:not(.other-month) { background: rgba(255,255,255,0.03); }
+    .day-cell:hover:not(.other-month) { background: var(--surface); }
 
     /* Custom Date Picker */
     .date-picker-wrap { position: relative; }
     .date-picker-trigger {
       width: 100%; padding: 10px 12px; border-radius: 10px;
-      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-      color: #fff; font-size: 11px; font-weight: 600;
+      background: var(--surface-2); border: 1px solid var(--border);
+      color: var(--ink); font-size: 11px; font-weight: 600;
       cursor: pointer; display: flex; align-items: center; gap: 8px;
       transition: all 0.2s; text-align: left;
     }
-    .date-picker-trigger:hover { border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); }
-    .date-picker-trigger.has-value { color: #fff; }
-    .date-picker-trigger .dp-placeholder { color: rgba(255,255,255,0.25); }
-    .date-picker-trigger .dp-icon { color: rgba(255,255,255,0.25); flex-shrink: 0; width: 14px; height: 14px; }
+    .date-picker-trigger:hover { border-color: var(--border-strong); background: var(--surface-3); }
+    .date-picker-trigger.has-value { color: var(--ink); }
+    .date-picker-trigger .dp-placeholder { color: var(--ink-3); }
+    .date-picker-trigger .dp-icon { color: var(--ink-3); flex-shrink: 0; width: 14px; height: 14px; }
     .date-picker-trigger .dp-clear {
       margin-left: auto; opacity: 0; transition: opacity 0.2s;
-      color: rgba(255,255,255,0.3); cursor: pointer; padding: 1px; font-size: 14px;
+      color: var(--ink-3); cursor: pointer; padding: 1px; font-size: 14px;
     }
     .date-picker-trigger:hover .dp-clear { opacity: 1; }
     .date-picker-trigger .dp-clear:hover { color: #EF4136; }
 
     .date-picker-dropdown {
       position: absolute; top: calc(100% + 6px); left: 0; z-index: 200;
-      background: #0d1117; border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 16px; padding: 14px; width: 280px;
-      box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+      background: var(--bg-elev); border: 1px solid var(--border-strong);
+      border-radius: var(--r-lg); padding: 14px; width: 280px;
+      box-shadow: 0 20px 56px var(--shadow);
       animation: dpFadeIn 0.15s ease;
     }
     @keyframes dpFadeIn { from { opacity: 0; transform: translateY(-6px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
@@ -90,26 +160,26 @@
     .dp-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
     .dp-header button {
       background: transparent; border: none;
-      border-radius: 8px; color: rgba(255,255,255,0.4); width: 28px; height: 28px;
+      border-radius: 8px; color: var(--ink-3); width: 28px; height: 28px;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer; transition: all 0.15s;
     }
-    .dp-header button:hover { background: rgba(255,255,255,0.06); color: #fff; }
-    .dp-header-label { font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1.5px; }
+    .dp-header button:hover { background: var(--surface-2); color: var(--ink); }
+    .dp-header-label { font-size: 11px; font-weight: 800; color: var(--ink-2); text-transform: uppercase; letter-spacing: 1.5px; }
 
     .dp-weekdays { display: grid; grid-template-columns: repeat(7,1fr); gap: 1px; margin-bottom: 4px; }
-    .dp-weekdays span { text-align: center; font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.2); text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 0; }
+    .dp-weekdays span { text-align: center; font-size: 9px; font-weight: 700; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 0; }
 
     .dp-days { display: grid; grid-template-columns: repeat(7,1fr); gap: 1px; }
     .dp-day {
       text-align: center; padding: 0; border: none; background: transparent;
-      color: rgba(255,255,255,0.6); font-size: 11px; font-weight: 500;
+      color: var(--ink-2); font-size: 11px; font-weight: 500;
       border-radius: 8px; height: 30px; display: flex; align-items: center; justify-content: center;
       cursor: pointer; transition: all 0.12s;
     }
-    .dp-day:hover { background: rgba(255,255,255,0.06); color: #fff; }
-    .dp-day.other { color: rgba(255,255,255,0.1); }
-    .dp-day.other:hover { background: transparent; color: rgba(255,255,255,0.15); }
+    .dp-day:hover { background: var(--surface-2); color: var(--ink); }
+    .dp-day.other { color: var(--ink-3); opacity: 0.5; }
+    .dp-day.other:hover { background: transparent; color: var(--ink-3); }
     .dp-day.today { color: #ED1C24; font-weight: 800; position: relative; }
     .dp-day.today::after { content:''; position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); width: 3px; height: 3px; border-radius: 50%; background: #ED1C24; }
     .dp-day.selected {
@@ -120,45 +190,53 @@
 
     .dp-today-btn {
       width: 100%; margin-top: 8px; padding: 6px; border: none;
-      border-radius: 8px; background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.3);
+      border-radius: 8px; background: var(--surface-2); color: var(--ink-3);
       font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px;
       cursor: pointer; transition: all 0.15s; text-align: center;
     }
-    .dp-today-btn:hover { background: rgba(237,28,36,0.08); color: #ED1C24; }
+    .dp-today-btn:hover { background: var(--brand-soft); color: var(--makro-red); }
 
     /* Custom Select */
     .custom-select-wrap { position: relative; }
     .custom-select-trigger {
       width: 100%; padding: 10px 12px; border-radius: 10px;
-      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-      color: rgba(255,255,255,0.25); font-size: 11px; font-weight: 600;
+      background: var(--surface-2); border: 1px solid var(--border);
+      color: var(--ink-3); font-size: 11px; font-weight: 600;
       cursor: pointer; display: flex; align-items: center; gap: 8px;
       transition: all 0.2s; text-align: left;
     }
-    .custom-select-trigger:hover { border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); }
-    .custom-select-trigger.has-value { color: #fff; }
+    .custom-select-trigger:hover { border-color: var(--border-strong); background: var(--surface-3); }
+    .custom-select-trigger.has-value { color: var(--ink); }
     .custom-select-trigger .cs-chevron {
-      margin-left: auto; transition: transform 0.2s; color: rgba(255,255,255,0.2); width: 14px; height: 14px;
+      margin-left: auto; transition: transform 0.2s; color: var(--ink-3); width: 14px; height: 14px;
     }
     .custom-select-trigger.open .cs-chevron { transform: rotate(180deg); }
 
     .custom-select-dropdown {
       position: absolute; top: calc(100% + 6px); left: 0; z-index: 200;
-      background: #0d1117; border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 14px; padding: 4px; width: 100%;
-      box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+      background: var(--bg-elev); border: 1px solid var(--border-strong);
+      border-radius: var(--r); padding: 4px; width: 100%;
+      box-shadow: 0 20px 56px var(--shadow);
       animation: dpFadeIn 0.15s ease; max-height: 220px; overflow-y: auto;
     }
     .custom-select-dropdown::-webkit-scrollbar { width: 3px; }
-    .custom-select-dropdown::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+    .custom-select-dropdown::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 10px; }
+
+    #header-search {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--ink);
+    }
+    #header-search::placeholder { color: var(--ink-3); }
+    #header-search:focus { outline: none; border-color: var(--makro-red); background: var(--surface-2); }
 
     .cs-option {
       width: 100%; padding: 8px 10px; border: none; background: transparent;
-      color: rgba(255,255,255,0.6); font-size: 11px; font-weight: 500;
+      color: var(--ink-2); font-size: 11px; font-weight: 500;
       border-radius: 10px; cursor: pointer; transition: all 0.12s;
       display: flex; align-items: center; gap: 8px; text-align: left;
     }
-    .cs-option:hover { background: rgba(255,255,255,0.06); color: #fff; }
+    .cs-option:hover { background: var(--surface-2); color: var(--ink); }
     .cs-option.selected { background: rgba(237,28,36,0.1); color: #ED1C24; font-weight: 700; }
     .cs-option .cs-dot {
       width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
@@ -166,43 +244,51 @@
     }
     .cs-option.selected .cs-dot { border-color: #ED1C24; box-shadow: 0 0 6px rgba(237,28,36,0.3); }
     .cs-option .cs-check { margin-left: auto; color: #ED1C24; opacity: 0; width: 12px; height: 12px; }
-    .cs-option.selected .cs-check { opacity: 1; }
+        .cs-option.selected .cs-check { opacity: 1; }
+
+    input[type="text"], input[type="date"], input[type="number"], input[type="email"], input[type="password"], textarea, select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--ink);
+    }
+    input::placeholder, textarea::placeholder { color: var(--ink-3); }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--makro-red); background: var(--surface-2); }
 
     /* Upload Preview Table */
     .upload-table { width: 100%; border-collapse: collapse; min-width: 700px; }
-    .upload-table th { padding: 10px 12px; text-align: left; font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.06); }
-    .upload-table td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
-    .upload-table tr:hover td { background: rgba(255,255,255,0.02); }
-    .upload-table .cell-edit { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 6px 10px; color: #fff; font-size: 11px; font-weight: 600; width: 100%; outline: none; transition: all 0.2s; }
+    .upload-table th { padding: 10px 12px; text-align: left; font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; color: var(--ink-3); background: var(--surface); border-bottom: 1px solid var(--border); }
+    .upload-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .upload-table tr:hover td { background: var(--surface); }
+    .upload-table .cell-edit { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; color: var(--ink); font-size: 11px; font-weight: 600; width: 100%; outline: none; transition: all 0.2s; }
     .upload-table .cell-edit:focus { border-color: rgba(237,28,36,0.5); box-shadow: 0 0 0 2px rgba(237,28,36,0.15); }
-    .upload-table .cell-select { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 6px 10px; color: #fff; font-size: 11px; font-weight: 600; width: 100%; outline: none; cursor: pointer; }
-    .upload-table .cell-select option { background: #010816; }
+    .upload-table .cell-select { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; color: var(--ink); font-size: 11px; font-weight: 600; width: 100%; outline: none; cursor: pointer; }
+    .upload-table .cell-select option { background: var(--bg-elev); }
     .upload-table .row-error td { border-bottom-color: rgba(239,68,68,0.3); }
     .upload-table .row-error .cell-edit { border-color: rgba(239,68,68,0.4); }
     .upload-badge { font-size: 8px; font-weight: 900; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
 
     /* Progress Bar */
-    .progress-bar-track { height: 6px; background: rgba(255,255,255,0.06); border-radius: 10px; overflow: hidden; }
+    .progress-bar-track { height: 6px; background: var(--surface-2); border-radius: 10px; overflow: hidden; }
     .progress-bar-fill { height: 100%; border-radius: 10px; transition: width 0.4s ease; }
     .progress-steps { display: flex; gap: 3px; }
     .progress-step {
       flex: 1; height: 20px; border-radius: 6px; cursor: pointer;
-      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.06);
+      background: var(--surface-2); border: 1px solid var(--border);
       transition: all 0.15s; display: flex; align-items: center; justify-content: center;
       font-size: 8px; font-weight: 800; color: transparent;
     }
-    .progress-step:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.4); }
-    .progress-step.active { border-color: transparent; color: #fff; }
+    .progress-step:hover { background: var(--surface-3); color: var(--ink-3); }
+    .progress-step.active { background: var(--makro-red); border-color: transparent; color: #fff; }
 
     /* Checklist */
     .checklist-item {
       display: flex; align-items: center; gap: 8px; padding: 8px 10px;
       border-radius: 10px; transition: all 0.15s; group: true;
     }
-    .checklist-item:hover { background: rgba(255,255,255,0.03); }
+    .checklist-item:hover { background: var(--surface); }
     .checklist-check {
       appearance: none; width: 18px; height: 18px; border-radius: 6px; flex-shrink: 0;
-      background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.15);
+      background: var(--surface-2); border: 1.5px solid var(--border-strong);
       cursor: pointer; display: grid; place-content: center; transition: all 0.15s;
     }
     .checklist-check::after {
@@ -211,15 +297,15 @@
     }
     .checklist-check:checked { background: #10B981; border-color: #10B981; }
     .checklist-check:checked::after { transform: scale(1); }
-    .checklist-text { flex: 1; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.8); background: transparent; border: none; outline: none; }
+    .checklist-text { flex: 1; font-size: 12px; font-weight: 600; color: var(--ink); background: transparent; border: none; outline: none; }
     .checklist-text.done { text-decoration: line-through; opacity: 0.35; }
-    .checklist-del { opacity: 0; transition: opacity 0.15s; cursor: pointer; color: rgba(255,255,255,0.3); }
+    .checklist-del { opacity: 0; transition: opacity 0.15s; cursor: pointer; color: var(--ink-3); }
     .checklist-item:hover .checklist-del { opacity: 1; }
     .checklist-del:hover { color: #EF4136; }
 
     /* File Upload */
     .file-drop-zone {
-      border: 2px dashed rgba(255,255,255,0.08); border-radius: 14px;
+      border: 2px dashed var(--border); border-radius: 14px;
       padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s;
     }
     .file-drop-zone:hover, .file-drop-zone.dragover {
@@ -228,16 +314,65 @@
     .file-chip {
       display: inline-flex; align-items: center; gap: 6px;
       padding: 6px 10px; border-radius: 8px; font-size: 10px; font-weight: 700;
-      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
-      color: rgba(255,255,255,0.7); max-width: 200px;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--ink-2); max-width: 200px;
     }
     .file-chip .file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .file-chip .file-remove { cursor: pointer; color: rgba(255,255,255,0.3); transition: color 0.15s; }
+    .file-chip .file-remove { cursor: pointer; color: var(--ink-3); transition: color 0.15s; }
     .file-chip .file-remove:hover { color: #EF4136; }
 
     /* Kanban column */
     .kanban-column { min-width: 280px; width: 280px; }
     @media (max-width: 768px) { .kanban-column { min-width: 85vw; width: 85vw; } }
+
+    /* Mobile spacing adjustments */
+    @media (max-width: 1023px) {
+      header.app-header { height: 56px !important; padding-left: 16px !important; padding-right: 16px !important; }
+      header.app-header .header-search-wrap { max-width: 100% !important; margin-left: 0 !important; }
+      header.app-header #header-search { padding-top: 7px !important; padding-bottom: 7px !important; font-size: 13px !important; }
+      #main-content { padding: 12px !important; padding-bottom: 96px !important; }
+      .mob-nav-bar { height: 56px; border-radius: 22px; padding: 0 4px; }
+      .mob-tab-bubble { width: 34px; height: 34px; }
+      .mob-tab-bubble i { width: 18px !important; height: 18px !important; }
+      .mob-tab.active .mob-tab-bubble { width: 40px; height: 40px; transform: translateY(-10px); }
+      .mob-tab-label { font-size: 7px; }
+      #btn-header-add { width: 40px; height: 40px; flex-shrink: 0; }
+      #theme-toggle { width: 36px; height: 36px; flex-shrink: 0; }
+      /* Dashboard */
+      #dashboard-view > div { gap: 20px !important; }
+      .glass-card { padding: 14px !important; }
+      #dashboard-view .text-4xl { font-size: 1.5rem !important; }
+      /* Kanban */
+      #kanban-board { gap: 10px !important; height: calc(100vh - 220px) !important; padding-bottom: 12px !important; }
+      #kanban-filters { gap: 6px !important; margin-bottom: 12px !important; }
+      #kanban-view > div:first-child { margin-bottom: 12px !important; }
+      /* Headings */
+      #main-content h2 { font-size: 1.25rem !important; }
+      #main-content h2 + p { margin-top: 2px !important; font-size: 12px !important; }
+      /* Grids */
+      #dashboard-view .grid { gap: 10px !important; }
+      /* Calendar */
+      #calendar-view > div { gap: 12px !important; }
+      #calendarGrid { gap: 2px !important; }
+      /* Modal body padding */
+      .max-h-\[95vh\] > div:last-child { padding: 16px !important; gap: 12px !important; }
+      .max-h-\[95vh\] > div:first-child { padding-left: 16px !important; padding-right: 16px !important; padding-top: 12px !important; padding-bottom: 12px !important; }
+      /* Config */
+      #configuracoes-view > div { gap: 12px !important; }
+      #instagramNotConnected { padding: 20px !important; }
+      /* Categories table */
+      #categories-view th, #categories-view td { padding: 12px !important; }
+    }
+    @media (max-width: 480px) {
+      header.app-header img { display: none; }
+      header.app-header .header-divider { display: none; }
+      #main-content { padding: 10px !important; padding-bottom: 90px !important; }
+      .glass-card { padding: 12px !important; }
+      #kanban-board { height: calc(100vh - 200px) !important; }
+      #instagramNotConnected { padding: 16px !important; }
+      #instagramNotConnected .w-20 { width: 56px !important; height: 56px !important; }
+      #instagramNotConnected .w-20 svg { width: 28px !important; height: 28px !important; }
+    }
 
     /* NPS */
     .zona-excelencia { background: rgba(0,166,80,0.15); color: #00A650; border: 1px solid rgba(0,166,80,0.3); }
@@ -254,24 +389,42 @@
     /* Mobile Bottom Nav */
     #mobile-bottom-nav { display: none; }
     @media (max-width: 1023px) { #mobile-bottom-nav { display: flex; } }
-    .mob-nav-bar { background: #0d1117; border: 1px solid rgba(255,255,255,0.08); border-radius: 28px; display: flex; align-items: center; justify-content: space-around; padding: 0 8px; height: 64px; width: 100%; box-shadow: 0 8px 40px rgba(0,0,0,0.6); }
+    .mob-nav-bar { background: var(--bg-elev); border: 1px solid var(--border); border-radius: 28px; display: flex; align-items: center; justify-content: space-around; padding: 0 8px; height: 64px; width: 100%; box-shadow: 0 12px 48px var(--shadow); }
     .mob-tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: none; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; padding: 0; height: 100%; }
     .mob-tab-bubble { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.3s cubic-bezier(0.34,1.4,0.64,1); background: transparent; }
     .mob-tab-bubble i { color: #555; transition: color 0.2s; }
     .mob-tab-label { font-size: 8px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.06em; color: transparent; line-height: 1; transition: color 0.2s; }
-    .mob-tab.active .mob-tab-bubble { background: #e01d24; transform: translateY(-14px); box-shadow: 0 6px 20px rgba(224,29,36,0.5); width: 48px; height: 48px; }
+    .mob-tab.active .mob-tab-bubble { background: var(--makro-red); transform: translateY(-14px); box-shadow: 0 8px 24px rgba(237,28,36,0.45); width: 48px; height: 48px; }
     .mob-tab.active .mob-tab-bubble i { color: #fff; }
-    .mob-tab.active .mob-tab-label { color: #e01d24; }
-    .mob-tab-add .mob-tab-bubble { background: #e01d24; transform: translateY(-14px); box-shadow: 0 6px 24px rgba(224,29,36,0.55); width: 52px; height: 52px; }
-    .mob-tab-add .mob-tab-bubble i { color: #fff; }
+    .mob-tab.active .mob-tab-label { color: var(--makro-red-bright); }
+
+    /* Gantt View */
+    .gantt-grid { position: relative; }
+    .gantt-cell { border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); min-height: 44px; display: flex; align-items: center; }
+    .gantt-header-cell { background: var(--bg-elev); padding: 6px 4px; min-height: 48px; border-top: 1px solid var(--border); }
+    .gantt-header-cell:first-child { border-left: 1px solid var(--border); border-top-left-radius: var(--r); }
+    .gantt-today-col { background: rgba(237,28,36,0.08); }
+    .gantt-bar {
+      position: absolute;
+      height: 22px;
+      border-radius: 11px;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      cursor: pointer;
+      transition: transform 0.15s var(--ease), filter 0.15s var(--ease);
+      margin-top: 11px;
+    }
+    .gantt-bar:hover { transform: translateY(-1px); filter: brightness(1.15); }
+    .gantt-bar-label { font-size: 10px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
   </style>
 </head>
 <body class="antialiased h-screen w-screen overflow-hidden">
 
   <!-- LOADER -->
-  <div id="global-loader" class="fixed inset-0 bg-[#010816] z-[999] flex flex-col items-center justify-center transition-opacity duration-500">
-    <div class="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-    <p class="text-xs font-black uppercase tracking-[3px] text-gray-500 animate-pulse">Carregando Makro Hub...</p>
+  <div id="global-loader" class="fixed inset-0 bg-[var(--bg)] z-[999] flex flex-col items-center justify-center transition-opacity duration-500">
+    <div class="w-12 h-12 border-[3px] border-[var(--border-strong)] border-t-red-600 rounded-full animate-spin mb-4"></div>
+    <p class="text-[10px] font-black uppercase tracking-[3px] text-[var(--ink-3)] animate-pulse">Carregando Makro Hub...</p>
   </div>
 
   <!-- TOAST -->
@@ -280,20 +433,20 @@
   <!-- MODAL ATIVIDADE -->
   <div id="modalActivity" class="hidden-view fixed inset-0 bg-black/80 backdrop-blur-md z-[150] flex items-end lg:items-center justify-center p-0 lg:p-4">
     <div class="absolute inset-0" onclick="closeModal('modalActivity')"></div>
-    <div class="bg-[#010816] border border-white/10 w-full max-w-2xl rounded-t-3xl lg:rounded-3xl shadow-2xl z-10 overflow-hidden animate-fadeup flex flex-col max-h-[95vh]">
-      <div class="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
-        <h2 id="activityModalTitle" class="text-lg font-black uppercase tracking-widest text-white">Nova Atividade</h2>
-        <button onclick="closeModal('modalActivity')" class="p-2 text-gray-500 hover:text-white bg-white/5 hover:bg-red-600 rounded-xl"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <div class="bg-[var(--bg)] border border-[var(--border-strong)] w-full max-w-2xl rounded-t-3xl lg:rounded-3xl shadow-2xl z-10 overflow-hidden animate-fadeup flex flex-col max-h-[95vh]">
+      <div class="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between bg-[var(--surface)]">
+        <h2 id="activityModalTitle" class="text-lg font-extrabold tracking-tight text-[var(--ink)]">Nova Atividade</h2>
+        <button onclick="closeModal('modalActivity')" class="p-2 text-[var(--ink-3)] hover:text-[var(--ink)] bg-[var(--surface)] hover:bg-red-600 rounded-lg transition"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
       <div class="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
         <input type="hidden" id="actId">
         <div>
-          <label class="text-[9px] font-black uppercase opacity-40 mb-2 block tracking-widest">Título</label>
+          <label class="text-xs font-medium text-[var(--ink-3)] mb-2 block">Título</label>
           <input type="text" id="actTitle" class="w-full p-4 rounded-xl text-sm font-bold">
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="text-[9px] font-black uppercase opacity-40 mb-2 block tracking-widest">Categoria</label>
+            <label class="text-xs font-medium text-[var(--ink-3)] mb-2 block">Categoria</label>
             <div class="custom-select-wrap" id="csWrapCategory">
               <button type="button" class="custom-select-trigger" id="csTriggerCategory" onclick="toggleCustomSelect('csCategory')">
                 <span class="cs-label">Selecionar...</span>
@@ -303,7 +456,7 @@
             <input type="hidden" id="actCategory">
           </div>
           <div>
-            <label class="text-[9px] font-black uppercase opacity-40 mb-2 block tracking-widest">Status</label>
+            <label class="text-xs font-medium text-[var(--ink-3)] mb-2 block">Status</label>
             <div class="custom-select-wrap" id="csWrapStage">
               <button type="button" class="custom-select-trigger" id="csTriggerStage" onclick="toggleCustomSelect('csStage')">
                 <span class="cs-label">Selecionar...</span>
@@ -315,7 +468,7 @@
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="text-[9px] font-black uppercase opacity-40 mb-2 block tracking-widest">Data de Entrega</label>
+            <label class="text-xs font-medium text-[var(--ink-3)] mb-2 block">Data de Entrega</label>
             <div class="date-picker-wrap" id="dpWrapDue">
               <button type="button" class="date-picker-trigger" id="dpTriggerDue" onclick="toggleDatePicker('dpDue')">
                 <svg class="dp-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
@@ -326,7 +479,7 @@
             <input type="hidden" id="actDue">
           </div>
           <div id="postDateGroup" class="hidden-view">
-            <label class="text-[9px] font-black uppercase opacity-40 mb-2 block tracking-widest">Data de Postagem</label>
+            <label class="text-xs font-medium text-[var(--ink-3)] mb-2 block">Data de Postagem</label>
             <div class="date-picker-wrap" id="dpWrapPost">
               <button type="button" class="date-picker-trigger" id="dpTriggerPost" onclick="toggleDatePicker('dpPost')">
                 <svg class="dp-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
@@ -338,65 +491,65 @@
           </div>
         </div>
         <div>
-          <label class="text-[9px] font-black uppercase opacity-40 mb-2 block tracking-widest">Canais</label>
+          <label class="text-xs font-medium text-[var(--ink-3)] mb-2 block">Canais</label>
           <div id="actChannels" class="flex flex-wrap gap-2 mt-1"></div>
         </div>
         <div>
-          <label class="text-[9px] font-black uppercase opacity-40 mb-2 block tracking-widest">Descrição</label>
+          <label class="text-xs font-medium text-[var(--ink-3)] mb-2 block">Descrição</label>
           <textarea id="actDesc" rows="4" class="w-full p-4 rounded-xl text-sm custom-scrollbar" placeholder="Detalhes da atividade..."></textarea>
         </div>
 
         <!-- Dynamic: Admin Fields -->
-        <div id="adminFields" class="hidden-view space-y-4 border-t border-white/5 pt-4">
+        <div id="adminFields" class="hidden-view space-y-4 border-t border-[var(--border)] pt-4">
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="text-[9px] font-black uppercase opacity-40 mb-2 block tracking-widest">Nº da Nota Fiscal</label>
+              <label class="text-xs font-medium text-[var(--ink-3)] mb-2 block">Nº da Nota Fiscal</label>
               <input type="text" id="actNotaFiscal" class="w-full p-3 rounded-xl text-xs font-bold" placeholder="Ex: 123456">
             </div>
             <div>
-              <label class="text-[9px] font-black uppercase opacity-40 mb-2 block tracking-widest">Valor (R$)</label>
+              <label class="text-xs font-medium text-[var(--ink-3)] mb-2 block">Valor (R$)</label>
               <input type="text" id="actValor" class="w-full p-3 rounded-xl text-xs font-bold" placeholder="Ex: 1.500,00">
             </div>
           </div>
         </div>
 
         <!-- Progresso -->
-        <div class="border-t border-white/5 pt-4">
+        <div class="border-t border-[var(--border)] pt-4">
           <div class="flex items-center justify-between mb-2">
-            <label class="text-[9px] font-black uppercase opacity-40 tracking-widest">Progresso</label>
-            <span id="progressLabel" class="text-[10px] font-black text-white">0%</span>
+            <label class="text-xs font-medium text-[var(--ink-3)]">Progresso</label>
+            <span id="progressLabel" class="text-[10px] font-black text-[var(--ink)]">0%</span>
           </div>
           <div id="progressSteps" class="progress-steps"></div>
         </div>
 
         <!-- Checklist -->
-        <div class="border-t border-white/5 pt-4">
+        <div class="border-t border-[var(--border)] pt-4">
           <div class="flex items-center justify-between mb-3">
-            <label class="text-[9px] font-black uppercase opacity-40 tracking-widest flex items-center gap-2">
+            <label class="text-xs font-medium text-[var(--ink-3)] flex items-center gap-2">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
               Checklist
             </label>
-            <span id="checklistCount" class="text-[9px] font-bold text-gray-500">0/0</span>
+            <span id="checklistCount" class="text-[9px] font-bold text-[var(--ink-3)]">0/0</span>
           </div>
-          <div id="checklistProgress" class="w-full bg-white/5 rounded-full h-1.5 mb-3 overflow-hidden">
+          <div id="checklistProgress" class="w-full bg-[var(--surface-2)] rounded-full h-1.5 mb-3 overflow-hidden">
             <div id="checklistProgressFill" class="bg-emerald-500 h-full rounded-full transition-all duration-300" style="width:0%"></div>
           </div>
           <div id="checklistItems" class="space-y-1 mb-3"></div>
           <div class="flex gap-2">
-            <input type="text" id="newCheckItem" class="flex-1 p-2.5 rounded-lg text-xs bg-white/[0.04] border border-white/[0.08] text-white outline-none focus:border-red-500/50" placeholder="Adicionar item..." onkeypress="if(event.key==='Enter')addChecklistItem()">
-            <button onclick="addChecklistItem()" class="px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-[10px] font-bold text-gray-400 hover:text-white transition">Add</button>
+            <input type="text" id="newCheckItem" class="flex-1 p-2.5 rounded-lg text-xs bg-[var(--surface)] border border-[var(--border-strong)] text-[var(--ink)] outline-none focus:border-red-500/50" placeholder="Adicionar item..." onkeypress="if(event.key==='Enter')addChecklistItem()">
+            <button onclick="addChecklistItem()" class="px-3 py-2 bg-[var(--surface-2)] hover:bg-[var(--surface-3)] rounded-lg text-[10px] font-bold text-[var(--ink-2)] hover:text-[var(--ink)] transition">Add</button>
           </div>
         </div>
 
         <!-- Anexos -->
-        <div class="border-t border-white/5 pt-4">
-          <label class="text-[9px] font-black uppercase opacity-40 mb-2 block tracking-widest flex items-center gap-2">
+        <div class="border-t border-[var(--border)] pt-4">
+          <label class="text-xs font-medium text-[var(--ink-3)] mb-2 block flex items-center gap-2">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
             Anexos
           </label>
           <div id="fileDropZone" class="file-drop-zone" onclick="document.getElementById('actFileInput').click()">
-            <p class="text-[10px] text-gray-500 font-bold">Arraste arquivos aqui ou clique para selecionar</p>
-            <p class="text-[9px] text-gray-600 mt-1">Máx. 500KB por arquivo</p>
+            <p class="text-[10px] text-[var(--ink-3)] font-bold">Arraste arquivos aqui ou clique para selecionar</p>
+            <p class="text-[9px] text-[var(--ink-3)] mt-1">Máx. 500KB por arquivo</p>
           </div>
           <input type="file" id="actFileInput" class="hidden" multiple onchange="handleActFileSelect(this)">
           <div id="filesList" class="flex flex-wrap gap-2 mt-3"></div>
@@ -404,11 +557,11 @@
 
 
       </div>
-      <div class="px-6 py-4 bg-white/[0.02] border-t border-white/5 flex justify-between items-center">
-        <button id="btnDeleteAct" onclick="deleteActivity()" class="text-xs font-bold text-red-500 hidden-view flex items-center gap-1"><i data-lucide="trash-2" class="w-3 h-3"></i> Excluir</button>
+      <div class="px-6 py-4 bg-[var(--surface)] border-t border-[var(--border)] flex justify-between items-center">
+        <button id="btnDeleteAct" onclick="deleteActivity()" class="text-xs font-semibold text-red-400 hidden-view flex items-center gap-1.5 hover:text-red-300 transition"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Excluir</button>
         <div class="flex gap-3 ml-auto">
-          <button onclick="closeModal('modalActivity')" class="px-4 py-2 text-xs font-bold text-gray-400 hover:text-white transition">Cancelar</button>
-          <button onclick="saveActivity()" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-widest rounded-xl shadow-lg active:scale-95 transition-all">Salvar</button>
+          <button onclick="closeModal('modalActivity')" class="px-4 py-2.5 text-xs font-semibold text-[var(--ink-2)] hover:text-[var(--ink)] transition">Cancelar</button>
+          <button onclick="saveActivity()" class="px-6 py-2.5 bg-red-600 hover:bg-red-700 shadow-lg shadow-red-600/25 text-white text-xs font-semibold rounded-xl active:scale-95 transition-all">Salvar</button>
         </div>
       </div>
     </div>
@@ -417,30 +570,30 @@
   <!-- MODAL CATEGORIA -->
   <div id="modalCategory" class="hidden-view fixed inset-0 bg-black/80 backdrop-blur-md z-[150] flex items-end lg:items-center justify-center p-0 lg:p-4">
     <div class="absolute inset-0" onclick="closeModal('modalCategory')"></div>
-    <div class="bg-[#010816] border border-white/10 w-full max-w-md rounded-t-3xl lg:rounded-3xl shadow-2xl z-10 overflow-hidden animate-fadeup">
-      <div class="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
-        <h2 id="catModalTitle" class="text-lg font-black uppercase tracking-widest text-white">Nova Categoria</h2>
-        <button onclick="closeModal('modalCategory')" class="p-2 text-gray-500 hover:text-white bg-white/5 hover:bg-red-600 rounded-xl"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <div class="bg-[var(--bg)] border border-[var(--border-strong)] w-full max-w-md rounded-t-3xl lg:rounded-3xl shadow-2xl z-10 overflow-hidden animate-fadeup">
+      <div class="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between bg-[var(--surface)]">
+        <h2 id="catModalTitle" class="text-lg font-extrabold tracking-tight text-[var(--ink)]">Nova Categoria</h2>
+        <button onclick="closeModal('modalCategory')" class="p-2 text-[var(--ink-3)] hover:text-[var(--ink)] bg-[var(--surface)] hover:bg-red-600 rounded-lg transition"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
       <div class="p-6 space-y-4">
         <input type="hidden" id="catIdInput">
         <div>
-          <label class="text-[9px] font-black uppercase opacity-40 mb-2 block tracking-widest">Nome</label>
+          <label class="text-xs font-medium text-[var(--ink-3)] mb-2 block">Nome</label>
           <input type="text" id="catNameInput" class="w-full p-4 rounded-xl text-sm font-bold">
         </div>
         <div>
-          <label class="text-[9px] font-black uppercase opacity-40 mb-2 block tracking-widest">Cor</label>
+          <label class="text-xs font-medium text-[var(--ink-3)] mb-2 block">Cor</label>
           <div class="flex items-center gap-4">
             <input type="color" id="catColorInput" class="w-12 h-12 rounded-lg cursor-pointer border-none p-0 bg-transparent">
-            <span class="text-[10px] text-gray-500 font-bold">Cor de identificação visual</span>
+            <span class="text-[10px] text-[var(--ink-3)] font-bold">Cor de identificação visual</span>
           </div>
         </div>
       </div>
-      <div class="px-6 py-4 bg-white/[0.02] border-t border-white/5 flex justify-between items-center">
-        <button id="btnDeleteCat" onclick="deleteCategoryFromModal()" class="text-xs font-bold text-red-500 hidden-view flex items-center gap-1"><i data-lucide="trash-2" class="w-3 h-3"></i> Excluir</button>
+      <div class="px-6 py-4 bg-[var(--surface)] border-t border-[var(--border)] flex justify-between items-center">
+        <button id="btnDeleteCat" onclick="deleteCategoryFromModal()" class="text-xs font-semibold text-red-400 hidden-view flex items-center gap-1.5 hover:text-red-300 transition"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Excluir</button>
         <div class="flex gap-3 ml-auto">
-          <button onclick="closeModal('modalCategory')" class="px-4 py-2 text-xs font-bold text-gray-400 hover:text-white transition">Cancelar</button>
-          <button onclick="saveCategory()" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-widest rounded-xl shadow-lg active:scale-95 transition-all">Salvar</button>
+          <button onclick="closeModal('modalCategory')" class="px-4 py-2.5 text-xs font-semibold text-[var(--ink-2)] hover:text-[var(--ink)] transition">Cancelar</button>
+          <button onclick="saveCategory()" class="px-6 py-2.5 bg-red-600 hover:bg-red-700 shadow-lg shadow-red-600/25 text-white text-xs font-semibold rounded-xl active:scale-95 transition-all">Salvar</button>
         </div>
       </div>
     </div>
@@ -448,26 +601,26 @@
 
   <!-- MODAL EDITAR COLUNAS KANBAN -->
   <div id="kanban-col-modal" class="hidden-view fixed inset-0 bg-black/80 backdrop-blur-md z-[160] flex items-center justify-center p-4">
-    <div class="bg-[#010816] border border-white/10 w-full max-w-md rounded-3xl animate-fadeup flex flex-col max-h-[90vh] overflow-hidden shadow-2xl">
-      <div class="flex justify-between items-center p-6 border-b border-white/5 bg-white/[0.02]">
-        <div class="flex items-center gap-3"><i data-lucide="columns" class="text-red-500 w-5 h-5"></i><h2 class="text-base font-black uppercase tracking-widest text-white">Suas Colunas</h2></div>
-        <button onclick="closeKanbanColModal()" class="text-gray-500 hover:text-white p-2 bg-white/5 hover:bg-red-600 rounded-xl transition-all"><i data-lucide="x"></i></button>
+    <div class="bg-[var(--bg)] border border-[var(--border-strong)] w-full max-w-md rounded-3xl animate-fadeup flex flex-col max-h-[90vh] overflow-hidden shadow-2xl">
+      <div class="flex justify-between items-center p-6 border-b border-[var(--border)] bg-[var(--surface)]">
+        <div class="flex items-center gap-3"><i data-lucide="columns" class="text-red-400 w-5 h-5"></i><h2 class="text-base font-extrabold tracking-tight text-[var(--ink)]">Suas colunas</h2></div>
+        <button onclick="closeKanbanColModal()" class="text-[var(--ink-3)] hover:text-[var(--ink)] p-2 bg-[var(--surface)] hover:bg-red-600 rounded-lg transition-all"><i data-lucide="x"></i></button>
       </div>
       <div class="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-3" id="kanban-col-list"></div>
-      <div class="p-6 border-t border-white/5 space-y-3">
+      <div class="p-6 border-t border-[var(--border)] space-y-3">
         <div class="flex gap-2">
           <input type="text" id="kanban-col-new-name" placeholder="Nome da nova coluna..." class="flex-1 p-3 rounded-xl text-sm">
           <select id="kanban-col-new-color" class="p-3 rounded-xl text-sm w-32">
-            <option value="gray" class="bg-[#010816]">Padrão</option>
-            <option value="blue" class="bg-[#010816]">Azul</option>
-            <option value="emerald" class="bg-[#010816]">Verde</option>
-            <option value="yellow" class="bg-[#010816]">Amarelo</option>
-            <option value="red" class="bg-[#010816]">Vermelho</option>
-            <option value="purple" class="bg-[#010816]">Roxo</option>
+            <option value="gray" class="bg-[var(--bg)]">Padrão</option>
+            <option value="blue" class="bg-[var(--bg)]">Azul</option>
+            <option value="emerald" class="bg-[var(--bg)]">Verde</option>
+            <option value="yellow" class="bg-[var(--bg)]">Amarelo</option>
+            <option value="red" class="bg-[var(--bg)]">Vermelho</option>
+            <option value="purple" class="bg-[var(--bg)]">Roxo</option>
           </select>
         </div>
-        <button onclick="addKanbanCol()" class="w-full py-3 bg-white/10 hover:bg-white/20 rounded-xl font-black uppercase text-xs tracking-widest text-white transition-all flex items-center justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Adicionar Coluna</button>
-        <button onclick="saveKanbanCols()" class="w-full py-3 bg-red-600 hover:bg-red-700 rounded-xl font-black uppercase text-xs tracking-widest text-white transition-all flex items-center justify-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> Salvar Layout</button>
+        <button onclick="addKanbanCol()" class="w-full py-3 bg-[var(--surface)] hover:bg-[var(--surface-3)] rounded-xl font-semibold text-sm text-[var(--ink)] transition-all flex items-center justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Adicionar coluna</button>
+        <button onclick="saveKanbanCols()" class="w-full py-3 bg-red-600 hover:bg-red-700 shadow-lg shadow-red-600/25 rounded-xl font-semibold text-sm text-[var(--ink)] transition-all flex items-center justify-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> Salvar layout</button>
       </div>
     </div>
   </div>
@@ -475,29 +628,29 @@
   <!-- MODAL UPLOAD PREVIEW -->
   <div id="uploadModal" class="hidden-view fixed inset-0 bg-black/80 backdrop-blur-md z-[160] flex items-end lg:items-center justify-center p-0 lg:p-4">
     <div class="absolute inset-0" onclick="closeUploadModal()"></div>
-    <div class="bg-[#010816] border border-white/10 w-full max-w-5xl rounded-t-3xl lg:rounded-3xl shadow-2xl z-10 overflow-hidden animate-fadeup flex flex-col max-h-[95vh]">
-      <div class="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+    <div class="bg-[var(--bg)] border border-[var(--border-strong)] w-full max-w-5xl rounded-t-3xl lg:rounded-3xl shadow-2xl z-10 overflow-hidden animate-fadeup flex flex-col max-h-[95vh]">
+      <div class="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between bg-[var(--surface)]">
         <div class="flex items-center gap-3">
-          <i data-lucide="file-spreadsheet" class="text-emerald-500 w-5 h-5"></i>
+          <i data-lucide="file-spreadsheet" class="text-emerald-400 w-5 h-5"></i>
           <div>
-            <h2 class="text-lg font-black uppercase tracking-widest text-white">Preview do Upload</h2>
-            <p id="uploadFileName" class="text-[10px] text-gray-500 font-bold"></p>
+            <h2 class="text-lg font-extrabold tracking-tight text-[var(--ink)]">Preview do upload</h2>
+            <p id="uploadFileName" class="text-xs text-[var(--ink-3)] font-medium mt-0.5"></p>
           </div>
         </div>
-        <button onclick="closeUploadModal()" class="p-2 text-gray-500 hover:text-white bg-white/5 hover:bg-red-600 rounded-xl"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <button onclick="closeUploadModal()" class="p-2 text-[var(--ink-3)] hover:text-[var(--ink)] bg-[var(--surface)] hover:bg-red-600 rounded-lg transition"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
       <div class="flex-1 overflow-auto custom-scrollbar p-6">
         <div id="uploadPreviewTable" class="overflow-x-auto"></div>
       </div>
-      <div class="px-6 py-4 bg-white/[0.02] border-t border-white/5 flex items-center justify-between">
+      <div class="px-6 py-4 bg-[var(--surface)] border-t border-[var(--border)] flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <span id="uploadCount" class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">0 itens</span>
-          <span id="uploadErrors" class="text-[10px] font-bold text-red-500 uppercase tracking-widest hidden"></span>
+          <span id="uploadCount" class="text-xs font-semibold text-[var(--ink-3)]">0 itens</span>
+          <span id="uploadErrors" class="text-xs font-semibold text-red-400 hidden"></span>
         </div>
         <div class="flex gap-3">
-          <button onclick="closeUploadModal()" class="px-4 py-2 text-xs font-bold text-gray-400 hover:text-white transition">Cancelar</button>
-          <button onclick="confirmUpload()" id="btnConfirmUpload" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-widest rounded-xl shadow-lg active:scale-95 transition-all flex items-center gap-2">
-            <i data-lucide="check" class="w-4 h-4"></i> Confirmar Upload
+          <button onclick="closeUploadModal()" class="px-4 py-2.5 text-xs font-semibold text-[var(--ink-2)] hover:text-[var(--ink)] transition">Cancelar</button>
+          <button onclick="confirmUpload()" id="btnConfirmUpload" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/25 text-white text-xs font-semibold rounded-xl active:scale-95 transition-all flex items-center gap-2">
+            <i data-lucide="check" class="w-4 h-4"></i> Confirmar upload
           </button>
         </div>
       </div>
@@ -505,21 +658,25 @@
   </div>
 
   <!-- APP -->
-  <div id="app-view" class="h-screen w-full flex flex-col bg-[#010816]">
+  <div id="app-view" class="h-screen w-full flex flex-col bg-[var(--bg)]">
 
     <!-- HEADER -->
-    <header class="h-20 flex-shrink-0 border-b border-white/5 flex items-center justify-between px-6 lg:px-8 bg-black/20 backdrop-blur-md z-40">
-      <div class="flex items-center gap-4">
+    <header class="app-header h-20 flex-shrink-0 border-b border-[var(--border)] flex items-center justify-between px-6 lg:px-8 bg-[var(--bg-elev)]/80 backdrop-blur-xl z-40">
+      <div class="flex items-center gap-4 flex-1 min-w-0">
         <img src="http://makroengenharia.com.br/wp-content/uploads/2023/03/logo-1.png" class="h-6 hidden md:block" alt="Logo">
-        <div class="h-6 w-[1px] bg-white/10 hidden md:block mx-2"></div>
-        <h2 id="header-title" class="font-black uppercase tracking-[3px] text-xs opacity-60"><i data-lucide="briefcase" class="inline w-4 h-4 mr-2 text-red-500"></i> Board Operacional</h2>
+        <div class="header-divider h-6 w-px bg-[var(--surface-3)] hidden md:block mx-2"></div>
+        <h2 id="header-title" class="text-sm font-semibold text-[var(--ink-2)] hidden lg:block"><i data-lucide="briefcase" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Board Operacional</h2>
+        <div class="header-search-wrap relative flex-1 max-w-md ml-2">
+          <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-3)]"></i>
+          <input type="text" id="header-search" class="w-full py-2 pl-9 pr-3 rounded-full text-xs font-medium" placeholder="Pesquisar atividade..." oninput="handleHeaderSearch(this.value)">
+        </div>
       </div>
       <div class="flex items-center gap-3">
-        <button onclick="document.getElementById('uploadFileInput').click()" class="flex p-3 px-5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white text-[10px] font-black uppercase tracking-widest items-center gap-2 transition-all">
-          <i data-lucide="upload" class="w-4 h-4"></i> Upload
+        <button onclick="toggleTheme()" id="theme-toggle" class="w-10 h-10 rounded-full bg-[var(--surface-2)] hover:bg-[var(--surface-3)] text-[var(--ink)] flex items-center justify-center transition-all" title="Alternar tema">
+          <i data-lucide="sun" class="w-4 h-4"></i>
         </button>
-        <button id="btn-header-add" onclick="openNewActivity()" class="flex p-3 px-6 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[10px] font-black uppercase tracking-widest items-center gap-2 transition-all">
-          <i data-lucide="plus" class="w-4 h-4"></i> Nova Atividade
+        <button id="btn-header-add" onclick="openNewActivity()" class="w-10 h-10 rounded-full bg-red-600 hover:bg-red-700 shadow-lg shadow-red-600/25 text-white flex items-center justify-center transition-all active:scale-95" title="Nova Atividade">
+          <i data-lucide="plus" class="w-5 h-5"></i>
         </button>
         <input type="file" id="uploadFileInput" accept=".csv,.xlsx,.xls" class="hidden" onchange="handleFileUpload(this)">
       </div>
@@ -527,43 +684,43 @@
 
     <div class="flex-1 flex overflow-hidden">
       <!-- SIDEBAR -->
-      <aside id="desktop-sidebar" onmouseenter="expandSidebar()" onmouseleave="collapseSidebar()" class="w-[84px] border-r border-white/5 px-3 py-8 flex flex-col hidden lg:flex bg-black/10 transition-all duration-300 relative flex-shrink-0">
+      <aside id="desktop-sidebar" onmouseenter="expandSidebar()" onmouseleave="collapseSidebar()" class="w-[84px] border-r border-[var(--border)] px-3 py-8 flex flex-col hidden lg:flex bg-[var(--surface)] transition-all duration-300 relative flex-shrink-0">
         <div class="flex items-center justify-between mb-8 h-8 overflow-hidden">
-          <span class="sidebar-text hidden-view text-[10px] font-black uppercase tracking-[3px] text-gray-400">Menu</span>
-          <button onclick="toggleDesktopSidebar()" class="p-2 text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl flex-shrink-0 ml-auto">
+          <span class="sidebar-text hidden-view text-xs font-bold text-[var(--ink-3)]">Menu</span>
+          <button onclick="toggleDesktopSidebar()" class="p-2 text-[var(--ink-3)] hover:text-[var(--ink)] bg-[var(--surface)] hover:bg-[var(--surface-3)] rounded-full flex-shrink-0 ml-auto transition">
             <i data-lucide="chevron-right" id="sidebar-toggle-icon" class="w-4 h-4"></i>
           </button>
         </div>
-        <nav class="flex-1 space-y-2 overflow-y-auto custom-scrollbar pr-2">
+        <nav class="flex-1 space-y-1.5 overflow-y-auto custom-scrollbar pr-2">
           <!-- ATIVIDADES -->
-          <div id="menu-group-atividades" class="border-t border-white/5 pt-4 mt-2">
-            <button onclick="toggleSubMenu('desktop-atividades')" class="w-full p-4 text-gray-400 hover:text-white bg-white/5 rounded-2xl flex items-center justify-between cursor-pointer transition-all">
-              <div class="flex items-center gap-4"><i data-lucide="briefcase" class="w-4 h-4 flex-shrink-0"></i><span class="sidebar-text hidden-view font-bold uppercase text-[10px] tracking-[2px]">Atividades</span></div>
+          <div id="menu-group-atividades" class="border-t border-[var(--border)] pt-4 mt-2">
+            <button onclick="toggleSubMenu('desktop-atividades')" class="w-full px-3 py-2.5 text-[var(--ink-2)] hover:text-[var(--ink)] bg-[var(--surface)] hover:bg-[var(--surface-2)] rounded-full flex items-center justify-between cursor-pointer transition-all">
+              <div class="flex items-center gap-3"><i data-lucide="briefcase" class="w-4 h-4 flex-shrink-0"></i><span class="sidebar-text hidden-view font-semibold text-xs">Atividades</span></div>
               <i data-lucide="chevron-down" id="icon-desktop-atividades" class="w-4 h-4 sidebar-text hidden-view transition-transform duration-300"></i>
             </button>
-            <div id="desktop-atividades" class="space-y-1 mt-2 pl-4">
-              <div onclick="changeView('dashboard')" class="nav-item-dashboard p-3 bg-red-600/10 text-red-500 rounded-xl flex items-center gap-3 cursor-pointer font-bold uppercase text-[9px] tracking-[2px] transition-all"><i data-lucide="layout-dashboard" class="w-3 h-3 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Dashboard</span></div>
-              <div onclick="changeView('kanban')" class="nav-item-kanban p-3 text-gray-500 hover:text-white rounded-xl flex items-center gap-3 cursor-pointer font-bold uppercase text-[9px] tracking-[2px] transition-all"><i data-lucide="columns" class="w-3 h-3 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Kanban</span></div>
-              <div onclick="changeView('calendar')" class="nav-item-calendar p-3 text-gray-500 hover:text-white rounded-xl flex items-center gap-3 cursor-pointer font-bold uppercase text-[9px] tracking-[2px] transition-all"><i data-lucide="calendar-days" class="w-3 h-3 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Calendário</span></div>
-              <div onclick="changeView('categories')" class="nav-item-categories p-3 text-gray-500 hover:text-white rounded-xl flex items-center gap-3 cursor-pointer font-bold uppercase text-[9px] tracking-[2px] transition-all"><i data-lucide="tags" class="w-3 h-3 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Categorias</span></div>
-              <div onclick="changeView('export')" class="nav-item-export p-3 text-gray-500 hover:text-white rounded-xl flex items-center gap-3 cursor-pointer font-bold uppercase text-[9px] tracking-[2px] transition-all"><i data-lucide="download" class="w-3 h-3 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Exportar</span></div>
+            <div id="desktop-atividades" class="space-y-1 mt-2 pl-2">
+              <div onclick="changeView('dashboard')" class="nav-item-dashboard px-3 py-2 text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--surface)] rounded-full flex items-center gap-3 cursor-pointer font-semibold text-xs transition-all"><i data-lucide="layout-dashboard" class="w-3.5 h-3.5 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Dashboard</span></div>
+              <div onclick="changeView('kanban')" class="nav-item-kanban px-3 py-2 bg-red-600/10 text-red-400 rounded-full flex items-center gap-3 cursor-pointer font-semibold text-xs transition-all"><i data-lucide="columns" class="w-3.5 h-3.5 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Kanban</span></div>
+              <div onclick="changeView('calendar')" class="nav-item-calendar px-3 py-2 text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--surface)] rounded-full flex items-center gap-3 cursor-pointer font-semibold text-xs transition-all"><i data-lucide="calendar-days" class="w-3.5 h-3.5 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Calendário</span></div>
+              <div onclick="changeView('gantt')" class="nav-item-gantt px-3 py-2 text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--surface)] rounded-full flex items-center gap-3 cursor-pointer font-semibold text-xs transition-all"><i data-lucide="gantt-chart" class="w-3.5 h-3.5 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Cronograma</span></div>
+              <div onclick="changeView('categories')" class="nav-item-categories px-3 py-2 text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--surface)] rounded-full flex items-center gap-3 cursor-pointer font-semibold text-xs transition-all"><i data-lucide="tags" class="w-3.5 h-3.5 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Categorias</span></div>
             </div>
           </div>
           <!-- NPS -->
-          <div id="menu-group-nps" class="border-t border-white/5 pt-4 mt-2">
-            <div onclick="changeView('nps')" class="nav-item-nps p-4 text-gray-400 hover:text-white hover:bg-white/5 rounded-2xl flex items-center gap-4 cursor-pointer font-bold uppercase text-[10px] tracking-[2px] transition-all">
+          <div id="menu-group-nps" class="border-t border-[var(--border)] pt-4 mt-2">
+            <div onclick="changeView('nps')" class="nav-item-nps px-3 py-2 text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)] rounded-full flex items-center gap-3 cursor-pointer font-semibold text-xs transition-all">
               <i data-lucide="bar-chart-2" class="w-4 h-4 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Painel NPS</span>
             </div>
           </div>
           <!-- CONFIGURAÇÕES -->
-          <div id="menu-group-configuracoes" class="border-t border-white/5 pt-4 mt-2">
-            <div onclick="changeView('configuracoes')" class="nav-item-configuracoes p-4 text-gray-400 hover:text-white hover:bg-white/5 rounded-2xl flex items-center gap-4 cursor-pointer font-bold uppercase text-[10px] tracking-[2px] transition-all relative">
+          <div id="menu-group-configuracoes" class="border-t border-[var(--border)] pt-4 mt-2">
+            <div onclick="changeView('configuracoes')" class="nav-item-configuracoes px-3 py-2 text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)] rounded-full flex items-center gap-3 cursor-pointer font-semibold text-xs transition-all relative">
               <i data-lucide="settings" class="w-4 h-4 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Configurações</span>
               <span id="igConnectedDot" class="ml-auto w-2 h-2 rounded-full hidden"></span>
             </div>
           </div>
         </nav>
-        <button class="p-4 text-gray-500 hover:text-red-500 flex items-center gap-4 transition-all font-black uppercase text-[10px] tracking-[3px] mt-auto" title="Brand Hub" onclick="window.open('http://makroengenharia.com.br/brandhub/','_blank')">
+        <button class="px-3 py-2 text-[var(--ink-3)] hover:text-red-400 hover:bg-[var(--surface)] rounded-full flex items-center gap-3 transition-all font-semibold text-xs mt-auto" title="Brand Hub" onclick="window.open('http://makroengenharia.com.br/brandhub/','_blank')">
           <i data-lucide="external-link" class="w-4 h-4 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Brand Hub</span>
         </button>
       </aside>
@@ -573,24 +730,27 @@
 
         <!-- VIEW: DASHBOARD ATIVIDADES -->
         <div id="dashboard-view" class="hidden-view">
-          <div class="space-y-8">
-            <h2 class="text-xl font-black uppercase tracking-widest text-white mb-6">Atividades</h2>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-              <div class="glass-card p-6 flex flex-col items-center text-center"><span class="text-[10px] font-black uppercase opacity-40 tracking-widest mb-2">Total</span><span id="dash-total" class="text-4xl font-black text-white">0</span></div>
-              <div class="glass-card p-6 flex flex-col items-center text-center border-b-4 border-emerald-500"><span class="text-[10px] font-black uppercase opacity-40 tracking-widest mb-2">Concluídas</span><span id="dash-concluidas" class="text-4xl font-black text-emerald-500">0</span></div>
-              <div class="glass-card p-6 flex flex-col items-center text-center border-b-4 border-blue-500"><span class="text-[10px] font-black uppercase opacity-40 tracking-widest mb-2">Pendentes</span><span id="dash-pendentes" class="text-4xl font-black text-blue-500">0</span></div>
-              <div class="glass-card p-6 flex flex-col items-center text-center border-b-4 border-red-500 bg-red-500/5"><span class="text-[10px] font-black uppercase opacity-40 tracking-widest mb-2">Taxa Sucesso</span><span id="dash-rate" class="text-4xl font-black text-red-500">0%</span></div>
+          <div class="space-y-10">
+            <div>
+              <h2 class="text-2xl font-extrabold tracking-tight text-[var(--ink)]">Atividades</h2>
+              <p class="text-sm text-[var(--ink-3)] mt-1">Visão geral do seu fluxo operacional</p>
             </div>
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
+              <div class="glass-card p-6 flex flex-col gap-1"><span class="text-xs font-semibold text-[var(--ink-3)]">Total</span><span id="dash-total" class="text-4xl font-extrabold text-[var(--ink)] tracking-tight">0</span></div>
+              <div class="glass-card p-6 flex flex-col gap-1 relative overflow-hidden"><span class="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500"></span><span class="text-xs font-semibold text-[var(--ink-3)]">Concluídas</span><span id="dash-concluidas" class="text-4xl font-extrabold text-emerald-400 tracking-tight">0</span></div>
+              <div class="glass-card p-6 flex flex-col gap-1 relative overflow-hidden"><span class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></span><span class="text-xs font-semibold text-[var(--ink-3)]">Pendentes</span><span id="dash-pendentes" class="text-4xl font-extrabold text-blue-400 tracking-tight">0</span></div>
+              <div class="glass-card p-6 flex flex-col gap-1 relative overflow-hidden bg-red-600/[0.06]"><span class="absolute left-0 top-0 bottom-0 w-1 bg-red-500"></span><span class="text-xs font-semibold text-[var(--ink-2)]">Taxa de sucesso</span><span id="dash-rate" class="text-4xl font-extrabold text-red-400 tracking-tight">0%</span></div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div class="lg:col-span-2 glass-card overflow-hidden">
-                <div class="p-6 border-b border-white/5 flex items-center justify-between">
-                  <h3 class="font-black text-xs uppercase tracking-widest text-white">Próximas Atividades</h3>
-                  <button onclick="changeView('kanban')" class="text-[10px] font-bold text-red-500 hover:text-red-400 transition">Ver Fluxo</button>
+                <div class="p-6 border-b border-[var(--border)] flex items-center justify-between">
+                  <h3 class="font-bold text-sm text-[var(--ink)]">Próximas atividades</h3>
+                  <button onclick="changeView('kanban')" class="text-xs font-semibold text-red-400 hover:text-red-300 transition flex items-center gap-1">Ver fluxo <i data-lucide="arrow-right" class="w-3 h-3"></i></button>
                 </div>
-                <div id="dashboardUpcoming" class="divide-y divide-white/5"></div>
+                <div id="dashboardUpcoming" class="divide-y divide-white/[0.04]"></div>
               </div>
               <div class="glass-card p-6">
-                <h3 class="font-black text-xs uppercase tracking-widest text-white mb-4">Canais de Distribuição</h3>
+                <h3 class="font-bold text-sm text-[var(--ink)] mb-5">Canais de distribuição</h3>
                 <div id="dashboardChannels" class="space-y-4"></div>
               </div>
             </div>
@@ -599,35 +759,38 @@
 
         <!-- VIEW: KANBAN -->
         <div id="kanban-view" class="hidden-view h-full">
-          <div class="flex items-center justify-between mb-3 flex-shrink-0">
-            <h2 class="text-xl font-black uppercase tracking-widest text-white">Fluxo de Trabalho</h2>
+          <div class="flex items-center justify-between mb-4 flex-shrink-0">
+            <div>
+              <h2 class="text-2xl font-extrabold tracking-tight text-[var(--ink)]">Fluxo de trabalho</h2>
+              <p class="text-sm text-[var(--ink-3)] mt-1">Arraste cards entre as colunas</p>
+            </div>
             <div class="flex gap-2">
-              <button onclick="openKanbanColModal()" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all"><i data-lucide="settings-2" class="w-3.5 h-3.5"></i> Colunas</button>
+              <button onclick="openKanbanColModal()" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-3)] border border-[var(--border-strong)] text-[var(--ink-2)] hover:text-[var(--ink)] text-xs font-semibold transition-all"><i data-lucide="settings-2" class="w-4 h-4"></i> Colunas</button>
             </div>
           </div>
-          <div id="kanban-filters" class="flex flex-wrap gap-2 mb-4 flex-shrink-0"></div>
-          <div id="kanban-board" class="flex gap-4 md:gap-6 overflow-x-auto custom-scrollbar pb-6 items-start" style="height:calc(100vh - 260px); -webkit-overflow-scrolling:touch;"></div>
+          <div id="kanban-filters" class="flex flex-wrap gap-2 mb-5 flex-shrink-0"></div>
+          <div id="kanban-board" class="flex gap-4 md:gap-5 overflow-x-auto custom-scrollbar pb-6 items-start" style="height:calc(100vh - 280px); -webkit-overflow-scrolling:touch;"></div>
         </div>
 
         <!-- VIEW: CALENDAR -->
         <div id="calendar-view" class="hidden-view">
-          <div class="flex flex-col lg:flex-row gap-8">
+          <div class="flex flex-col lg:flex-row gap-6">
             <div class="flex-1 glass-card overflow-hidden">
-              <div class="p-4 lg:p-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
-                <h2 id="calMonthLabel" class="text-lg lg:text-xl font-black uppercase tracking-widest text-white">Junho 2026</h2>
+              <div class="p-4 lg:p-6 border-b border-[var(--border)] flex items-center justify-between bg-[var(--surface)]">
+                <h2 id="calMonthLabel" class="text-xl font-extrabold tracking-tight text-[var(--ink)]">Junho 2026</h2>
                 <div class="flex items-center gap-2">
-                  <button onclick="changeMonth(-1)" class="p-2 rounded-lg hover:bg-white/10 border border-transparent hover:border-white/10 transition"><i data-lucide="chevron-left" class="w-5 h-5 text-gray-400"></i></button>
-                  <button onclick="goToday()" class="px-3 py-1.5 text-xs font-bold bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition">Hoje</button>
-                  <button onclick="changeMonth(1)" class="p-2 rounded-lg hover:bg-white/10 border border-transparent hover:border-white/10 transition"><i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i></button>
+                  <button onclick="changeMonth(-1)" class="p-2 rounded-lg hover:bg-[var(--surface-3)] border border-transparent hover:border-[var(--border-strong)] transition"><i data-lucide="chevron-left" class="w-5 h-5 text-[var(--ink-2)]"></i></button>
+                  <button onclick="goToday()" class="px-3 py-1.5 text-xs font-semibold bg-[var(--surface)] border border-[var(--border-strong)] rounded-lg hover:bg-[var(--surface-3)] transition">Hoje</button>
+                  <button onclick="changeMonth(1)" class="p-2 rounded-lg hover:bg-[var(--surface-3)] border border-transparent hover:border-[var(--border-strong)] transition"><i data-lucide="chevron-right" class="w-5 h-5 text-[var(--ink-2)]"></i></button>
                 </div>
               </div>
-              <div class="grid grid-cols-7 border-b border-white/5 text-[10px] font-black uppercase tracking-widest text-gray-500 text-center py-2">
+              <div class="grid grid-cols-7 border-b border-[var(--border)] text-[11px] font-bold text-[var(--ink-3)] text-center py-2.5">
                 <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
               </div>
               <div id="calendarGrid" class="grid grid-cols-7 auto-rows-fr"></div>
             </div>
             <div class="w-full lg:w-80 glass-card p-6">
-              <h3 id="dailyTitle" class="font-black text-xs uppercase tracking-widest text-white mb-4">Posts do Dia</h3>
+              <h3 id="dailyTitle" class="font-bold text-sm text-[var(--ink)] mb-4">Posts do Dia</h3>
               <div id="dailyPostsList" class="space-y-3"></div>
             </div>
           </div>
@@ -636,44 +799,49 @@
         <!-- VIEW: CATEGORIES -->
         <div id="categories-view" class="hidden-view">
           <div class="glass-card overflow-hidden">
-            <div class="p-6 border-b border-white/5 flex items-center justify-between">
-              <h3 class="font-black text-xs uppercase tracking-widest text-white">Categorias</h3>
-              <button onclick="openNewCategoryModal()" class="px-4 py-3 bg-red-600 hover:bg-red-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg active:scale-95 transition-all flex items-center gap-2"><i data-lucide="plus" class="w-3 h-3"></i> Nova</button>
+            <div class="p-6 border-b border-[var(--border)] flex items-center justify-between">
+              <div>
+                <h3 class="font-bold text-base text-[var(--ink)]">Categorias</h3>
+                <p class="text-xs text-[var(--ink-3)] mt-0.5">Organize suas atividades por tipo</p>
+              </div>
+              <button onclick="openNewCategoryModal()" class="px-4 py-2.5 bg-red-600 hover:bg-red-700 shadow-lg shadow-red-600/25 text-white text-xs font-semibold rounded-xl transition-all active:scale-95 flex items-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Nova</button>
             </div>
             <div class="overflow-x-auto">
               <table class="w-full text-left">
-                <thead class="bg-white/5 text-gray-500 text-[9px] font-black uppercase tracking-widest"><tr><th class="p-5">Nome</th><th class="p-5 text-right">Ações</th></tr></thead>
-                <tbody id="categoriesTableBody" class="divide-y divide-white/5"></tbody>
+                <thead class="bg-[var(--surface)] text-[var(--ink-3)] text-xs font-semibold"><tr><th class="p-5">Nome</th><th class="p-5 text-right">Ações</th></tr></thead>
+                <tbody id="categoriesTableBody" class="divide-y divide-white/[0.04]"></tbody>
               </table>
             </div>
-          </div>
-        </div>
-
-        <!-- VIEW: EXPORT -->
-        <div id="export-view" class="hidden-view">
-          <div class="max-w-md mx-auto glass-card p-8 text-center">
-            <div class="w-16 h-16 bg-red-600/10 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-6"><i data-lucide="download" class="w-8 h-8"></i></div>
-            <h2 class="text-xl font-black uppercase tracking-widest text-white mb-2">Exportar Dados</h2>
-            <p class="text-xs text-gray-400 mb-8">Baixe o backup completo em formato JSON.</p>
-            <button onclick="exportData()" class="w-full py-4 bg-red-600 hover:bg-red-700 text-white font-black uppercase tracking-widest rounded-xl shadow-lg active:scale-95 transition-all">Baixar Backup</button>
           </div>
         </div>
 
         <!-- VIEW: CONFIGURAÇÕES / INSTAGRAM -->
         <div id="configuracoes-view" class="hidden-view">
           <div class="max-w-4xl mx-auto space-y-6">
+            <div class="glass-card p-6">
+              <h3 class="text-base font-extrabold tracking-tight text-[var(--ink)] mb-1">Dados</h3>
+              <p class="text-sm text-[var(--ink-3)] mb-5">Importe planilhas ou exporte o backup do sistema</p>
+              <div class="flex flex-col sm:flex-row gap-3">
+                <button onclick="document.getElementById('uploadFileInput').click()" class="flex-1 py-3 px-4 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-3)] border border-[var(--border-strong)] text-[var(--ink)] text-sm font-semibold flex items-center justify-center gap-2 transition-all">
+                  <i data-lucide="upload" class="w-4 h-4"></i> Importar planilha
+                </button>
+                <button onclick="exportData()" class="flex-1 py-3 px-4 rounded-xl bg-red-600 hover:bg-red-700 shadow-lg shadow-red-600/25 text-white text-sm font-semibold flex items-center justify-center gap-2 transition-all active:scale-95">
+                  <i data-lucide="download" class="w-4 h-4"></i> Exportar backup
+                </button>
+              </div>
+            </div>
             <div id="instagramHero" class="glass-card overflow-hidden">
               <div id="instagramNotConnected" class="p-8 text-center">
                 <div class="w-20 h-20 mx-auto mb-5 rounded-2xl flex items-center justify-center" style="background:linear-gradient(135deg,#833AB4,#FD1D1D,#F77737,#FCAF45)">
                   <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
                 </div>
-                <h2 class="text-xl font-black text-white mb-2">Conectar Instagram</h2>
-                <p class="text-[13px] text-gray-400 max-w-md mx-auto mb-6">Conecte sua conta do Instagram para acessar análises, descobrir os melhores horários e publicar conteúdo pelo painel.</p>
+                <h2 class="text-xl font-black text-[var(--ink)] mb-2">Conectar Instagram</h2>
+                <p class="text-[13px] text-[var(--ink-2)] max-w-md mx-auto mb-6">Conecte sua conta do Instagram para acessar análises, descobrir os melhores horários e publicar conteúdo pelo painel.</p>
 
                 <!-- PRIMEIRA OPÇÃO: OAuth com Facebook -->
-                <div class="max-w-lg mx-auto mb-6 p-5 rounded-2xl" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06)">
-                  <h3 class="text-[11px] font-black uppercase tracking-widest text-white mb-3">Opção 1: Login com Facebook</h3>
-                  <p class="text-[10px] text-gray-500 mb-4">Você será redirecionado ao Facebook para fazer login e autorizar o acesso. (Requer App Meta)</p>
+                <div class="max-w-lg mx-auto mb-6 p-5 rounded-2xl" style="background:var(--surface);border:1px solid var(--border)">
+                  <h3 class="text-sm font-bold text-[var(--ink)] mb-3">Opção 1: Login com Facebook</h3>
+                  <p class="text-[10px] text-[var(--ink-3)] mb-4">Você será redirecionado ao Facebook para fazer login e autorizar o acesso. (Requer App Meta)</p>
                   <button onclick="startInstagramOAuth()" class="w-full px-8 py-4 rounded-xl font-black uppercase text-xs tracking-widest text-white shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3" style="background:linear-gradient(135deg,#833AB4,#FD1D1D)">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
                     Conectar com Facebook
@@ -685,61 +853,107 @@
                 <!-- SEGUNDA OPÇÃO: Token manual -->
                 <div class="max-w-lg mx-auto">
                   <div class="flex items-center gap-2 mb-3 justify-center">
-                    <span class="h-px flex-1" style="background:rgba(255,255,255,0.06)"></span>
-                    <span class="text-[9px] font-black uppercase tracking-widest text-gray-600">ou</span>
-                    <span class="h-px flex-1" style="background:rgba(255,255,255,0.06)"></span>
+                    <span class="h-px flex-1" style="background:var(--border)"></span>
+                    <span class="text-xs font-medium text-[var(--ink-3)]">ou</span>
+                    <span class="h-px flex-1" style="background:var(--border)"></span>
                   </div>
-                  <button onclick="document.getElementById('igTokenInput').classList.toggle('hidden')" class="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition-all">Usar Token Manual</button>
+                  <button onclick="document.getElementById('igTokenInput').classList.toggle('hidden')" class="px-6 py-3 bg-[var(--surface-2)] hover:bg-[var(--surface-3)] rounded-xl text-xs font-semibold text-[var(--ink)] transition-all">Usar token manual</button>
                   <div id="igTokenInput" class="hidden mt-4">
                     <div class="flex gap-3">
                       <input id="manualIgToken" class="flex-1 p-3 rounded-xl text-sm font-bold" placeholder="EAABwzLix...">
-                      <button onclick="connectInstagramManual()" class="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg transition-all">Conectar</button>
+                      <button onclick="connectInstagramManual()" class="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-lg transition-all">Conectar</button>
                     </div>
-                    <p class="text-[10px] text-gray-500 mt-2">Cole o Access Token gerado no <a href="https://developers.facebook.com/tools/explorer/" target="_blank" class="text-blue-400 hover:text-blue-300">Graph API Explorer</a></p>
+                    <p class="text-[10px] text-[var(--ink-3)] mt-2">Cole o Access Token gerado no <a href="https://developers.facebook.com/tools/explorer/" target="_blank" class="text-blue-400 hover:text-blue-300">Graph API Explorer</a></p>
                   </div>
                 </div>
               </div>
               <div id="instagramConnected" class="hidden">
                 <!-- Profile Header -->
-                <div class="p-6 border-b border-white/5">
+                <div class="p-6 border-b border-[var(--border)]">
                   <div class="flex items-center gap-5">
                     <div id="igProfilePic" class="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-orange-400 flex items-center justify-center text-white font-black text-2xl">?</div>
                     <div class="flex-1">
                       <div class="flex items-center gap-3">
-                        <h2 id="igUsername" class="text-lg font-black text-white">@usuário</h2>
-                        <span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 text-[8px] font-black uppercase tracking-widest rounded border border-emerald-500/30">● Conectado</span>
+                        <h2 id="igUsername" class="text-lg font-black text-[var(--ink)]">@usuário</h2>
+                        <span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold rounded border border-emerald-500/30">● Conectado</span>
                       </div>
-                      <p id="igFullName" class="text-[13px] text-gray-400 mt-0.5">Nome da Conta</p>
+                      <p id="igFullName" class="text-[13px] text-[var(--ink-2)] mt-0.5">Nome da Conta</p>
                     </div>
-                    <button onclick="disconnectInstagram()" class="px-4 py-2 bg-white/10 hover:bg-red-600 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-white transition-all">Desconectar</button>
+                    <button onclick="disconnectInstagram()" class="px-4 py-2 bg-[var(--surface-2)] hover:bg-red-600 rounded-xl text-xs font-semibold text-[var(--ink-2)] hover:text-[var(--ink)] transition-all">Desconectar</button>
                   </div>
                   <div class="grid grid-cols-3 gap-4 mt-6">
-                    <div class="text-center p-4 bg-white/5 rounded-xl"><span id="igPostsCount" class="text-2xl font-black text-white">0</span><p class="text-[9px] font-black uppercase tracking-widest text-gray-500 mt-1">Publicações</p></div>
-                    <div class="text-center p-4 bg-white/5 rounded-xl"><span id="igFollowersCount" class="text-2xl font-black text-white">0</span><p class="text-[9px] font-black uppercase tracking-widest text-gray-500 mt-1">Seguidores</p></div>
-                    <div class="text-center p-4 bg-white/5 rounded-xl"><span id="igFollowingCount" class="text-2xl font-black text-white">0</span><p class="text-[9px] font-black uppercase tracking-widest text-gray-500 mt-1">Seguindo</p></div>
+                    <div class="text-center p-4 bg-[var(--surface)] rounded-xl"><span id="igPostsCount" class="text-2xl font-extrabold text-[var(--ink)]">0</span><p class="text-xs font-medium text-[var(--ink-3)] mt-1">Publicações</p></div>
+                    <div class="text-center p-4 bg-[var(--surface)] rounded-xl"><span id="igFollowersCount" class="text-2xl font-extrabold text-[var(--ink)]">0</span><p class="text-xs font-medium text-[var(--ink-3)] mt-1">Seguidores</p></div>
+                    <div class="text-center p-4 bg-[var(--surface)] rounded-xl"><span id="igFollowingCount" class="text-2xl font-extrabold text-[var(--ink)]">0</span><p class="text-xs font-medium text-[var(--ink-3)] mt-1">Seguindo</p></div>
                   </div>
                 </div>
                 <!-- Best Time to Post -->
-                <div class="p-6 border-b border-white/5">
+                <div class="p-6 border-b border-[var(--border)]">
                   <div class="flex items-center justify-between mb-5">
                     <div>
-                      <h3 class="text-[13px] font-black uppercase tracking-widest text-white">Melhor Horário para Postar</h3>
-                      <p class="text-[10px] text-gray-500 mt-0.5">Baseado nos insights da sua conta</p>
+                      <h3 class="text-sm font-bold text-[var(--ink)]">Melhor horário para postar</h3>
+                      <p class="text-[10px] text-[var(--ink-3)] mt-0.5">Baseado nos insights da sua conta</p>
                     </div>
                     <div class="flex items-center gap-2">
-                      <span class="w-3 h-3 rounded" style="background:#059669"></span><span class="text-[9px] text-gray-500 font-bold">Melhor</span>
-                      <span class="w-3 h-3 rounded" style="background:#D97706"></span><span class="text-[9px] text-gray-500 font-bold">Bom</span>
-                      <span class="w-3 h-3 rounded" style="background:#DC2626"></span><span class="text-[9px] text-gray-500 font-bold">Menor</span>
+                      <span class="w-3 h-3 rounded" style="background:#059669"></span><span class="text-[9px] text-[var(--ink-3)] font-bold">Melhor</span>
+                      <span class="w-3 h-3 rounded" style="background:#D97706"></span><span class="text-[9px] text-[var(--ink-3)] font-bold">Bom</span>
+                      <span class="w-3 h-3 rounded" style="background:#DC2626"></span><span class="text-[9px] text-[var(--ink-3)] font-bold">Menor</span>
                     </div>
                   </div>
                   <div id="bestTimeGrid" class="overflow-x-auto"></div>
                 </div>
                 <!-- Recent Media -->
                 <div class="p-6">
-                  <h3 class="text-[13px] font-black uppercase tracking-widest text-white mb-4">Mídias Recentes</h3>
+                  <h3 class="text-sm font-bold text-[var(--ink)] mb-4">Mídias recentes</h3>
                   <div id="igRecentMedia" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2"></div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW: SEARCH -->
+        <div id="search-view" class="hidden-view">
+          <div class="space-y-6">
+            <div>
+              <h2 class="text-2xl font-extrabold tracking-tight text-[var(--ink)]">Pesquisar</h2>
+              <p class="text-sm text-[var(--ink-3)] mt-1">Encontre atividades por título, descrição ou categoria</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="flex-1 relative">
+                <input type="text" id="searchInput" class="w-full p-4 pl-12 rounded-xl text-sm font-medium" placeholder="Buscar por título, descrição ou categoria..." oninput="renderSearch()">
+                <i data-lucide="search" class="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-[var(--ink-3)]"></i>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2" id="searchFilters">
+              <button onclick="state.searchFilter='all';updateSearchFilterButtons();renderSearch()" id="searchFilterAll" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all bg-red-600/10 text-red-400">Todos</button>
+              <button onclick="state.searchFilter='afazer';updateSearchFilterButtons();renderSearch()" id="searchFilterAfazer" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all text-[var(--ink-3)] border border-[var(--border-strong)]">A Fazer</button>
+              <button onclick="state.searchFilter='execucao';updateSearchFilterButtons();renderSearch()" id="searchFilterExecucao" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all text-[var(--ink-3)] border border-[var(--border-strong)]">Execução</button>
+              <button onclick="state.searchFilter='espera';updateSearchFilterButtons();renderSearch()" id="searchFilterEspera" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all text-[var(--ink-3)] border border-[var(--border-strong)]">Espera</button>
+              <button onclick="state.searchFilter='validando';updateSearchFilterButtons();renderSearch()" id="searchFilterValidando" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all text-[var(--ink-3)] border border-[var(--border-strong)]">Validando</button>
+              <button onclick="state.searchFilter='concluido';updateSearchFilterButtons();renderSearch()" id="searchFilterConcluido" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all text-[var(--ink-3)] border border-[var(--border-strong)]">Concluído</button>
+            </div>
+            <div id="searchResultsCount" class="text-xs font-medium text-[var(--ink-3)]"></div>
+            <div id="searchResultsList" class="space-y-3"></div>
+          </div>
+        </div>
+
+        <!-- VIEW: GANTT -->
+        <div id="gantt-view" class="hidden-view h-full">
+          <div class="flex flex-col h-full">
+            <div class="flex items-start justify-between mb-4 flex-shrink-0">
+              <div>
+                <h2 class="text-2xl font-extrabold tracking-tight text-[var(--ink)]">Cronograma</h2>
+                <p class="text-sm text-[var(--ink-3)] mt-1">Visualize prazos e duração das atividades</p>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="moveGantt(-7)" class="p-2 rounded-lg hover:bg-[var(--surface-3)] border border-transparent hover:border-[var(--border-strong)] transition"><i data-lucide="chevron-left" class="w-5 h-5 text-[var(--ink-2)]"></i></button>
+                <button onclick="moveGantt(7)" class="p-2 rounded-lg hover:bg-[var(--surface-3)] border border-transparent hover:border-[var(--border-strong)] transition"><i data-lucide="chevron-right" class="w-5 h-5 text-[var(--ink-2)]"></i></button>
+              </div>
+            </div>
+            <div id="gantt-filters" class="flex flex-wrap gap-2 mb-4 flex-shrink-0"></div>
+            <div class="glass-card flex-1 overflow-hidden flex flex-col p-5">
+              <div id="gantt-container" class="overflow-auto custom-scrollbar flex-1"></div>
             </div>
           </div>
         </div>
@@ -756,20 +970,21 @@
   <!-- MOBILE BOTTOM NAV -->
   <nav id="mobile-bottom-nav" class="fixed bottom-0 left-0 right-0 z-[90] flex items-end justify-center px-4" style="padding-bottom: max(14px, env(safe-area-inset-bottom));">
     <div class="mob-nav-bar">
-      <button class="mob-tab nav-item-dashboard active" onclick="changeView('dashboard')">
+      <button class="mob-tab nav-item-dashboard" onclick="changeView('dashboard')">
         <div class="mob-tab-bubble"><i data-lucide="layout-dashboard" class="w-5 h-5"></i></div>
         <span class="mob-tab-label">Painel</span>
       </button>
-      <button class="mob-tab nav-item-kanban" onclick="changeView('kanban')">
+      <button class="mob-tab nav-item-kanban active" onclick="changeView('kanban')">
         <div class="mob-tab-bubble"><i data-lucide="columns" class="w-5 h-5"></i></div>
         <span class="mob-tab-label">Board</span>
-      </button>
-      <button class="mob-tab mob-tab-add" onclick="openNewActivity()">
-        <div class="mob-tab-bubble"><i data-lucide="plus" class="w-6 h-6"></i></div>
       </button>
       <button class="mob-tab nav-item-calendar" onclick="changeView('calendar')">
         <div class="mob-tab-bubble"><i data-lucide="calendar-days" class="w-5 h-5"></i></div>
         <span class="mob-tab-label">Agenda</span>
+      </button>
+      <button class="mob-tab nav-item-gantt" onclick="changeView('gantt')">
+        <div class="mob-tab-bubble"><i data-lucide="gantt-chart" class="w-5 h-5"></i></div>
+        <span class="mob-tab-label">Gantt</span>
       </button>
       <button class="mob-tab nav-item-nps" onclick="changeView('nps')">
         <div class="mob-tab-bubble"><i data-lucide="bar-chart-2" class="w-5 h-5"></i></div>
@@ -807,7 +1022,7 @@
     // ── ATIVIDADES ──────────────────────────────────────────────────────
     const STAGES = ['afazer', 'execucao', 'espera', 'validando', 'concluido'];
     const STAGE_LABELS = { afazer: 'A Fazer', execucao: 'Em Execução', espera: 'Em Espera', validando: 'Validando', concluido: 'Concluído' };
-    const STAGE_COLORS = { afazer: 'text-gray-400 bg-white/5', execucao: 'text-blue-400 bg-blue-500/10', espera: 'text-amber-400 bg-amber-500/10', validando: 'text-purple-400 bg-purple-500/10', concluido: 'text-emerald-400 bg-emerald-500/10' };
+    const STAGE_COLORS = { afazer: 'text-[var(--ink-2)] bg-[var(--surface-2)]', execucao: 'text-blue-400 bg-blue-500/10', espera: 'text-amber-400 bg-amber-500/10', validando: 'text-purple-400 bg-purple-500/10', concluido: 'text-emerald-400 bg-emerald-500/10' };
     const CHANNELS = [
       { id: 'ig', label: 'IG', color: '#E1306C' }, { id: 'fb', label: 'FB', color: '#1877F2' },
       { id: 'li', label: 'LI', color: '#0A66C2' }, { id: 'site', label: 'Site', color: '#3B82F6' },
@@ -820,7 +1035,7 @@
       return STAGE_MIGRATION[stage] || stage;
     }
 
-    let state = { activities: [], categories: [], calDate: new Date(), activityIdCounter: 1, categoryIdCounter: 1, kanbanFilter: 'all' };
+    let state = { activities: [], categories: [], calDate: new Date(), activityIdCounter: 1, categoryIdCounter: 1, kanbanFilter: 'all', searchFilter: 'all', ganttFilter: 'all', ganttStart: new Date() };
 
     window.initActivities = async () => {
       try {
@@ -867,7 +1082,7 @@
       renderCategories();
       refreshCategoryOptions();
       document.getElementById('actChannels').innerHTML = CHANNELS.map(ch => `
-        <label class="flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-lg cursor-pointer text-[10px] font-bold hover:bg-white/10 transition">
+        <label class="flex items-center gap-2 px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-strong)] rounded-lg cursor-pointer text-[10px] font-bold hover:bg-[var(--surface-3)] transition">
           <input type="checkbox" value="${ch.id}" class="hub-check"> ${ch.label}
         </label>
       `).join('');
@@ -884,21 +1099,21 @@
       const upcoming = [...state.activities].filter(a => a.stage !== 'concluido').sort((a, b) => new Date(a.dataVencimento) - new Date(b.dataVencimento)).slice(0, 5);
       document.getElementById('dashboardUpcoming').innerHTML = upcoming.length ? upcoming.map(a => {
         const cat = state.categories.find(c => c.id == a.categoria) || { nome: 'Geral', cor: '#cbd5e1' };
-        return `<div class="p-4 hover:bg-white/5 transition-all cursor-pointer flex items-center justify-between" onclick="openEditActivity(${a.id})">
-          <div class="flex items-center gap-3 flex-1 min-w-0"><div class="w-1.5 h-6 rounded-full flex-shrink-0" style="background-color:${cat.cor}"></div>
-          <div class="min-w-0 flex-1"><h4 class="text-xs font-bold text-white truncate">${esc(a.titulo)}</h4>
-          <div class="flex items-center gap-2 mt-1"><div class="progress-bar-track flex-1"><div class="progress-bar-fill" style="width:${a.progress || 0}%; background:${getProgressColor(a.progress || 0)}"></div></div>
-          <span class="text-[9px] font-bold text-gray-500">${a.progress || 0}%</span></div>
-          <p class="text-[10px] text-gray-500 mt-0.5">Entrega: ${fmtDate(a.dataVencimento)}${a.dataPostagem ? ` · Post: ${fmtDate(a.dataPostagem)}` : ''}</p></div></div>
-          <span class="text-[9px] font-black uppercase ${STAGE_COLORS[a.stage]} px-2 py-1 rounded-full flex-shrink-0 ml-3">${STAGE_LABELS[a.stage]}</span>
+        return `<div class="p-5 hover:bg-[var(--surface-2)] transition-all cursor-pointer flex items-center justify-between gap-4" onclick="openEditActivity(${a.id})">
+          <div class="flex items-center gap-4 flex-1 min-w-0"><div class="w-1 h-10 rounded-full flex-shrink-0" style="background-color:${cat.cor}"></div>
+          <div class="min-w-0 flex-1"><h4 class="text-sm font-semibold text-[var(--ink)] truncate">${esc(a.titulo)}</h4>
+          <div class="flex items-center gap-3 mt-2"><div class="progress-bar-track flex-1 max-w-[180px]"><div class="progress-bar-fill" style="width:${a.progress || 0}%; background:${getProgressColor(a.progress || 0)}"></div></div>
+          <span class="text-[11px] font-semibold text-[var(--ink-3)]">${a.progress || 0}%</span></div>
+          <p class="text-[11px] text-[var(--ink-3)] mt-1.5 flex items-center gap-1.5"><i data-lucide="calendar" class="w-3 h-3"></i> ${fmtDate(a.dataVencimento)}${a.dataPostagem ? ` · <span class="text-blue-400/70">Post: ${fmtDate(a.dataPostagem)}</span>` : ''}</p></div></div>
+          <span class="text-[10px] font-bold uppercase ${STAGE_COLORS[a.stage]} px-2.5 py-1 rounded-full flex-shrink-0">${STAGE_LABELS[a.stage]}</span>
         </div>`;
-      }).join('') : '<div class="p-8 text-center text-xs text-gray-500 font-bold uppercase tracking-widest">Nenhuma pendência.</div>';
+      }).join('') : '<div class="p-10 text-center text-sm text-[var(--ink-3)]">Nenhuma pendência. Tudo em dia.</div>';
 
       document.getElementById('dashboardChannels').innerHTML = CHANNELS.map(ch => {
         const count = state.activities.filter(a => a.canais && a.canais.includes(ch.id)).length;
         const pct = total ? Math.round((count / total) * 100) : 0;
-        return `<div><div class="flex justify-between text-[10px] font-bold text-gray-400 mb-1"><span>${ch.label}</span><span>${count}</span></div>
-        <div class="w-full bg-white/5 h-1.5 rounded-full"><div class="h-full rounded-full transition-all duration-700" style="width:${pct}%; background-color:${ch.color}"></div></div></div>`;
+        return `<div><div class="flex justify-between text-xs font-medium text-[var(--ink-2)] mb-1.5"><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:${ch.color}"></span>${ch.label}</span><span class="text-[var(--ink-3)]">${count}</span></div>
+        <div class="w-full bg-[var(--surface-2)] h-1.5 rounded-full overflow-hidden"><div class="h-full rounded-full transition-all duration-700" style="width:${pct}%; background-color:${ch.color}"></div></div></div>`;
       }).join('');
     }
 
@@ -916,11 +1131,11 @@
       const isConteudo = (cat.nome || '').toLowerCase().includes('conteúdo') || (cat.nome || '').toLowerCase().includes('conteudo');
       const parts = [];
       if (type === 'admin') {
-        if (activity.notaFiscal) parts.push(`<span class="text-[9px] text-gray-400"><span class="text-gray-600">NF:</span> ${esc(activity.notaFiscal)}</span>`);
+        if (activity.notaFiscal) parts.push(`<span class="text-[9px] text-[var(--ink-2)]"><span class="text-[var(--ink-3)]">NF:</span> ${esc(activity.notaFiscal)}</span>`);
       }
       if (isConteudo) {
         if (activity.canais && activity.canais.length) {
-          const chTags = activity.canais.map(chId => { const ch = CHANNELS.find(c => c.id === chId); return ch ? `<span class="px-1.5 py-0.5 rounded text-[7px] font-bold text-white" style="background:${ch.color}">${ch.label}</span>` : ''; }).join(' ');
+          const chTags = activity.canais.map(chId => { const ch = CHANNELS.find(c => c.id === chId); return ch ? `<span class="px-1.5 py-0.5 rounded text-[7px] font-bold text-[var(--ink)]" style="background:${ch.color}">${ch.label}</span>` : ''; }).join(' ');
           parts.push(chTags);
         }
       }
@@ -946,8 +1161,11 @@
       if (!container) return;
       const cats = [{ id: 'all', nome: 'Todos', cor: '#fff' }, ...state.categories];
       container.innerHTML = cats.map(c => {
-        const isActive = state.kanbanFilter === String(c.id);
-        return `<button onclick="setKanbanFilter('${c.id}')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${isActive ? 'text-white' : 'text-gray-500 hover:text-gray-300 bg-white/5 hover:bg-white/10'}" style="${isActive ? `background:${c.cor}22; border:1px solid ${c.cor}55; color:${c.cor}` : 'border:1px solid transparent'}">
+        const isActive = String(state.kanbanFilter) === String(c.id);
+        const base = 'px-3.5 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 border';
+        const active = 'bg-[var(--surface-3)] border-[var(--border-strong)] text-[var(--ink)]';
+        const inactive = 'bg-[var(--surface)] border-transparent text-[var(--ink-3)] hover:text-[var(--ink-2)] hover:bg-[var(--surface-2)]';
+        return `<button onclick="setKanbanFilter('${c.id}')" class="${base} ${isActive ? active : inactive}">
           ${c.id !== 'all' ? `<span class="w-2 h-2 rounded-full" style="background:${c.cor}"></span>` : ''}
           ${c.nome}
         </button>`;
@@ -972,7 +1190,7 @@
         : state.activities.filter(a => String(a.categoria) === String(state.kanbanFilter));
 
       const colColors = {
-        gray: { border: 'border-white/5', bg: 'bg-black/20', text: 'text-gray-300', badge: 'bg-white/10 text-gray-400', dot: 'bg-gray-400' },
+        gray: { border: 'border-[var(--border)]', bg: 'bg-[var(--surface)]', text: 'text-[var(--ink-2)]', badge: 'bg-[var(--surface-3)] text-[var(--ink-2)]', dot: 'bg-[var(--ink-3)]' },
         blue: { border: 'border-blue-500/20', bg: 'bg-blue-500/5', text: 'text-blue-400', badge: 'bg-blue-500/20 text-blue-400', dot: 'bg-blue-400' },
         emerald: { border: 'border-emerald-500/20', bg: 'bg-emerald-500/5', text: 'text-emerald-400', badge: 'bg-emerald-500/20 text-emerald-400', dot: 'bg-emerald-400' },
         yellow: { border: 'border-yellow-500/20', bg: 'bg-yellow-500/5', text: 'text-yellow-400', badge: 'bg-yellow-500/20 text-yellow-400', dot: 'bg-yellow-400' },
@@ -994,39 +1212,39 @@
           const checkDone = (a.checklist || []).filter(i => i.done).length;
           const checkTotal = (a.checklist || []).length;
           const prog = a.progress || 0;
-          return `<div id="card-${a.id}" draggable="true" ondragstart="handleDragStart(event,'${a.id}')" ondragend="handleDragEnd('${a.id}')" onclick="openEditActivity(${a.id})" class="bg-[#010816] p-4 rounded-xl border border-white/10 hover:border-white/20 group cursor-pointer animate-fadeup shadow-lg select-none">
-            <div class="pointer-events-none">
-              <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider mb-2" style="background:${cat.cor}18; color:${cat.cor}; border:1px solid ${cat.cor}33">
+          return `<div id="card-${a.id}" draggable="true" ondragstart="handleDragStart(event,'${a.id}')" ondragend="handleDragEnd('${a.id}')" onclick="openEditActivity(${a.id})" class="bg-[var(--bg-elev)] p-4 rounded-[14px] border border-[var(--border-strong)] hover:border-white/[0.16] group cursor-pointer animate-fadeup transition-all select-none">
+            <div class="pointer-events-none flex items-center justify-between mb-2.5">
+              <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold" style="background:${cat.cor}1a; color:${cat.cor}; border:1px solid ${cat.cor}33">
                 <span class="w-1.5 h-1.5 rounded-full" style="background:${cat.cor}"></span>${cat.nome}
               </span>
+              ${checkTotal > 0 ? `<span class="text-[10px] font-bold ${checkDone === checkTotal && checkTotal > 0 ? 'text-emerald-400' : 'text-[var(--ink-3)]'} flex items-center gap-1">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                ${checkDone}/${checkTotal}
+              </span>` : ''}
             </div>
-            <h4 class="text-xs font-bold ${isLast ? 'line-through opacity-50' : 'text-gray-100'} mb-2 pointer-events-none">${esc(a.titulo)}</h4>
-            ${extraInfo ? `<div class="pointer-events-none mb-2">${extraInfo}</div>` : ''}
-            <div class="pointer-events-none mb-2">
-              <div class="flex items-center justify-between mb-1">
-                <span class="text-[9px] font-bold text-gray-500">${prog}%</span>
-                ${checkTotal > 0 ? `<span class="text-[9px] font-bold ${checkDone === checkTotal && checkTotal > 0 ? 'text-emerald-400' : 'text-gray-500'}">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="inline -mt-0.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                  ${checkDone}/${checkTotal}
-                </span>` : ''}
+            <h4 class="text-[13px] font-semibold ${isLast ? 'line-through opacity-50 text-gray-100' : 'text-gray-100'} mb-3 pointer-events-none leading-snug">${esc(a.titulo)}</h4>
+            ${extraInfo ? `<div class="pointer-events-none mb-3">${extraInfo}</div>` : ''}
+            <div class="pointer-events-none mb-3">
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[10px] font-semibold text-[var(--ink-3)]">${prog}%</span>
               </div>
               <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${prog}%; background:${getProgressColor(prog)}"></div></div>
             </div>
             <div class="flex items-center justify-between pointer-events-none">
               <div class="flex flex-col gap-0.5">
-                <span class="text-[9px] text-gray-500 font-medium">Entrega: ${fmtDate(a.dataVencimento)}</span>
-                ${a.dataPostagem ? `<span class="text-[9px] text-blue-400/60 font-medium">Post: ${fmtDate(a.dataPostagem)}</span>` : ''}
+                <span class="text-[10px] text-[var(--ink-3)] font-medium flex items-center gap-1"><i data-lucide="calendar" class="w-3 h-3"></i> ${fmtDate(a.dataVencimento)}</span>
+                ${a.dataPostagem ? `<span class="text-[10px] text-blue-400/70 font-medium flex items-center gap-1"><i data-lucide="send" class="w-3 h-3"></i> ${fmtDate(a.dataPostagem)}</span>` : ''}
               </div>
-              <div class="flex -space-x-1">${(a.canais || []).map(chId => { const ch = CHANNELS.find(c => c.id === chId); return ch ? `<div class="w-4 h-4 rounded-full border border-[#010816] text-[7px] text-white font-bold flex items-center justify-center" style="background-color:${ch.color}">${ch.label.charAt(0)}</div>` : ''; }).join('')}</div>
+              <div class="flex -space-x-1.5">${(a.canais || []).map(chId => { const ch = CHANNELS.find(c => c.id === chId);                     return ch ? `<div class="w-5 h-5 rounded-full border-2 border-[var(--bg)] text-[8px] text-[var(--ink)] font-bold flex items-center justify-center" style="background-color:${ch.color}">${ch.label.charAt(0)}</div>` : ''; }).join('')}</div>
             </div>
           </div>`;
         }).join('');
 
         const domId = 'kc_' + col.name.replace(/\s+/g, '_');
-        return `<div class="flex-1 min-w-[190px] max-w-[260px] flex flex-col max-h-full bg-white/[0.02] rounded-2xl border border-white/5">
-          <div class="p-4 border-b ${c.border} flex justify-between items-center ${c.bg} rounded-t-2xl">
-            <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full ${c.dot}"></span><h3 class="font-black text-xs uppercase tracking-widest ${c.text}">${col.name}</h3></div>
-            <span class="text-[10px] font-black ${c.badge} px-2 py-0.5 rounded">${acts.length}</span>
+        return `<div class="flex-1 min-w-[200px] max-w-[280px] flex flex-col max-h-full bg-[var(--surface)] rounded-[16px] border border-[var(--border)]">
+          <div class="p-4 border-b ${c.border} flex justify-between items-center ${c.bg} rounded-t-[16px]">
+            <div class="flex items-center gap-2.5"><span class="w-2 h-2 rounded-full ${c.dot}"></span><h3 class="font-bold text-[13px] ${c.text}">${col.name}</h3></div>
+            <span class="text-[11px] font-bold ${c.badge} px-2 py-0.5 rounded-md min-w-[24px] text-center">${acts.length}</span>
           </div>
           <div id="${domId}" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event,'${col.name}')" class="p-3 space-y-3 overflow-y-auto flex-1 custom-scrollbar min-h-[150px]">${cards}</div>
         </div>`;
@@ -1057,7 +1275,7 @@
         }
       } catch {}
 
-      for (let i = first - 1; i >= 0; i--) grid.appendChild(Object.assign(document.createElement('div'), { className: 'day-cell other-month p-2 border-b border-r border-white/5 text-gray-600 text-[10px]', textContent: prevLast - i }));
+      for (let i = first - 1; i >= 0; i--) grid.appendChild(Object.assign(document.createElement('div'), { className: 'day-cell other-month p-2 border-b border-r border-[var(--border)] text-[var(--ink-3)] text-[10px]', textContent: prevLast - i }));
       const today = new Date().toISOString().split('T')[0];
       const conteudoCat = state.categories.find(c => c.nome === 'Conteúdo');
       for (let d = 1; d <= last; d++) {
@@ -1067,14 +1285,14 @@
         const dayNames = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
         const dateObj = new Date(y, m, d);
         const isBestDay = bestDays.includes(dayNames[dateObj.getDay()]);
-        cell.className = `day-cell p-2 border-b border-r border-white/5 relative cursor-pointer ${dateStr === today ? 'bg-red-600/10' : isBestDay ? 'bg-emerald-500/5' : 'bg-transparent'}`;
+        cell.className = `day-cell p-2 border-b border-r border-[var(--border)] relative cursor-pointer ${dateStr === today ? 'bg-red-600/10' : isBestDay ? 'bg-emerald-500/5' : 'bg-transparent'}`;
         cell.onclick = () => showDailyPosts(dateStr);
-        cell.innerHTML = `<span class="text-[10px] font-bold ${dateStr === today ? 'text-red-500' : 'text-gray-400'}">${d}</span>
+        cell.innerHTML = `<span class="text-[10px] font-bold ${dateStr === today ? 'text-red-500' : 'text-[var(--ink-2)]'}">${d}</span>
           <div class="flex flex-col gap-0.5 mt-1">${dayActs.slice(0, 3).map(() => `<div class="h-1 rounded-full bg-red-500 w-full"></div>`).join('')}</div>`;
         grid.appendChild(cell);
       }
       const total = grid.children.length;
-      for (let i = 1; i <= (42 - total); i++) grid.appendChild(Object.assign(document.createElement('div'), { className: 'day-cell other-month p-2 border-b border-r border-white/5 text-gray-600 text-[10px]', textContent: i }));
+      for (let i = 1; i <= (42 - total); i++) grid.appendChild(Object.assign(document.createElement('div'), { className: 'day-cell other-month p-2 border-b border-r border-[var(--border)] text-[var(--ink-3)] text-[10px]', textContent: i }));
       showDailyPosts(today);
     }
 
@@ -1113,28 +1331,28 @@
         const stLabel = POST_STATUS[st] || 'Rascunho';
         const stColor = POST_STATUS_COLORS[st] || POST_STATUS_COLORS.rascunho;
         const canShowPublish = st === 'rascunho' || st === 'agendado';
-        return `<div class="p-3 bg-white/5 rounded-xl border border-white/5 cursor-pointer hover:bg-white/10 transition" onclick="openEditActivity(${a.id})">
-          <h4 class="text-xs font-bold text-white">${esc(a.titulo)}</h4>
-          <div class="flex justify-between items-center mt-2 text-[8px] font-black uppercase text-gray-500">
+        return `<div class="p-3 bg-[var(--surface-2)] rounded-xl border border-[var(--border)] cursor-pointer hover:bg-[var(--surface-3)] transition" onclick="openEditActivity(${a.id})">
+          <h4 class="text-xs font-bold text-[var(--ink)]">${esc(a.titulo)}</h4>
+          <div class="flex justify-between items-center mt-2 text-[8px] font-black uppercase text-[var(--ink-3)]">
             <span>${STAGE_LABELS[a.stage]}</span>
             <span class="px-1.5 py-0.5 rounded ${stColor}">${stLabel}</span>
           </div>
           <div class="flex items-center gap-2 mt-2 flex-wrap">
-            ${(a.canais || []).map(chId => { const ch = CHANNELS.find(c => c.id === chId); return ch ? `<span class="px-1.5 py-0.5 rounded text-[7px] font-bold text-white" style="background:${ch.color}">${ch.label}</span>` : ''; }).join('')}
+            ${(a.canais || []).map(chId => { const ch = CHANNELS.find(c => c.id === chId); return ch ? `<span class="px-1.5 py-0.5 rounded text-[7px] font-bold text-[var(--ink)]" style="background:${ch.color}">${ch.label}</span>` : ''; }).join('')}
           </div>
-          ${canShowPublish ? `<button onclick="event.stopPropagation();publishNow(${a.id})" class="mt-2 w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-[9px] font-black uppercase tracking-widest rounded-lg transition-all shadow-lg flex items-center justify-center gap-1">
+          ${canShowPublish ? `<button onclick="event.stopPropagation();publishNow(${a.id})" class="mt-2 w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-[11px] font-semibold rounded-lg transition-all shadow-lg flex items-center justify-center gap-1">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Publicar no Instagram
           </button>` : ''}
         </div>`;
-      }).join('') : '<div class="text-[10px] text-gray-500 italic text-center py-4 font-bold uppercase tracking-widest">Nenhum post agendado.</div>');
+      }).join('') : '<div class="text-[10px] text-[var(--ink-3)] italic text-center py-4 font-bold uppercase tracking-widest">Nenhum post agendado.</div>');
     }
 
     function renderCategories() {
-      document.getElementById('categoriesTableBody').innerHTML = state.categories.map(c => `<tr class="hover:bg-white/5 transition-colors">
-        <td class="p-5"><div class="flex items-center gap-3"><div class="w-3 h-3 rounded-full" style="background:${c.cor}"></div><span class="text-xs font-bold text-white">${esc(c.nome)}</span></div></td>
+      document.getElementById('categoriesTableBody').innerHTML = state.categories.map(c => `<tr class="hover:bg-[var(--surface-2)] transition-colors">
+        <td class="p-5"><div class="flex items-center gap-3"><div class="w-3 h-3 rounded-full" style="background:${c.cor}"></div><span class="text-sm font-semibold text-[var(--ink)]">${esc(c.nome)}</span></div></td>
         <td class="p-5 text-right whitespace-nowrap">
-          <button onclick="openEditCategory(${c.id})" class="text-gray-500 hover:text-blue-400 p-2 bg-white/5 hover:bg-blue-500/10 rounded-lg transition mr-1"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-          <button onclick="deleteCategory(${c.id})" class="text-gray-500 hover:text-red-500 p-2 bg-white/5 hover:bg-red-500/10 rounded-lg transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+          <button onclick="openEditCategory(${c.id})" class="text-[var(--ink-3)] hover:text-blue-400 p-2 bg-[var(--surface)] hover:bg-blue-500/10 rounded-lg transition mr-1"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+          <button onclick="deleteCategory(${c.id})" class="text-[var(--ink-3)] hover:text-red-400 p-2 bg-[var(--surface)] hover:bg-red-500/10 rounded-lg transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
         </td>
       </tr>`).join('');
       lucide.createIcons();
@@ -1502,15 +1720,15 @@
       const list = document.getElementById('kanban-col-list');
       if (!editingCols.length) { list.innerHTML = `<p class="text-xs text-center opacity-30 font-bold uppercase">Nenhuma coluna.</p>`; return; }
       list.innerHTML = editingCols.map((col, i) => `
-        <div class="flex items-center gap-3 p-3 bg-white/[0.03] rounded-xl border border-white/5 group" draggable="true"
+        <div class="flex items-center gap-3 p-3 bg-[var(--surface-2)] rounded-xl border border-[var(--border)] group" draggable="true"
              ondragstart="window._colDragIdx=${i}" ondragover="event.preventDefault()" ondrop="dropKanbanCol(event,${i})">
-          <div class="cursor-grab text-gray-600 hover:text-gray-400 flex-shrink-0"><i data-lucide="grip-vertical" class="w-4 h-4"></i></div>
+          <div class="cursor-grab text-[var(--ink-3)] hover:text-[var(--ink-2)] flex-shrink-0"><i data-lucide="grip-vertical" class="w-4 h-4"></i></div>
           <span class="w-3 h-3 rounded-full flex-shrink-0 ${colorDots[col.color] || 'bg-gray-400'}"></span>
-          <input type="text" value="${col.name}" class="flex-1 bg-transparent border-none outline-none text-sm font-bold text-white p-0" oninput="editingCols[${i}].name=this.value">
-          <select class="bg-transparent border-none outline-none text-[10px] font-bold text-gray-400 cursor-pointer" onchange="editingCols[${i}].color=this.value;renderKanbanColList()">
-            ${['gray', 'blue', 'emerald', 'yellow', 'red', 'purple'].map(c => `<option value="${c}" class="bg-[#010816]" ${col.color === c ? 'selected' : ''}>${colorLabels[c]}</option>`).join('')}
+          <input type="text" value="${col.name}" class="flex-1 bg-transparent border-none outline-none text-sm font-bold text-[var(--ink)] p-0" oninput="editingCols[${i}].name=this.value">
+          <select class="bg-transparent border-none outline-none text-[10px] font-bold text-[var(--ink-2)] cursor-pointer" onchange="editingCols[${i}].color=this.value;renderKanbanColList()">
+            ${['gray', 'blue', 'emerald', 'yellow', 'red', 'purple'].map(c => `<option value="${c}" class="bg-[var(--bg)]" ${col.color === c ? 'selected' : ''}>${colorLabels[c]}</option>`).join('')}
           </select>
-          ${editingCols.length > 1 ? `<button onclick="editingCols.splice(${i},1);renderKanbanColList()" class="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-red-500 transition-all flex-shrink-0"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : '<span class="w-4"></span>'}
+          ${editingCols.length > 1 ? `<button onclick="editingCols.splice(${i},1);renderKanbanColList()" class="opacity-0 group-hover:opacity-100 text-[var(--ink-3)] hover:text-red-500 transition-all flex-shrink-0"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : '<span class="w-4"></span>'}
         </div>
       `).join('');
       lucide.createIcons();
@@ -1760,7 +1978,7 @@
 
       dd.innerHTML = sel.options.map(opt => {
         const isSelected = String(sel.value) === String(opt.value);
-        const dotStyle = opt.color ? `background:${opt.color}` : 'background:rgba(255,255,255,0.2)';
+        const dotStyle = opt.color ? `background:${opt.color}` : 'background:var(--ink-3)';
         return `<button type="button" class="cs-option${isSelected ? ' selected' : ''}" onclick="selectCustomOption('${selId}','${opt.value}')">
           <span class="cs-dot" style="${dotStyle}"></span>
           <span>${opt.label}</span>
@@ -1805,6 +2023,160 @@
         value: c.id, label: c.nome, color: c.cor
       }));
       customSelects.csCategory.onChange = () => toggleDynamicFields();
+    }
+
+    // ── Search ──────────────────────────────────────────────────────────
+    function handleHeaderSearch(value) {
+      changeView('search');
+      const input = document.getElementById('searchInput');
+      if (input) { input.value = value; renderSearch(); }
+    }
+    window.handleHeaderSearch = handleHeaderSearch;
+
+    function updateSearchFilterButtons() {
+      const f = state.searchFilter;
+      document.querySelectorAll('#searchFilters button').forEach(b => {
+        b.className = b.className.replace(/bg-red-600\/10|text-red-400|text-red-500|border border-white\/10|border border-white\/\[0\.08\]/g, '').trim();
+        if ((f === 'all' && b.id === 'searchFilterAll') || b.id === `searchFilter${f.charAt(0).toUpperCase() + f.slice(1)}`) {
+          b.className += ' bg-red-600/10 text-red-400';
+        } else {
+          b.className += ' text-[var(--ink-3)] border border-[var(--border-strong)]';
+        }
+      });
+    }
+
+    function renderSearch() {
+      updateSearchFilterButtons();
+      const term = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+      const filter = state.searchFilter || 'all';
+      let results = state.activities;
+      if (filter !== 'all') results = results.filter(a => a.stage === filter);
+      if (term) {
+        results = results.filter(a => {
+          const cat = state.categories.find(c => c.id == a.categoria);
+          const catNome = (cat?.nome || '').toLowerCase();
+          return (a.titulo || '').toLowerCase().includes(term) || (a.descricao || '').toLowerCase().includes(term) || catNome.includes(term);
+        });
+      }
+      document.getElementById('searchResultsCount').textContent = `${results.length} resultado${results.length !== 1 ? 's' : ''}`;
+      document.getElementById('searchResultsList').innerHTML = results.length ? results.map(a => {
+        const cat = state.categories.find(c => c.id == a.categoria) || { nome: 'Geral', cor: '#6366f1' };
+        const prog = a.progress || 0;
+        return `<div class="glass-card p-5 hover:bg-[var(--surface-2)] transition-all cursor-pointer" onclick="openEditActivity(${a.id})">
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1.5">
+                <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${cat.cor}"></span>
+                <h3 class="text-sm font-semibold text-[var(--ink)] truncate">${esc(a.titulo)}</h3>
+              </div>
+              ${a.descricao ? `<p class="text-xs text-[var(--ink-3)] mt-1 line-clamp-2">${esc(a.descricao)}</p>` : ''}
+              <div class="flex items-center gap-3 mt-3 flex-wrap">
+                <span class="text-[11px] font-medium text-[var(--ink-3)] flex items-center gap-1"><i data-lucide="calendar" class="w-3 h-3"></i> ${fmtDate(a.dataVencimento)}</span>
+                ${a.dataPostagem ? `<span class="text-[11px] font-medium text-blue-400/70 flex items-center gap-1"><i data-lucide="send" class="w-3 h-3"></i> ${fmtDate(a.dataPostagem)}</span>` : ''}
+                <span class="text-[10px] font-bold uppercase ${STAGE_COLORS[a.stage]} px-2 py-0.5 rounded-full">${STAGE_LABELS[a.stage]}</span>
+                <span class="text-[11px] font-semibold text-[var(--ink-3)]">${prog}%</span>
+              </div>
+              ${(a.canais || []).length ? `<div class="flex gap-1 mt-2.5">${a.canais.map(chId => { const ch = CHANNELS.find(c => c.id === chId); return ch ? `<span class="px-1.5 py-0.5 rounded text-[8px] font-bold text-[var(--ink)]" style="background:${ch.color}">${ch.label}</span>` : ''; }).join('')}</div>` : ''}
+            </div>
+          </div>
+        </div>`;
+      }).join('') : '<div class="glass-card p-12 text-center"><p class="text-sm text-[var(--ink-3)]">Nenhum resultado encontrado.</p></div>';
+    }
+
+    // ── Gantt View ──────────────────────────────────────────────────────
+    function renderGanttFilters() {
+      const container = document.getElementById('gantt-filters');
+      if (!container) return;
+      const cats = [{ id: 'all', nome: 'Todas', cor: '#fff' }, ...state.categories];
+      container.innerHTML = cats.map(c => {
+        const isActive = String(state.ganttFilter) === String(c.id);
+        const base = 'px-3.5 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 border';
+        const active = 'bg-[var(--surface-3)] border-[var(--border-strong)] text-[var(--ink)]';
+        const inactive = 'bg-[var(--surface)] border-transparent text-[var(--ink-3)] hover:text-[var(--ink-2)] hover:bg-[var(--surface-2)]';
+        return `<button onclick="setGanttFilter('${c.id}')" class="${base} ${isActive ? active : inactive}">
+          ${c.id !== 'all' ? `<span class="w-2 h-2 rounded-full" style="background:${c.cor}"></span>` : ''}
+          ${c.nome}
+        </button>`;
+      }).join('');
+    }
+    window.setGanttFilter = (catId) => { state.ganttFilter = catId; renderGantt(); };
+    window.moveGantt = (days) => { state.ganttStart.setDate(state.ganttStart.getDate() + days); renderGantt(); };
+
+    function renderGantt() {
+      renderGanttFilters();
+      const container = document.getElementById('gantt-container');
+      if (!container) return;
+
+      const filtered = state.ganttFilter === 'all'
+        ? state.activities
+        : state.activities.filter(a => String(a.categoria) === String(state.ganttFilter));
+
+      const days = 21;
+      const start = new Date(state.ganttStart);
+      start.setHours(0,0,0,0);
+      const end = new Date(start); end.setDate(start.getDate() + days);
+      const dayMs = 24 * 60 * 60 * 1000;
+      const totalMs = days * dayMs;
+
+      const dateCols = [];
+      for (let i = 0; i < days; i++) {
+        const d = new Date(start); d.setDate(start.getDate() + i);
+        dateCols.push(d);
+      }
+
+      const gridTemplateColumns = `140px repeat(${days}, minmax(44px, 1fr))`;
+
+      let html = `<div class="gantt-grid" style="display:grid; grid-template-columns:${gridTemplateColumns}; min-width:max(100%, ${140 + days * 44}px);">`;
+
+      // Header row
+      html += `<div class="gantt-cell gantt-header-cell sticky left-0 z-10">Atividade</div>`;
+      dateCols.forEach(d => {
+        const isToday = d.toISOString().split('T')[0] === new Date().toISOString().split('T')[0];
+        html += `<div class="gantt-cell gantt-header-cell text-center ${isToday ? 'gantt-today-col' : ''}">
+          <span class="block text-[10px] font-semibold text-[var(--ink-3)]">${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][d.getDay()]}</span>
+          <span class="block text-xs font-bold ${isToday ? 'text-red-400' : 'text-[var(--ink-2)]'}">${d.getDate()}</span>
+        </div>`;
+      });
+
+      // Activity rows
+      const sorted = [...filtered].sort((a,b) => new Date(a.dataVencimento) - new Date(b.dataVencimento));
+      if (!sorted.length) {
+        html += `<div class="gantt-cell sticky left-0 z-10"></div>`;
+        html += `<div class="gantt-cell" style="grid-column:span ${days};"><div class="p-8 text-center text-sm text-[var(--ink-3)]">Nenhuma atividade no período.</div></div>`;
+      }
+
+      sorted.forEach(a => {
+        const cat = state.categories.find(c => c.id == a.categoria) || { nome: 'Geral', cor: '#94a3b8' };
+        const due = a.dataVencimento ? new Date(a.dataVencimento + 'T12:00:00') : null;
+        if (!due) return;
+        let begin = due;
+        if (a.dataPostagem) {
+          begin = new Date(a.dataPostagem + 'T12:00:00');
+        } else {
+          begin = new Date(due); begin.setDate(due.getDate() - 3);
+        }
+
+        const leftPct = Math.max(0, Math.min(100, ((begin - start) / totalMs) * 100));
+        const widthPct = Math.max(1.5, Math.min(100 - leftPct, ((due - begin) / totalMs) * 100));
+        const isConcluded = a.stage === 'concluido';
+
+        html += `<div class="gantt-cell sticky left-0 z-10 flex items-center gap-2 pr-2">
+          <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${cat.cor}"></span>
+          <span class="text-xs font-medium text-[var(--ink-2)] truncate" title="${esc(a.titulo)}">${esc(a.titulo)}</span>
+        </div>`;
+
+        dateCols.forEach(d => {
+          html += `<div class="gantt-cell"></div>`;
+        });
+
+        html += `<div class="gantt-bar" onclick="openEditActivity(${a.id})" style="grid-column:2 / span ${days}; left:${leftPct}%; width:${widthPct}%; background:${cat.cor}${isConcluded ? '80' : 'cc'}; box-shadow:0 2px 8px ${cat.cor}33;" title="${esc(a.titulo)} (${fmtDate(begin.toISOString().split('T')[0])} → ${fmtDate(a.dataVencimento)})">
+          <span class="gantt-bar-label">${esc(a.titulo)}</span>
+        </div>`;
+      });
+
+      html += `</div>`;
+      container.innerHTML = html;
+      lucide.createIcons();
     }
 
     // ── Export ──────────────────────────────────────────────────────────
@@ -1943,7 +2315,7 @@
           <tbody>
             ${uploadRows.map((r, i) => `
               <tr class="${r._valid ? '' : 'row-error'}">
-                <td><span class="text-[10px] font-bold ${r._valid ? 'text-gray-600' : 'text-red-500'}">${i + 1}</span></td>
+                <td><span class="text-[10px] font-bold ${r._valid ? 'text-[var(--ink-3)]' : 'text-red-500'}">${i + 1}</span></td>
                 <td><input type="date" class="cell-edit" value="${r.dataEntrega}" onchange="uploadRows[${i}].dataEntrega=this.value"></td>
                 <td><input type="date" class="cell-edit" value="${r.dataPostagem || ''}" onchange="uploadRows[${i}].dataPostagem=this.value"></td>
                 <td><select class="cell-select" onchange="uploadRows[${i}].categoria=parseInt(this.value)">${state.categories.map(c => `<option value="${c.id}" ${c.id == r.categoria ? 'selected' : ''}>${c.nome}</option>`).join('')}</select></td>
@@ -2004,7 +2376,7 @@
       }
 
       btn.disabled = false;
-      btn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> Confirmar Upload';
+      btn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> Confirmar upload';
       lucide.createIcons();
 
       closeUploadModal();
@@ -2026,7 +2398,7 @@
 
   <!-- NAVIGATION + SIDEBAR LOGIC -->
   <script>
-    const ALL_VIEWS = ['dashboard', 'kanban', 'calendar', 'categories', 'export', 'configuracoes', 'nps'];
+    const ALL_VIEWS = ['dashboard', 'kanban', 'calendar', 'categories', 'search', 'gantt', 'configuracoes', 'nps'];
 
     function changeView(view) {
       ALL_VIEWS.forEach(v => {
@@ -2039,13 +2411,13 @@
       // Sidebar active
       document.querySelectorAll('[class*="nav-item-"]').forEach(n => {
         if (n.closest('#mobile-bottom-nav')) return;
-        n.className = n.className.replace(/bg-red-600\/10|text-red-500|hover:text-red-500/g, '').trim();
-        if (!n.className.includes('text-gray-500')) n.className += ' text-gray-500 hover:text-white';
+        n.className = n.className.replace(/bg-red-600\/10|text-red-400|text-red-500|hover:text-red-400|hover:text-red-500/g, '').trim();
+        if (!n.className.includes('text-[var(--ink-2)]') && !n.className.includes('text-[var(--ink-3)]')) n.className += ' text-[var(--ink-2)] hover:text-[var(--ink)]';
       });
       document.querySelectorAll(`.nav-item-${view}`).forEach(n => {
         if (n.closest('#mobile-bottom-nav')) return;
-        n.className = n.className.replace(/text-gray-500|hover:text-white/g, '').trim();
-        n.className += ' bg-red-600/10 text-red-500 hover:text-red-500';
+        n.className = n.className.replace(/text-\[var\(--ink-2\)\]|text-\[var\(--ink-3\)\]|hover:text-\[var\(--ink\)\]/g, '').trim();
+        n.className += ' bg-red-600/10 text-red-400';
       });
 
       // Mobile nav
@@ -2057,21 +2429,24 @@
       const title = document.getElementById('header-title');
       const btn = document.getElementById('btn-header-add');
       const titles = {
-        dashboard: '<i data-lucide="layout-dashboard" class="inline w-4 h-4 mr-2 text-red-500"></i> Dashboard',
-        kanban: '<i data-lucide="columns" class="inline w-4 h-4 mr-2 text-red-500"></i> Fluxo de Trabalho',
-        calendar: '<i data-lucide="calendar-days" class="inline w-4 h-4 mr-2 text-red-500"></i> Calendário Editorial',
-        categories: '<i data-lucide="tags" class="inline w-4 h-4 mr-2 text-red-500"></i> Categorias',
-        export: '<i data-lucide="download" class="inline w-4 h-4 mr-2 text-red-500"></i> Exportar Dados',
-        configuracoes: '<i data-lucide="settings" class="inline w-4 h-4 mr-2 text-red-500"></i> Configurações',
-        nps: '<i data-lucide="bar-chart-2" class="inline w-4 h-4 mr-2 text-red-500"></i> Quality & NPS'
+        dashboard: '<i data-lucide="layout-dashboard" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Dashboard',
+        kanban: '<i data-lucide="columns" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Fluxo de Trabalho',
+        calendar: '<i data-lucide="calendar-days" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Calendário Editorial',
+        categories: '<i data-lucide="tags" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Categorias',
+        search: '<i data-lucide="search" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Pesquisar',
+        gantt: '<i data-lucide="gantt-chart" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Cronograma',
+        configuracoes: '<i data-lucide="settings" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Configurações',
+        nps: '<i data-lucide="bar-chart-2" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Quality & NPS'
       };
       title.innerHTML = titles[view] || titles.dashboard;
 
-      if (view === 'nps' || view === 'configuracoes') btn.classList.add('hidden-view');
+      if (view === 'nps' || view === 'configuracoes' || view === 'search' || view === 'gantt') btn.classList.add('hidden-view');
       else btn.classList.remove('hidden-view');
 
-      if (view !== 'nps' && view !== 'configuracoes') renderAllActivities();
+      if (view !== 'nps' && view !== 'configuracoes' && view !== 'search' && view !== 'gantt') renderAllActivities();
       if (view === 'configuracoes') renderConfiguracoes();
+      if (view === 'search') { renderSearch(); setTimeout(() => document.getElementById('searchInput')?.focus(), 100); }
+      if (view === 'gantt') { renderGantt(); }
       // Instagram connection dot
       const dot = document.getElementById('igConnectedDot');
       if (dot) { dot.style.display = getIgProfile() ? 'block' : 'none'; dot.style.background = '#10B981'; dot.style.boxShadow = '0 0 6px rgba(16,185,129,0.5)'; }
@@ -2083,6 +2458,31 @@
       }
     }
     window.changeView = changeView;
+
+    // ── Theme Toggle ────────────────────────────────────────────────────
+    function initTheme() {
+      const saved = localStorage.getItem('makro_hub_theme');
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = saved || (prefersDark ? 'noir' : 'clean');
+      document.documentElement.setAttribute('data-theme', theme);
+      updateThemeIcon(theme);
+    }
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'clean';
+      const next = current === 'noir' ? 'clean' : 'noir';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('makro_hub_theme', next);
+      updateThemeIcon(next);
+      if (window.lucide) lucide.createIcons();
+    }
+    function updateThemeIcon(theme) {
+      const btn = document.getElementById('theme-toggle');
+      if (!btn) return;
+      btn.innerHTML = theme === 'noir'
+        ? '<i data-lucide="moon" class="w-4 h-4"></i>'
+        : '<i data-lucide="sun" class="w-4 h-4"></i>';
+    }
+    window.toggleTheme = toggleTheme;
 
     // ── INSTAGRAM — META GRAPH API REAL ────────────────────────────────
     const DAYS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
@@ -2403,14 +2803,14 @@
       const container = document.getElementById('bestTimeGrid');
       if (!container) return;
       const grid = analytics.bestTimeGrid;
-      let html = '<table class="w-full text-center border-collapse"><thead><tr><th class="p-1 text-[8px] font-black uppercase tracking-wider text-gray-500 w-10"></th>';
+      let html = '<table class="w-full text-center border-collapse"><thead><tr><th class="p-1 text-[8px] font-black uppercase tracking-wider text-[var(--ink-3)] w-10"></th>';
       HOURS.forEach(h => {
         const hInt = parseInt(h);
-        html += `<th class="p-1 text-[7px] font-black uppercase tracking-wider text-gray-500 ${hInt % 4 === 0 ? '' : 'opacity-30'}">${h}</th>`;
+        html += `<th class="p-1 text-[7px] font-black uppercase tracking-wider text-[var(--ink-3)] ${hInt % 4 === 0 ? '' : 'opacity-30'}">${h}</th>`;
       });
       html += '</tr></thead><tbody>';
       DAYS.forEach(d => {
-        html += `<tr><td class="p-1 text-[9px] font-black uppercase tracking-wider text-gray-400 text-left">${d}</td>`;
+        html += `<tr><td class="p-1 text-xs font-semibold text-[var(--ink-2)] text-left">${d}</td>`;
         HOURS.forEach(h => {
           const score = grid[d]?.[parseInt(h)] || 50;
           let color;
@@ -2481,18 +2881,18 @@
           mediaContainer.innerHTML = media.map(m => {
             const isVideo = m.type === 'VIDEO';
             const hasImg = m.mediaUrl && (m.mediaUrl.startsWith('http'));
-            return `<div class="aspect-square rounded-xl overflow-hidden relative cursor-pointer hover:opacity-80 transition group" style="background:${m.thumbnailColor || '#333'}22;border:1px solid rgba(255,255,255,0.05)">
+            return `<div class="aspect-square rounded-xl overflow-hidden relative cursor-pointer hover:opacity-80 transition group" style="background:${m.thumbnailColor || '#333'}22;border:1px solid var(--border)">
               ${hasImg ? `<img src="${m.mediaUrl}" class="w-full h-full object-cover" />` :
               `<div class="w-full h-full flex items-center justify-center" style="background:${m.thumbnailColor || '#333'}33">
                 <div class="text-center">${isVideo ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>' : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>'}</div>
               </div>`}
-              <div class="absolute bottom-1 left-1 right-1 flex justify-between text-[8px] font-bold text-white px-1.5 py-0.5 rounded" style="background:rgba(0,0,0,0.5)">
+              <div class="absolute bottom-1 left-1 right-1 flex justify-between text-[8px] font-bold text-white px-1.5 py-0.5 rounded" style="background:rgba(0,0,0,0.55)">
                 <span>❤ ${m.likes}</span><span>💬 ${m.comments}</span>
               </div>
             </div>`;
           }).join('');
         } else {
-          mediaContainer.innerHTML = '<div class="col-span-full text-center text-[10px] text-gray-500 py-8">Nenhuma mídia encontrada. As mídias aparecerão aqui após conectar o Instagram.</div>';
+          mediaContainer.innerHTML = '<div class="col-span-full text-center text-[10px] text-[var(--ink-3)] py-8">Nenhuma mídia encontrada. As mídias aparecerão aqui após conectar o Instagram.</div>';
         }
       }
 
@@ -2576,7 +2976,7 @@
     // ── Toast ───────────────────────────────────────────────────────────
     function showToast(msg, type = 'success') {
       const t = document.createElement('div');
-      t.className = `p-4 rounded-xl bg-[#010816] border ${type === 'error' ? 'border-red-500 text-red-400' : 'border-emerald-500 text-emerald-400'} animate-fadeup shadow-2xl text-[10px] font-black uppercase tracking-widest z-[200]`;
+      t.className = `p-4 rounded-xl bg-[var(--bg)] border ${type === 'error' ? 'border-red-500 text-red-400' : 'border-emerald-500 text-emerald-400'} animate-fadeup shadow-2xl text-sm font-medium z-[200]`;
       t.innerText = msg;
       document.getElementById('toast-container').appendChild(t);
       setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
@@ -2591,9 +2991,10 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+      initTheme();
       setTimeout(() => {
         hideLoader();
-        changeView('dashboard');
+        changeView('kanban');
         // IG connection dot
         const dot = document.getElementById('igConnectedDot');
         if (dot) { dot.style.display = getIgProfile() ? 'block' : 'none'; dot.style.background = '#10B981'; dot.style.boxShadow = '0 0 6px rgba(16,185,129,0.5)'; }
@@ -2607,7 +3008,7 @@
     const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine, LabelList } = window.Recharts;
 
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw68DmuS_sDfZ2ozpG5bX3JQITYO2_nFdXwe9lPFD7rPE0wfxpSjV6uvxmsp0fOyHH1/exec';
-    const COLORS = { critica: '#EF4136', aperfeicoamento: '#FDB913', qualidade: '#56C174', excelencia: '#00A650', textMuted: 'rgba(255,255,255,0.4)' };
+    const COLORS = { critica: '#EF4136', aperfeicoamento: '#FDB913', qualidade: '#56C174', excelencia: '#00A650', textMuted: 'var(--ink-3)' };
 
     const getNPSColor = (score) => { if (score >= 75) return COLORS.excelencia; if (score >= 50) return COLORS.qualidade; if (score >= 0) return COLORS.aperfeicoamento; return COLORS.critica; };
     const getNPSZone = (score) => { if (score >= 75) return { label: 'Excelência', cls: 'zona-excelencia' }; if (score >= 50) return { label: 'Qualidade', cls: 'zona-qualidade' }; if (score >= 0) return { label: 'Aperfeiçoamento', cls: 'zona-aperfeicoamento' }; return { label: 'Crítico', cls: 'zona-critica' }; };
@@ -2626,9 +3027,9 @@
 
     const TrendBadge = ({ current, previous }) => { if (previous === null || previous === undefined) return null; const diff = current - previous; if (diff > 0) return <span className="trend-up text-xs font-black ml-2">↑ +{diff} vs mês ant.</span>; if (diff < 0) return <span className="trend-down text-xs font-black ml-2">↓ {diff} vs mês ant.</span>; return <span className="trend-flat text-xs font-black ml-2">→ Estável</span>; };
 
-    const CustomBarTooltip = ({ active, payload }) => { if (!active || !payload?.length) return null; const d = payload[0].payload; const zone = getNPSZone(d.score); return ( <div className="bg-[#010816] border border-white/20 rounded-2xl p-4 text-xs shadow-2xl min-w-[160px]"> <p className="font-black text-white mb-2 uppercase">{d.mes}</p> <p className="font-black text-2xl mb-1" style={{ color: getNPSColor(d.score) }}>{d.score}</p> <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${zone.cls}`}>{zone.label}</span> <div className="mt-3 space-y-1 text-[10px] opacity-70 text-white"> <p><span style={{color:COLORS.excelencia}}>▲</span> {d.p} promotores</p> <p><span style={{color:COLORS.aperfeicoamento}}>◆</span> {d.neutros} neutros</p> <p><span style={{color:COLORS.critica}}>▼</span> {d.det} detratores</p> <p className="border-t border-white/10 pt-1 mt-1">Σ {d.total} respostas</p> </div> </div> ); };
+    const CustomBarTooltip = ({ active, payload }) => { if (!active || !payload?.length) return null; const d = payload[0].payload; const zone = getNPSZone(d.score); return ( <div className="bg-[var(--bg)] border border-white/20 rounded-2xl p-4 text-xs shadow-2xl min-w-[160px]"> <p className="font-black text-[var(--ink)] mb-2 uppercase">{d.mes}</p> <p className="font-black text-2xl mb-1" style={{ color: getNPSColor(d.score) }}>{d.score}</p> <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${zone.cls}`}>{zone.label}</span> <div className="mt-3 space-y-1 text-[10px] opacity-70 text-[var(--ink)]"> <p><span style={{color:COLORS.excelencia}}>▲</span> {d.p} promotores</p> <p><span style={{color:COLORS.aperfeicoamento}}>◆</span> {d.neutros} neutros</p> <p><span style={{color:COLORS.critica}}>▼</span> {d.det} detratores</p> <p className="border-t border-[var(--border-strong)] pt-1 mt-1">Σ {d.total} respostas</p> </div> </div> ); };
 
-    const PromoterBar = ({ p, neutros, det, total }) => { if (!total) return null; const pw = ((p / total) * 100).toFixed(1); const nw = ((neutros / total) * 100).toFixed(1); const dw = ((det / total) * 100).toFixed(1); return ( <div className="bg-white/5 border border-white/10 rounded-[24px] p-5"> <h4 className="text-[10px] font-black uppercase opacity-40 mb-3 tracking-widest">Distribuição das Respostas</h4> <div className="flex h-5 rounded-full overflow-hidden gap-0.5"> {p > 0 && <div style={{ width:`${pw}%`, background: COLORS.excelencia }} className="transition-all duration-700 rounded-l-full"/>} {neutros > 0 && <div style={{ width:`${nw}%`, background: COLORS.aperfeicoamento }} className="transition-all duration-700"/>} {det > 0 && <div style={{ width:`${dw}%`, background: COLORS.critica }} className="transition-all duration-700 rounded-r-full"/>} </div> <div className="flex justify-between mt-2 text-[9px] font-black uppercase"> <span style={{ color: COLORS.excelencia }}>▲ {pw}% Promotores</span> <span style={{ color: COLORS.aperfeicoamento }}>◆ {nw}% Neutros</span> <span style={{ color: COLORS.critica }}>▼ {dw}% Detratores</span> </div> </div> ); };
+    const PromoterBar = ({ p, neutros, det, total }) => { if (!total) return null; const pw = ((p / total) * 100).toFixed(1); const nw = ((neutros / total) * 100).toFixed(1); const dw = ((det / total) * 100).toFixed(1); return ( <div className="bg-[var(--surface-2)] border border-[var(--border-strong)] rounded-[24px] p-5"> <h4 className="text-[10px] font-black uppercase opacity-40 mb-3 tracking-widest">Distribuição das Respostas</h4> <div className="flex h-5 rounded-full overflow-hidden gap-0.5"> {p > 0 && <div style={{ width:`${pw}%`, background: COLORS.excelencia }} className="transition-all duration-700 rounded-l-full"/>} {neutros > 0 && <div style={{ width:`${nw}%`, background: COLORS.aperfeicoamento }} className="transition-all duration-700"/>} {det > 0 && <div style={{ width:`${dw}%`, background: COLORS.critica }} className="transition-all duration-700 rounded-r-full"/>} </div> <div className="flex justify-between mt-2 text-[9px] font-black uppercase"> <span style={{ color: COLORS.excelencia }}>▲ {pw}% Promotores</span> <span style={{ color: COLORS.aperfeicoamento }}>◆ {nw}% Neutros</span> <span style={{ color: COLORS.critica }}>▼ {dw}% Detratores</span> </div> </div> ); };
 
     const HorizontalNPSChart = ({ data, dimension, label }) => {
       const [isExpanded, setIsExpanded] = useState(false);
@@ -2638,18 +3039,18 @@
       const hasMore = items.length > INITIAL_COUNT;
       const displayedItems = isExpanded ? items : items.slice(0, INITIAL_COUNT);
       return (
-        <div className="bg-white/5 border border-white/10 rounded-[30px] p-6 flex flex-col h-full">
+        <div className="bg-[var(--surface-2)] border border-[var(--border-strong)] rounded-[30px] p-6 flex flex-col h-full">
           <h4 className="text-[10px] font-black uppercase opacity-40 mb-4 tracking-widest flex-shrink-0">NPS por {label}</h4>
           <div className="space-y-3 flex-1">
             {displayedItems.map((item, i) => { const zone = getNPSZone(item.nps); const barW = Math.max(4, ((item.nps + 100) / 200) * 100); return (
               <div key={i} className="animate-fadeup" style={{ animationDelay: `${i*30}ms` }}>
                 <div className="flex justify-between items-center mb-1"><span className="text-xs font-bold uppercase truncate max-w-[60%]" title={item.name}>{item.name}</span><div className="flex items-center gap-2"><span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${zone.cls}`}>{zone.label}</span><span className="text-sm font-black" style={{ color: getNPSColor(item.nps) }}>{item.nps}</span></div></div>
-                <div className="h-2 bg-white/5 rounded-full overflow-hidden"><div className="h-full rounded-full transition-all duration-700" style={{ width: `${barW}%`, background: getNPSColor(item.nps) }}/></div>
+                <div className="h-2 bg-[var(--surface-2)] rounded-full overflow-hidden"><div className="h-full rounded-full transition-all duration-700" style={{ width: `${barW}%`, background: getNPSColor(item.nps) }}/></div>
                 <div className="flex gap-3 mt-1 text-[9px] opacity-40 font-bold"><span>▲ {item.p} prom.</span><span>◆ {item.neutros} neut.</span><span>▼ {item.det} detr.</span><span>Σ {item.total}</span></div>
               </div>
             ); })}
           </div>
-          {hasMore && <button onClick={() => setIsExpanded(!isExpanded)} className="mt-4 pt-4 border-t border-white/5 w-full flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-widest text-blue-400 opacity-60 hover:opacity-100 hover:bg-white/5 rounded-xl transition-all">{isExpanded ? 'Ver Menos' : `Ver Mais (${items.length - INITIAL_COUNT})`}<Icon name={isExpanded ? 'ChevronUp' : 'ChevronDown'} size={14} /></button>}
+          {hasMore && <button onClick={() => setIsExpanded(!isExpanded)} className="mt-4 pt-4 border-t border-[var(--border)] w-full flex items-center justify-center gap-2 text-xs font-semibold text-blue-400 opacity-60 hover:opacity-100 hover:bg-[var(--surface)] rounded-xl transition-all">{isExpanded ? 'Ver menos' : `Ver mais (${items.length - INITIAL_COUNT})`}<Icon name={isExpanded ? 'ChevronUp' : 'ChevronDown'} size={14} /></button>}
         </div>
       );
     };
@@ -2697,6 +3098,9 @@
             if (res.result === "success") {
               let baseDados = res.metrics?.baseDados || [];
               let listaContratos = res.metrics?.listaContratos || [];
+              console.log('[NPS DEBUG] baseDados[0] keys:', baseDados[0] ? Object.keys(baseDados[0]) : 'empty');
+              console.log('[NPS DEBUG] baseDados[0]:', baseDados[0]);
+              console.log('[NPS DEBUG] listaContratos[0]:', listaContratos[0]);
               setRawData(baseDados);
               setContractsList(listaContratos);
               setErrorMsg('');
@@ -2760,7 +3164,7 @@
       if (view === 'loading') return <div className="flex h-full items-center justify-center pt-20"><div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div></div>;
 
       return (
-        <div className="animate-fadeup text-white pb-20">
+        <div className="animate-fadeup text-[var(--ink)] pb-20">
           <div className="space-y-8 animate-slide">
             {errorMsg && (
               <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex items-center gap-3">
@@ -2769,14 +3173,14 @@
               </div>
             )}
             <div className="flex justify-between items-center">
-              <div><h2 className="text-2xl font-black uppercase tracking-widest text-white">Dashboard NPS</h2></div>
+              <div><h2 className="text-2xl font-extrabold tracking-tight text-[var(--ink)]">Dashboard NPS</h2></div>
               <div className="flex gap-2">
                 <div className="relative">
                   <button onClick={() => setExportMenuOpen(!exportMenuOpen)} className="p-3 bg-green-600/10 text-green-500 border border-green-600/20 rounded-2xl font-bold text-xs hover:bg-green-600/20 transition-all"><Icon name="FileSpreadsheet" size={18}/></button>
                   {exportMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 rounded-2xl bg-[#010816] border border-white/10 shadow-2xl z-50 overflow-hidden">
-                      <button onClick={() => handleExport('filtered')} className="w-full text-left p-4 text-[10px] font-bold uppercase hover:bg-white/5 transition flex items-center gap-2 border-b border-white/5"><Icon name="Filter" size={14} className="text-green-500"/> Exportar Filtrado</button>
-                      <button onClick={() => handleExport('all')} className="w-full text-left p-4 text-[10px] font-bold uppercase hover:bg-white/5 transition flex items-center gap-2"><Icon name="Download" size={14} className="text-blue-500"/> Exportar Tudo</button>
+                    <div className="absolute right-0 mt-2 w-48 rounded-2xl bg-[var(--bg)] border border-[var(--border-strong)] shadow-2xl z-50 overflow-hidden">
+                      <button onClick={() => handleExport('filtered')} className="w-full text-left p-4 text-[10px] font-bold uppercase hover:bg-[var(--surface-2)] transition flex items-center gap-2 border-b border-[var(--border)]"><Icon name="Filter" size={14} className="text-green-500"/> Exportar Filtrado</button>
+                      <button onClick={() => handleExport('all')} className="w-full text-left p-4 text-[10px] font-bold uppercase hover:bg-[var(--surface-2)] transition flex items-center gap-2"><Icon name="Download" size={14} className="text-blue-500"/> Exportar Tudo</button>
                     </div>
                   )}
                 </div>
@@ -2784,34 +3188,34 @@
             </div>
 
             {/* FILTROS */}
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-4 bg-white/5 p-6 rounded-[30px] border border-white/10">
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-4 bg-[var(--surface-2)] p-6 rounded-[30px] border border-[var(--border-strong)]">
               <div>
                 <div className="flex justify-between items-center ml-2 mb-1">
-                  <label className="text-[10px] font-bold opacity-30 uppercase text-white">Mês</label>
+                  <label className="text-[10px] font-bold opacity-30 uppercase text-[var(--ink)]">Mês</label>
                   <label className="flex items-center gap-1.5 cursor-pointer group">
-                    <input type="checkbox" checked={filters.verNA} onChange={e => setFilters({...filters, verNA: e.target.checked})} className="w-3 h-3 rounded bg-white/5 border-white/10 checked:bg-red-600 transition-all cursor-pointer"/>
-                    <span className="text-[8px] font-black opacity-30 group-hover:opacity-60 transition-opacity uppercase text-white tracking-tighter">Incluir N/A</span>
+                    <input type="checkbox" checked={filters.verNA} onChange={e => setFilters({...filters, verNA: e.target.checked})} className="w-3 h-3 rounded bg-[var(--surface-2)] border-[var(--border-strong)] checked:bg-red-600 transition-all cursor-pointer"/>
+                    <span className="text-[8px] font-black opacity-30 group-hover:opacity-60 transition-opacity uppercase text-[var(--ink)] tracking-tighter">Incluir N/A</span>
                   </label>
                 </div>
-                <select className="w-full bg-[#010816] border border-white/10 p-3 rounded-xl outline-none text-xs text-white cursor-pointer" value={filters.mes} onChange={e=>setFilters({...filters, mes:e.target.value})}>
+                <select className="w-full bg-[var(--bg)] border border-[var(--border-strong)] p-3 rounded-xl outline-none text-xs text-[var(--ink)] cursor-pointer" value={filters.mes} onChange={e=>setFilters({...filters, mes:e.target.value})}>
                   <option value="Todos">Todos os Períodos</option>
                   {Object.entries(groupMonthsByYear(sortMonthsChronologically([...new Set(data.map(d=>d.mes.replace(' - N/A', '')))].filter(Boolean)))).map(([y,ms])=>(
                     <optgroup key={y} label={y}><option value={`Ano ${y.slice(-2)}`}>Todo o Ano {y}</option>{ms.map(m=><option key={m} value={m}>{m}</option>)}</optgroup>
                   ))}
                 </select>
               </div>
-              <div><label className="text-[10px] font-bold opacity-30 uppercase ml-2 mb-1 block text-white">Unidade</label><select className="w-full bg-[#010816] border border-white/10 p-3 rounded-xl outline-none text-xs text-white cursor-pointer" value={filters.unidade} onChange={e=>setFilters({...filters, unidade:e.target.value, estrategico:'Todos', cliente:'Todos', contrato:'Todos'})}><option value="Todas">Todas</option>{[...new Set(data.map(d=>d.unidade))].filter(v => v && v !== "Não Definida").sort().map(v=><option key={v} value={v}>{v}</option>)}</select></div>
-              <div><label className="text-[10px] font-bold opacity-30 uppercase ml-2 mb-1 block text-blue-400">Estratégico</label><select className="w-full bg-[#010816] border border-blue-500/30 p-3 rounded-xl outline-none text-xs text-white cursor-pointer" value={filters.estrategico} onChange={e=>setFilters({...filters, estrategico:e.target.value, cliente:'Todos', contrato:'Todos'})}><option value="Todos">Todos</option><option value="ArcelorMittal">ArcelorMittal</option><option value="Vale">Vale</option><option value="Petroreconcavo">Petroreconcavo</option><option value="Wind">Wind</option><option value="Outros">Outros</option></select></div>
-              <div><label className="text-[10px] font-bold opacity-30 uppercase ml-2 mb-1 block text-purple-400">Empresa</label><select className="w-full bg-[#010816] border border-purple-500/30 p-3 rounded-xl outline-none text-xs text-white cursor-pointer" value={filters.empresa} onChange={e=>setFilters({...filters, empresa:e.target.value, cliente:'Todos', contrato:'Todos'})}><option value="Todas">MKE + MKT</option><option value="MKE">MKE (Engenharia)</option><option value="MKT">MKT (Transportes)</option></select></div>
-              <div><label className="text-[10px] font-bold opacity-30 uppercase ml-2 mb-1 block text-white">Cliente</label><select className="w-full bg-[#010816] border border-white/10 p-3 rounded-xl outline-none text-xs text-white cursor-pointer" value={filters.cliente} onChange={e=>setFilters({...filters, cliente:e.target.value, contrato:'Todos'})}><option value="Todos">Todos</option>{[...new Set(data.filter(d => (filters.unidade==='Todas' || d.unidade===filters.unidade) && (filters.estrategico==='Todos' || getCategory(d)===filters.estrategico) && (filters.empresa==='Todas' || d.empresa===filters.empresa)).map(d=>d.cliente))].filter(Boolean).sort().map(v=><option key={v} value={v}>{v}</option>)}</select></div>
-              <div><label className="text-[10px] font-bold opacity-30 uppercase ml-2 mb-1 block text-white">Contrato</label><select className="w-full bg-[#010816] border border-white/10 p-3 rounded-xl outline-none text-xs text-white cursor-pointer" value={filters.contrato} onChange={e=>setFilters({...filters, contrato:e.target.value})}><option value="Todos">Todos</option>{[...new Set(data.filter(d => (filters.unidade==='Todas' || d.unidade===filters.unidade) && (filters.estrategico==='Todos' || getCategory(d)===filters.estrategico) && (filters.empresa==='Todas' || d.empresa===filters.empresa) && (filters.cliente==='Todos' || d.cliente===filters.cliente)).map(d=>d.contratoExibicao))].filter(Boolean).sort().map(v=><option key={v} value={v}>{v}</option>)}</select></div>
+              <div><label className="text-[10px] font-bold opacity-30 uppercase ml-2 mb-1 block text-[var(--ink)]">Unidade</label><select className="w-full bg-[var(--bg)] border border-[var(--border-strong)] p-3 rounded-xl outline-none text-xs text-[var(--ink)] cursor-pointer" value={filters.unidade} onChange={e=>setFilters({...filters, unidade:e.target.value, estrategico:'Todos', cliente:'Todos', contrato:'Todos'})}><option value="Todas">Todas</option>{[...new Set(data.map(d=>d.unidade))].filter(v => v && v !== "Não Definida").sort().map(v=><option key={v} value={v}>{v}</option>)}</select></div>
+              <div><label className="text-[10px] font-bold opacity-30 uppercase ml-2 mb-1 block text-blue-400">Estratégico</label><select className="w-full bg-[var(--bg)] border border-blue-500/30 p-3 rounded-xl outline-none text-xs text-[var(--ink)] cursor-pointer" value={filters.estrategico} onChange={e=>setFilters({...filters, estrategico:e.target.value, cliente:'Todos', contrato:'Todos'})}><option value="Todos">Todos</option><option value="ArcelorMittal">ArcelorMittal</option><option value="Vale">Vale</option><option value="Petroreconcavo">Petroreconcavo</option><option value="Wind">Wind</option><option value="Outros">Outros</option></select></div>
+              <div><label className="text-[10px] font-bold opacity-30 uppercase ml-2 mb-1 block text-purple-400">Empresa</label><select className="w-full bg-[var(--bg)] border border-purple-500/30 p-3 rounded-xl outline-none text-xs text-[var(--ink)] cursor-pointer" value={filters.empresa} onChange={e=>setFilters({...filters, empresa:e.target.value, cliente:'Todos', contrato:'Todos'})}><option value="Todas">MKE + MKT</option><option value="MKE">MKE (Engenharia)</option><option value="MKT">MKT (Transportes)</option></select></div>
+              <div><label className="text-[10px] font-bold opacity-30 uppercase ml-2 mb-1 block text-[var(--ink)]">Cliente</label><select className="w-full bg-[var(--bg)] border border-[var(--border-strong)] p-3 rounded-xl outline-none text-xs text-[var(--ink)] cursor-pointer" value={filters.cliente} onChange={e=>setFilters({...filters, cliente:e.target.value, contrato:'Todos'})}><option value="Todos">Todos</option>{[...new Set(data.filter(d => (filters.unidade==='Todas' || d.unidade===filters.unidade) && (filters.estrategico==='Todos' || getCategory(d)===filters.estrategico) && (filters.empresa==='Todas' || d.empresa===filters.empresa)).map(d=>d.cliente))].filter(Boolean).sort().map(v=><option key={v} value={v}>{v}</option>)}</select></div>
+              <div><label className="text-[10px] font-bold opacity-30 uppercase ml-2 mb-1 block text-[var(--ink)]">Contrato</label><select className="w-full bg-[var(--bg)] border border-[var(--border-strong)] p-3 rounded-xl outline-none text-xs text-[var(--ink)] cursor-pointer" value={filters.contrato} onChange={e=>setFilters({...filters, contrato:e.target.value})}><option value="Todos">Todos</option>{[...new Set(data.filter(d => (filters.unidade==='Todas' || d.unidade===filters.unidade) && (filters.estrategico==='Todos' || getCategory(d)===filters.estrategico) && (filters.empresa==='Todas' || d.empresa===filters.empresa) && (filters.cliente==='Todos' || d.cliente===filters.cliente)).map(d=>d.contratoExibicao))].filter(Boolean).sort().map(v=><option key={v} value={v}>{v}</option>)}</select></div>
             </div>
 
             {/* KPIs */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               {[{l:'Total Respostas',v:stats.total,c:'white'},{l:'Promotores',v:stats.p,c:COLORS.excelencia},{l:'Neutros',v:stats.neutros,c:COLORS.aperfeicoamento},{l:'Detratores',v:stats.det,c:COLORS.critica},{l:'NPS Score',v:stats.nps,c:getNPSColor(stats.nps),h:true}].map((s,i)=>(
-                <div key={i} className={`p-6 rounded-3xl border ${s.h?'bg-white/10 border-white/30':'bg-white/5 border-white/10'} text-center`}>
-                  <span className="text-[10px] font-bold opacity-40 uppercase block mb-1 text-white">{s.l}</span><span className="text-3xl font-black" style={{color:s.c}}>{s.v}</span>
+                <div key={i} className={`p-6 rounded-3xl border ${s.h?'bg-[var(--surface-3)] border-white/30':'bg-[var(--surface-2)] border-[var(--border-strong)]'} text-center`}>
+                  <span className="text-[10px] font-bold opacity-40 uppercase block mb-1 text-[var(--ink)]">{s.l}</span><span className="text-3xl font-black" style={{color:s.c}}>{s.v}</span>
                   {s.h && <div className="mt-2"><span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${getNPSZone(stats.nps).cls}`}>{getNPSZone(stats.nps).label}</span></div>}
                 </div>
               ))}
@@ -2820,17 +3224,17 @@
             <PromoterBar p={stats.p} neutros={stats.neutros} det={stats.det} total={stats.total}/>
 
             {/* CHART */}
-            <div className="bg-white/5 p-8 rounded-[40px] border border-white/10 h-[480px]">
+            <div className="bg-[var(--surface-2)] p-8 rounded-[40px] border border-[var(--border-strong)] h-[480px]">
               <div className="mb-4 flex justify-between items-center flex-wrap gap-2">
-                <div><h4 className="text-xs font-bold uppercase opacity-40 text-white">Série Histórica NPS</h4>{!selectedMonthInChart && <p className="text-[10px] opacity-30 mt-1 chart-hint">Clique na barra para filtrar</p>}{selectedMonthInChart && <p className="text-[10px] text-red-500 font-bold mt-1 animate-pulse">Filtrando: <strong>{selectedMonthInChart}</strong></p>}</div>
+                <div><h4 className="text-xs font-bold uppercase opacity-40 text-[var(--ink)]">Série Histórica NPS</h4>{!selectedMonthInChart && <p className="text-[10px] opacity-30 mt-1 chart-hint">Clique na barra para filtrar</p>}{selectedMonthInChart && <p className="text-[10px] text-red-500 font-bold mt-1 animate-pulse">Filtrando: <strong>{selectedMonthInChart}</strong></p>}</div>
                 <div className="flex gap-4 flex-wrap">{[{c:COLORS.excelencia,l:'EXCELÊNCIA ≥75'},{c:COLORS.qualidade,l:'QUALIDADE ≥50'},{c:COLORS.aperfeicoamento,l:'APERFEIÇOAMENTO ≥0'},{c:COLORS.critica,l:'CRÍTICO <0'}].map(({c,l})=><div key={l} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{background:c}}/><span className="text-[8px] font-bold opacity-40">{l}</span></div>)}</div>
               </div>
               <ResponsiveContainer width="100%" height="85%">
                 <BarChart key={JSON.stringify(filters)} data={monthlyNpsData} onClick={handleBarClick} style={{cursor:'pointer'}}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff10"/><XAxis dataKey="mes" stroke="#cccccc" fontSize={10}/><YAxis stroke="#cccccc" fontSize={10} domain={[-100,100]} ticks={[-100,-50,0,50,75,100]}/>
-                  <Tooltip content={<CustomBarTooltip/>} cursor={{fill:'rgba(255,255,255,0.05)'}}/>
-                  <ReferenceLine y={0} stroke="#ffffff30" strokeDasharray="0"/><ReferenceLine y={50} stroke={COLORS.qualidade+'50'} strokeDasharray="4 4" label={{ value:'50 — Qualidade', position:'insideTopLeft', fill:COLORS.qualidade, fontSize:9, fontWeight:'bold' }}/><ReferenceLine y={75} stroke={COLORS.excelencia+'50'} strokeDasharray="4 4" label={{ value:'75 — Excelência', position:'insideTopLeft', fill:COLORS.excelencia, fontSize:9, fontWeight:'bold' }}/>
-                  <Bar dataKey="score" radius={[8,8,0,0]}>{monthlyNpsData.map((e,i)=><Cell key={i} fill={getNPSColor(e.score)} fillOpacity={selectedMonthInChart&&selectedMonthInChart!==e.mes?0.3:1} stroke={selectedMonthInChart===e.mes?'#fff':'none'} strokeWidth={2}/>)}<LabelList dataKey="score" position="top" fill="#cccccc" fontSize={10} fontWeight="bold"/></Bar>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-strong)"/><XAxis dataKey="mes" stroke="var(--ink-3)" fontSize={10}/><YAxis stroke="var(--ink-3)" fontSize={10} domain={[-100,100]} ticks={[-100,-50,0,50,75,100]}/>
+                  <Tooltip content={<CustomBarTooltip/>} cursor={{fill:'var(--surface)'}}/>
+                  <ReferenceLine y={0} stroke="var(--border-strong)" strokeDasharray="0"/><ReferenceLine y={50} stroke={COLORS.qualidade+'50'} strokeDasharray="4 4" label={{ value:'50 — Qualidade', position:'insideTopLeft', fill:COLORS.qualidade, fontSize:9, fontWeight:'bold' }}/><ReferenceLine y={75} stroke={COLORS.excelencia+'50'} strokeDasharray="4 4" label={{ value:'75 — Excelência', position:'insideTopLeft', fill:COLORS.excelencia, fontSize:9, fontWeight:'bold' }}/>
+                  <Bar dataKey="score" radius={[8,8,0,0]}>{monthlyNpsData.map((e,i)=><Cell key={i} fill={getNPSColor(e.score)} fillOpacity={selectedMonthInChart&&selectedMonthInChart!==e.mes?0.3:1} stroke={selectedMonthInChart===e.mes?'#fff':'none'} strokeWidth={2}/>)}<LabelList dataKey="score" position="top" fill="var(--ink-2)" fontSize={10} fontWeight="bold"/></Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -2841,22 +3245,22 @@
             </div>
 
             {/* TABELA */}
-            <div className="bg-white/5 border border-white/10 rounded-[40px] overflow-hidden">
-              <div className="p-6 border-b border-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+            <div className="bg-[var(--surface-2)] border border-[var(--border-strong)] rounded-[40px] overflow-hidden">
+              <div className="p-6 border-b border-[var(--border)] flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                 <div><h4 className="text-xs font-bold uppercase opacity-40">Respostas Recentes</h4><span className="text-[10px] font-bold opacity-30">{tableData.length} registros</span></div>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 opacity-30"><Icon name="Search" size={14}/></span>
-                  <input value={searchText} onChange={e=>setSearchText(e.target.value)} placeholder="Buscar..." className="bg-white/5 border border-white/10 rounded-xl pl-8 pr-4 py-2 text-xs text-white outline-none focus:ring-2 ring-red-600 w-64 transition-all"/>
+                  <input value={searchText} onChange={e=>setSearchText(e.target.value)} placeholder="Buscar..." className="bg-[var(--surface-2)] border border-[var(--border-strong)] rounded-xl pl-8 pr-4 py-2 text-xs text-[var(--ink)] outline-none focus:ring-2 ring-red-600 w-64 transition-all"/>
                   {searchText && <button onClick={()=>setSearchText('')} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-40 hover:opacity-100 transition"><Icon name="X" size={12}/></button>}
                 </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead><tr className="bg-white/5 text-red-500 font-bold uppercase tracking-widest"><th className="p-5">Mês</th><th className="p-5">Contrato</th><th className="p-5">Cliente</th><th className="p-5 text-center">Nota</th><th className="p-5">Zona</th><th className="p-5">Comentário</th></tr></thead>
+                  <thead><tr className="bg-[var(--surface-2)] text-red-500 font-bold uppercase tracking-widest"><th className="p-5">Mês</th><th className="p-5">Contrato</th><th className="p-5">Cliente</th><th className="p-5 text-center">Nota</th><th className="p-5">Zona</th><th className="p-5">Comentário</th></tr></thead>
                   <tbody className="divide-y divide-white/5">
                     {pagedData.length === 0 && <tr><td colSpan={6} className="p-10 text-center opacity-30 text-xs font-bold uppercase">Nenhum registro</td></tr>}
                     {pagedData.map((r, i) => { const zone = getNPSZone(r.nota); return (
-                      <tr key={i} className="hover:bg-white/5 transition-all text-white">
+                      <tr key={i} className="hover:bg-[var(--surface-2)] transition-all text-[var(--ink)]">
                         <td className="p-5 opacity-40">{r.mes}</td>
                         <td className="p-5 font-bold text-blue-400">{r.contratoExibicao}</td>
                         <td className="p-5 uppercase">{r.cliente}</td>
@@ -2869,14 +3273,14 @@
                 </table>
               </div>
               {totalPages > 1 && (
-                <div className="flex items-center justify-between px-6 py-4 border-t border-white/5">
+                <div className="flex items-center justify-between px-6 py-4 border-t border-[var(--border)]">
                   <span className="text-[10px] font-bold opacity-30">Página {currentPage} de {totalPages}</span>
                   <div className="flex gap-1">
-                    <button disabled={currentPage===1} onClick={()=>setCurrentPage(1)} className="px-3 py-1 rounded-lg text-[10px] font-bold bg-white/5 hover:bg-white/10 disabled:opacity-20 transition">«</button>
-                    <button disabled={currentPage===1} onClick={()=>setCurrentPage(p=>p-1)} className="px-3 py-1 rounded-lg text-[10px] font-bold bg-white/5 hover:bg-white/10 disabled:opacity-20 transition">‹</button>
-                    {Array.from({length:Math.min(5,totalPages)},(_,i) => { let p=currentPage-2+i; if(p<1)p=i+1; if(p>totalPages)p=totalPages-(4-i); if(p<1||p>totalPages)return null; return <button key={p} onClick={()=>setCurrentPage(p)} className={`px-3 py-1 rounded-lg text-[10px] font-bold transition ${currentPage===p?'bg-red-600 text-white':'bg-white/5 hover:bg-white/10'}`}>{p}</button>; })}
-                    <button disabled={currentPage===totalPages} onClick={()=>setCurrentPage(p=>p+1)} className="px-3 py-1 rounded-lg text-[10px] font-bold bg-white/5 hover:bg-white/10 disabled:opacity-20 transition">›</button>
-                    <button disabled={currentPage===totalPages} onClick={()=>setCurrentPage(totalPages)} className="px-3 py-1 rounded-lg text-[10px] font-bold bg-white/5 hover:bg-white/10 disabled:opacity-20 transition">»</button>
+                    <button disabled={currentPage===1} onClick={()=>setCurrentPage(1)} className="px-3 py-1 rounded-lg text-[10px] font-bold bg-[var(--surface-2)] hover:bg-[var(--surface-3)] disabled:opacity-20 transition">«</button>
+                    <button disabled={currentPage===1} onClick={()=>setCurrentPage(p=>p-1)} className="px-3 py-1 rounded-lg text-[10px] font-bold bg-[var(--surface-2)] hover:bg-[var(--surface-3)] disabled:opacity-20 transition">‹</button>
+                    {Array.from({length:Math.min(5,totalPages)},(_,i) => { let p=currentPage-2+i; if(p<1)p=i+1; if(p>totalPages)p=totalPages-(4-i); if(p<1||p>totalPages)return null; return <button key={p} onClick={()=>setCurrentPage(p)} className={`px-3 py-1 rounded-lg text-[10px] font-bold transition ${currentPage===p?'bg-red-600 text-[var(--ink)]':'bg-[var(--surface-2)] hover:bg-[var(--surface-3)]'}`}>{p}</button>; })}
+                    <button disabled={currentPage===totalPages} onClick={()=>setCurrentPage(p=>p+1)} className="px-3 py-1 rounded-lg text-[10px] font-bold bg-[var(--surface-2)] hover:bg-[var(--surface-3)] disabled:opacity-20 transition">›</button>
+                    <button disabled={currentPage===totalPages} onClick={()=>setCurrentPage(totalPages)} className="px-3 py-1 rounded-lg text-[10px] font-bold bg-[var(--surface-2)] hover:bg-[var(--surface-3)] disabled:opacity-20 transition">»</button>
                   </div>
                 </div>
               )}
