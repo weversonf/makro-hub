@@ -1146,6 +1146,13 @@
       try {
         const rootActs = await window.fb.collection(window.fb.db, 'activities').get();
         const userActs = await userPath('activities').get();
+        const rootCats = await window.fb.collection(window.fb.db, 'categories').get();
+        const userCats = await userPath('categories').get();
+        
+        const msg = 'Raiz: ' + rootActs.size + ' atividades, ' + rootCats.size + ' categorias | Usuario: ' + userActs.size + ' atividades, ' + userCats.size + ' categorias';
+        console.log(msg);
+        showToast(msg, 'info');
+
         if(!rootActs.empty && userActs.empty) {
           const batch = window.fb.db.batch();
           rootActs.forEach(d => {
@@ -1153,11 +1160,9 @@
             batch.set(ref, d.data());
           });
           await batch.commit();
-          showToast('Atividades migradas!', 'success');
+          showToast(rootActs.size + ' atividades migradas!', 'success');
         }
 
-        const rootCats = await window.fb.collection(window.fb.db, 'categories').get();
-        const userCats = await userPath('categories').get();
         if(!rootCats.empty && userCats.empty) {
           const batch = window.fb.db.batch();
           rootCats.forEach(d => {
@@ -1165,9 +1170,12 @@
             batch.set(ref, d.data());
           });
           await batch.commit();
-          showToast('Categorias migradas!', 'success');
+          showToast(rootCats.size + ' categorias migradas!', 'success');
         }
-      } catch(e) { console.error('Migration error:', e); }
+      } catch(e) {
+        console.error('Migration error:', e);
+        showToast('Erro na migracao: ' + e.message, 'error');
+      }
 
       localStorage.setItem('migrated_' + uid, '1');
     }
