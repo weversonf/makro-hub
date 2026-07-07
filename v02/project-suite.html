@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flowspace — Project Suite v2</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18.2.0/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+  <script>if(window.React&&!window.React.PropTypes)window.React.PropTypes=window.PropTypes;</script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCGemp_OA8savCmLZfX7Us0nmDpdbpv4N0",
+      authDomain: "mytasks-saturday.firebaseapp.com",
+      projectId: "mytasks-saturday",
+      storageBucket: "mytasks-saturday.firebasestorage.app",
+      messagingSenderId: "647554172397",
+      appId: "1:647554172397:web:aac3ef00938ee7cd8f13e4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    window.fb = { db, auth, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged };
+    window.dispatchEvent(new Event('firebase-ready'));
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    body { margin: 0; background: #F7F8FC; }
+    @keyframes fadeSlide { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+    ::-webkit-scrollbar { height: 6px; width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #D8DBE3; border-radius: 8px; }
+    .dark-mode { background: #0E0F14; }
+    .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 100; display: flex; align-items: center; justify-content: center; }
+    .modal-content { background: #fff; border-radius: 20px; width: 100%; max-width: 560px; max-height: 90vh; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.2); animation: fadeSlide 0.2s ease; }
+    .dark .modal-content { background: #1A1C25; border: 1px solid #22242E; }
+    .modal-input { width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid #E5E7EB; font-size: 13px; font-weight: 500; outline: none; transition: all 0.2s; background: #F9FAFB; color: #222; }
+    .dark .modal-input { background: #15171F; border-color: #22242E; color: #fff; }
+    .modal-input:focus { border-color: #3B82F6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .modal-select { width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid #E5E7EB; font-size: 13px; font-weight: 500; outline: none; background: #F9FAFB; color: #222; cursor: pointer; }
+    .dark .modal-select { background: #15171F; border-color: #22242E; color: #fff; }
+    .modal-select option { background: #fff; color: #222; }
+    .dark .modal-select option { background: #15171F; color: #fff; }
+
+    /* Login */
+    .login-bg { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .login-card { background: white; border-radius: 24px; padding: 48px; width: 100%; max-width: 400px; box-shadow: 0 25px 60px rgba(0,0,0,0.3); animation: fadeSlide 0.3s ease; }
+    .login-input { width: 100%; padding: 14px 16px; border-radius: 12px; border: 2px solid #E5E7EB; font-size: 14px; font-weight: 500; outline: none; transition: all 0.2s; }
+    .login-input:focus { border-color: #3B82F6; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
+    .login-btn { width: 100%; padding: 14px; border-radius: 12px; background: linear-gradient(135deg, #3B82F6, #7C3AED); color: white; font-size: 14px; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s; }
+    .login-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 25px rgba(59,130,246,0.4); }
+    .login-btn:active { transform: translateY(0); }
+
+    /* Settings */
+    .settings-card { border-radius: 16px; padding: 24px; transition: all 0.2s; }
+    .settings-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
+    .api-status { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .api-connected { background: #DCFCE7; color: #15803D; }
+    .api-disconnected { background: #FEE2E2; color: #B91C1C; }
+    .api-pending { background: #FEF3C7; color: #B45309; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useRef, useEffect } = React;
+
+    /* ── ICONS (pure inline SVG — no lucide.createIcons) ────────────── */
+    const ICON_PATHS = {
+      "layout-dashboard": <><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></>,
+      "folder-kanban": <><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/><path d="M8 10h4"/><path d="M8 14h2"/></>,
+      "table-2": <><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></>,
+      "trello": <><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h4v10H7z"/><path d="M13 7h4v6h-4z"/></>,
+      "calendar-clock": <><path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h5"/><path d="M17.5 17.5 16 16.3V14"/><circle cx="16" cy="16" r="6"/></>,
+      "calendar-days": <><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></>,
+      "settings": <><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></>,
+      "briefcase": <><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="6" rx="2"/></>,
+      "search": <><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></>,
+      "plus": <><path d="M5 12h14"/><path d="M12 5v14"/></>,
+      "bell": <><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></>,
+      "sun": <><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></>,
+      "moon": <><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></>,
+      "chevron-right": <><path d="m9 18 6-6-6-6"/></>,
+      "chevron-left": <><path d="m15 18-6-6 6-6"/></>,
+      "chevron-down": <><path d="m6 9 6 6 6-6"/></>,
+      "more-horizontal": <><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></>,
+      "message-square": <><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></>,
+      "paperclip": <><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></>,
+      "clock": <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>,
+      "filter": <><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></>,
+      "check-circle-2": <><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></>,
+      "user-square-2": <><path d="M18 21a6 6 0 0 0-12 0"/><circle cx="12" cy="11" r="4"/><rect width="18" height="18" x="3" y="3" rx="2"/></>,
+    };
+
+    function Icon({ name, size = 18, strokeWidth = 2, className = "" }) {
+      const paths = ICON_PATHS[name];
+      if (!paths) return null;
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round"
+          className={className} style={{ flexShrink: 0 }}>
+          {paths}
+        </svg>
+      );
+    }
+
+    /* ── DATA ───────────────────────────────────────────────────────── */
+    const NAV_ITEMS = [
+      { key: "dashboard", label: "Dashboard", icon: "layout-dashboard" },
+      { key: "projetos", label: "Projetos", icon: "folder-kanban" },
+      { key: "atividades", label: "Atividades", icon: "briefcase", sub: [
+        { key: "lista", label: "Lista" },
+        { key: "kanban", label: "Kanban" },
+        { key: "cronograma", label: "Cronograma" },
+      ]},
+      { key: "editorial", label: "Editorial", icon: "calendar-days" },
+      { key: "configuracoes", label: "Configurações", icon: "settings" },
+    ];
+
+    const KPI = [
+      { label: "Projetos", value: "24", sub: "+3 este mês", color: "#3B82F6", icon: "folder-kanban" },
+      { label: "Tarefas", value: "312", sub: "18 novas hoje", color: "#7C3AED", icon: "check-circle-2" },
+      { label: "Em andamento", value: "87", sub: "62% do total", color: "#F59E0B", icon: "clock" },
+      { label: "Concluídas", value: "196", sub: "+12 esta semana", color: "#22C55E", icon: "check-circle-2" },
+      { label: "Horas", value: "1.284h", sub: "média 6.4h/dia", color: "#3B82F6", icon: "clock" },
+      { label: "Clientes", value: "38", sub: "5 ativos agora", color: "#EF4444", icon: "user-square-2" },
+    ];
+
+    const STATUS_STYLES = {
+      "Done": { bg: "#DCFCE7", text: "#15803D", dot: "#22C55E" },
+      "Working On It": { bg: "#FEF3C7", text: "#B45309", dot: "#F59E0B" },
+      "Stuck": { bg: "#FEE2E2", text: "#B91C1C", dot: "#EF4444" },
+      "Waiting": { bg: "#F3F4F6", text: "#4B5563", dot: "#9CA3AF" },
+      "Review": { bg: "#DBEAFE", text: "#1D4ED8", dot: "#3B82F6" },
+      "Planning": { bg: "#EDE9FE", text: "#6D28D9", dot: "#7C3AED" },
+    };
+    const STATUS_LIST = Object.keys(STATUS_STYLES);
+
+    const PEOPLE = [
+      { name: "Ana Souza", color: "#3B82F6", initials: "AS" },
+      { name: "Bruno Lima", color: "#7C3AED", initials: "BL" },
+      { name: "Carla Dias", color: "#F59E0B", initials: "CD" },
+      { name: "Diego Alves", color: "#22C55E", initials: "DA" },
+      { name: "Elis Nunes", color: "#EF4444", initials: "EN" },
+    ];
+
+    const initialRows = [
+      { id: 1, name: "Redesign do site institucional", owners: [0, 1], status: "Working On It", start: 20, len: 30, date: "12 Jul", priority: 3, tags: ["Design", "Web"], progress: 62, comments: 8, files: 4 },
+      { id: 2, name: "App mobile - módulo financeiro", owners: [2], status: "Stuck", start: 10, len: 20, date: "05 Jul", priority: 4, tags: ["Mobile"], progress: 24, comments: 3, files: 1 },
+      { id: 3, name: "Migração de infraestrutura AWS", owners: [3, 4], status: "Planning", start: 40, len: 25, date: "22 Jul", priority: 2, tags: ["DevOps", "Infra"], progress: 8, comments: 1, files: 0 },
+      { id: 4, name: "Campanha de marketing Q3", owners: [1], status: "Review", start: 5, len: 35, date: "01 Jul", priority: 3, tags: ["Marketing"], progress: 85, comments: 15, files: 9 },
+      { id: 5, name: "Integração API de pagamentos", owners: [0, 3], status: "Done", start: 0, len: 40, date: "28 Jun", priority: 5, tags: ["Backend", "API"], progress: 100, comments: 22, files: 6 },
+      { id: 6, name: "Onboarding de novos clientes", owners: [2, 4], status: "Waiting", start: 55, len: 15, date: "30 Jul", priority: 1, tags: ["CS"], progress: 0, comments: 0, files: 2 },
+    ];
+
+    const KANBAN_COLUMNS = [
+      { key: "backlog", label: "Backlog", color: "#9CA3AF" },
+      { key: "todo", label: "To Do", color: "#3B82F6" },
+      { key: "doing", label: "Doing", color: "#F59E0B" },
+      { key: "review", label: "Review", color: "#7C3AED" },
+      { key: "done", label: "Done", color: "#22C55E" },
+    ];
+
+    const initialCards = [
+      { id: "c1", col: "backlog", title: "Definir identidade visual v2", desc: "Levantar referências e paleta para o novo branding.", owners: [1], checklist: [3, 5], comments: 2, files: 1, time: "2h 10m", date: "18 Jul" },
+      { id: "c2", col: "backlog", title: "Pesquisa com usuários", desc: "Entrevistas com 8 clientes ativos.", owners: [0, 2], checklist: [0, 4], comments: 0, files: 0, time: "0h", date: "20 Jul" },
+      { id: "c3", col: "todo", title: "Wireframes do dashboard", desc: "Baixa fidelidade, foco em hierarquia.", owners: [3], checklist: [2, 2], comments: 4, files: 3, time: "1h 40m", date: "15 Jul" },
+      { id: "c4", col: "todo", title: "Configurar ambiente de staging", desc: "Docker + pipeline de deploy automático.", owners: [4], checklist: [1, 3], comments: 1, files: 0, time: "3h", date: "16 Jul" },
+      { id: "c5", col: "doing", title: "Tela de login e autenticação", desc: "Incluir 2FA e login social.", owners: [0], checklist: [4, 6], comments: 6, files: 2, time: "5h 25m", date: "13 Jul" },
+      { id: "c6", col: "doing", title: "Componente de tabela virtualizada", desc: "Suporte a 10k+ linhas sem travar.", owners: [3, 1], checklist: [2, 5], comments: 3, files: 1, time: "4h 05m", date: "14 Jul" },
+      { id: "c7", col: "review", title: "Revisão de acessibilidade", desc: "Contraste, foco de teclado, ARIA labels.", owners: [2], checklist: [5, 5], comments: 9, files: 0, time: "1h 15m", date: "10 Jul" },
+      { id: "c8", col: "done", title: "Setup do design system", desc: "Tokens de cor, tipografia e espaçamento.", owners: [1, 4], checklist: [6, 6], comments: 12, files: 5, time: "8h 30m", date: "01 Jul" },
+    ];
+
+    /* ── UI PRIMITIVES ──────────────────────────────────────────────── */
+    function Avatar({ person, size = 28 }) {
+      return (
+        <div title={person.name}
+          className="rounded-full flex items-center justify-center text-white font-medium ring-2 ring-white shrink-0 select-none"
+          style={{ width: size, height: size, background: person.color, fontSize: size * 0.38 }}>
+          {person.initials}
+        </div>
+      );
+    }
+
+    function AvatarStack({ ids }) {
+      return (
+        <div className="flex items-center -space-x-2">
+          {ids.map((i) => <Avatar key={i} person={PEOPLE[i]} />)}
+        </div>
+      );
+    }
+
+    function StatusPill({ status, onChange }) {
+      const [open, setOpen] = useState(false);
+      const s = STATUS_STYLES[status];
+      return (
+        <div className="relative">
+          <button onClick={() => setOpen(o => !o)}
+            className="px-3.5 py-1.5 rounded-full text-[13px] font-semibold flex items-center gap-1.5 transition-all duration-150 hover:brightness-95"
+            style={{ background: s.bg, color: s.text }}>
+            {status} <Icon name="chevron-down" size={13} strokeWidth={2.5} />
+          </button>
+          {open && <>
+            <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+            <div className="absolute z-20 mt-1.5 w-44 bg-white rounded-xl shadow-lg border border-gray-100 p-1.5" style={{ animation: 'fadeSlide .15s ease' }}>
+              {STATUS_LIST.map(opt => (
+                <button key={opt} onClick={() => { onChange(opt); setOpen(false); }}
+                  className="w-full text-left px-2.5 py-1.5 rounded-lg text-[13px] font-medium flex items-center gap-2 hover:bg-gray-50 transition-colors">
+                  <span className="w-2 h-2 rounded-full" style={{ background: STATUS_STYLES[opt].dot }} />
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </>}
+        </div>
+      );
+    }
+
+    function PriorityStars({ level }) {
+      return (
+        <div className="flex items-center gap-0.5">
+          {[1,2,3,4,5].map(n => (
+            <svg key={n} width="14" height="14" viewBox="0 0 24 24" fill={n <= level ? "#F59E0B" : "#E5E7EB"} stroke="none">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+          ))}
+        </div>
+      );
+    }
+
+    function TimelineBar({ start, len }) {
+      const color = len + start > 90 ? "#22C55E" : len > 30 ? "#3B82F6" : "#F59E0B";
+      return (
+        <div className="relative w-40 h-2.5 bg-gray-100 rounded-full overflow-hidden">
+          <div className="absolute top-0 h-full rounded-full transition-all" style={{ left: `${start}%`, width: `${len}%`, background: color }} />
+        </div>
+      );
+    }
+
+    function ProgressBar({ value }) {
+      const color = value === 100 ? "#22C55E" : value > 50 ? "#3B82F6" : "#F59E0B";
+      return (
+        <div className="flex items-center gap-2 w-28">
+          <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-full rounded-full transition-all" style={{ width: `${value}%`, background: color }} />
+          </div>
+          <span className="text-[11px] font-medium text-gray-500 w-8 text-right">{value}%</span>
+        </div>
+      );
+    }
+
+    function Tag({ children }) {
+      return <span className="px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 text-[11px] font-medium">{children}</span>;
+    }
+
+    /* ── SIDEBAR ────────────────────────────────────────────────────── */
+    function Sidebar({ active, setActive, dark, activeCount = 0, donePct = 0 }) {
+      const [expanded, setExpanded] = useState({ atividades: true, calendario: true });
+
+      const toggleExpand = (key) => {
+        setExpanded(prev => ({ ...prev, [key]: !prev[key] }));
+      };
+
+      const isActiveParent = (item) => {
+        if (item.sub) return item.sub.some(s => s.key === active);
+        return active === item.key;
+      };
+
+      return (
+        <aside className="fixed left-0 top-0 h-screen w-[250px] flex flex-col border-r z-30"
+          style={{ background: dark ? "#15171F" : "#FFFFFF", borderColor: dark ? "#22242E" : "#EEF0F5" }}>
+          <div className="h-16 flex items-center gap-2.5 px-6">
+            <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">F</div>
+            <span className={`font-semibold text-[15px] tracking-tight ${dark ? "text-white" : "text-gray-900"}`}>Flowspace</span>
+          </div>
+          <nav className="flex-1 px-3 mt-3 space-y-0.5 overflow-y-auto">
+            {NAV_ITEMS.map(item => {
+              const isActive = isActiveParent(item);
+              const hasSub = item.sub && item.sub.length > 0;
+              const isExpanded = expanded[item.key];
+
+              return (
+                <div key={item.key}>
+                  {/* Parent item */}
+                  <button
+                    onClick={() => {
+                      if (hasSub) {
+                        toggleExpand(item.key);
+                        // Also navigate to first sub-item if not already on a sub-item
+                        if (!item.sub.some(s => s.key === active)) {
+                          setActive(item.sub[0].key);
+                        }
+                      } else {
+                        setActive(item.key);
+                      }
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[13.5px] font-medium transition-all duration-150"
+                    style={{
+                      background: isActive ? (dark ? "rgba(59,130,246,0.16)" : "#EFF4FF") : "transparent",
+                      color: isActive ? "#3B82F6" : dark ? "#9CA3AF" : "#4B5563",
+                    }}
+                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = dark ? "#1C1E27" : "#F7F8FC"; }}
+                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}>
+                    <Icon name={item.icon} size={17} strokeWidth={2} />
+                    <span className="flex-1 text-left">{item.label}</span>
+                    {hasSub && (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                        className="transition-transform duration-200"
+                        style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)', opacity: 0.5 }}>
+                        <polyline points="9 18 15 12 9 6"/>
+                      </svg>
+                    )}
+                  </button>
+
+                  {/* Sub items */}
+                  {hasSub && isExpanded && (
+                    <div className="ml-4 mt-0.5 space-y-0.5 border-l-2 pl-3" style={{ borderColor: dark ? "#22242E" : "#EEF0F5" }}>
+                      {item.sub.map(sub => {
+                        const isSubActive = active === sub.key;
+                        return (
+                          <button key={sub.key} onClick={() => setActive(sub.key)}
+                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[12.5px] font-medium transition-all duration-150"
+                            style={{
+                              background: isSubActive ? (dark ? "rgba(59,130,246,0.12)" : "#EFF4FF") : "transparent",
+                              color: isSubActive ? "#3B82F6" : dark ? "#6B7280" : "#9CA3AF",
+                            }}
+                            onMouseEnter={e => { if (!isSubActive) e.currentTarget.style.background = dark ? "#1C1E27" : "#F7F8FC"; }}
+                            onMouseLeave={e => { if (!isSubActive) e.currentTarget.style.background = "transparent"; }}>
+                            {sub.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </nav>
+          <div className={`m-3 p-3.5 rounded-2xl ${dark ? "bg-gray-800/50" : "bg-gray-50"}`}>
+            <p className={`text-[12px] font-semibold ${dark ? "text-white" : "text-gray-900"}`}>{donePct}% do Projeto</p>
+            <p className="text-[11px] text-gray-500 mt-0.5">{activeCount} atividades em andamento</p>
+            <div className="h-1.5 bg-gray-200 rounded-full mt-2 overflow-hidden">
+              <div className="h-full rounded-full transition-all" style={{ width: `${donePct}%`, background: donePct >= 80 ? "#22C55E" : donePct >= 40 ? "#3B82F6" : "#F59E0B" }} />
+            </div>
+          </div>
+        </aside>
+      );
+    }
+
+    /* ── HEADER ─────────────────────────────────────────────────────── */
+    function Header({ dark, setDark, crumbs, active, onSearch, onNewActivity, user }) {
+      const [notifOpen, setNotifOpen] = useState(false);
+      const [searchVal, setSearchVal] = useState('');
+      const isProjetos = active === 'projetos';
+
+      const handleSearch = (e) => {
+        setSearchVal(e.target.value);
+        if (onSearch) onSearch(e.target.value);
+      };
+      return (
+        <header className="fixed top-0 right-0 left-[250px] h-16 flex items-center justify-between px-8 z-20 backdrop-blur-sm border-b"
+          style={{ background: dark ? "rgba(21,23,31,0.85)" : "rgba(255,255,255,0.85)", borderColor: dark ? "#22242E" : "#EEF0F5" }}>
+          <div className="flex items-center gap-1.5 text-[13px]">
+            {crumbs.map((c, i) => (
+              <React.Fragment key={c}>
+                {i > 0 && <Icon name="chevron-right" size={13} className="text-gray-400" />}
+                <span className={i === crumbs.length - 1 ? (dark ? "text-white font-semibold" : "text-gray-900 font-semibold") : "text-gray-400"}>{c}</span>
+              </React.Fragment>
+            ))}
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Icon name="search" size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input placeholder="Pesquisar projetos, tarefas, clientes..."
+                value={searchVal} onChange={handleSearch}
+                className="pl-10 pr-4 py-2 w-72 rounded-full text-[13px] outline-none transition-all focus:w-80"
+                style={{ background: dark ? "#1C1E27" : "#F3F4F6", color: dark ? "#E5E7EB" : "#222" }} />
+            </div>
+            <button onClick={onNewActivity} className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-500 text-white text-[13px] font-semibold hover:bg-blue-600 transition-all active:scale-[0.97] shadow-[0_4px_14px_rgba(59,130,246,0.35)]">
+              <Icon name="plus" size={15} strokeWidth={2.5} /> {isProjetos ? 'Novo Projeto' : 'Nova Atividade'}
+            </button>
+            <button onClick={() => setDark(!dark)}
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${dark ? "bg-gray-800 text-yellow-500" : "bg-gray-100 text-gray-600"}`}>
+              <Icon name={dark ? "sun" : "moon"} size={16} />
+            </button>
+            <div className="relative">
+              <button onClick={() => setNotifOpen(o => !o)}
+                className={`w-9 h-9 rounded-full flex items-center justify-center relative transition-colors ${dark ? "bg-gray-800 text-gray-400" : "bg-gray-100 text-gray-600"}`}>
+                <Icon name="bell" size={16} />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white" />
+              </button>
+              {notifOpen && <>
+                <div className="fixed inset-0 z-10" onClick={() => setNotifOpen(false)} />
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 z-20 overflow-hidden" style={{ animation: 'fadeSlide .15s ease' }}>
+                  <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                    <span className="font-semibold text-[13.5px] text-gray-900">Notificações</span>
+                    <span className="text-[11px] text-blue-500 font-medium">{NOTIFICATIONS.filter(n => !n.read).length} não lidas</span>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto">
+                    {NOTIFICATIONS.length > 0 ? NOTIFICATIONS.map((n, i) => (
+                      <div key={i} className="px-4 py-3 flex gap-3 hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-50">
+                        <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ background: n.urgent ? '#EF4444' : n.color || '#3B82F6' }} />
+                        <div className="min-w-0">
+                          <p className="text-[12.5px] text-gray-900 leading-snug">
+                            <span className="font-semibold">{n.who}</span> {n.what}
+                          </p>
+                          <p className="text-[11px] text-gray-400 mt-0.5">{n.when}</p>
+                        </div>
+                      </div>
+                    )) : (
+                      <div className="px-4 py-6 text-center text-[12px] text-gray-400">Sem notificações</div>
+                    )}
+                  </div>
+                </div>
+              </>}
+            </div>
+            <Avatar person={PEOPLE[0]} size={34} />
+            <span className="text-[11px] font-bold text-gray-500 hidden md:block">{user?.email}</span>
+          </div>
+        </header>
+      );
+    }
+
+    /* ── DASHBOARD ──────────────────────────────────────────────────── */
+    function Dashboard({ dark }) {
+      return (
+        <div className="grid grid-cols-3 gap-5">
+          {KPI.map(k => (
+            <div key={k.label} className="relative rounded-2xl p-5 flex items-center gap-4 overflow-hidden transition-shadow hover:shadow-lg"
+              style={{ background: dark ? "#1A1C25" : "#FFFFFF", boxShadow: "0 2px 12px rgba(20,20,43,0.05)" }}>
+              <span className="absolute left-0 top-0 h-full w-1.5 rounded-l-2xl" style={{ background: k.color }} />
+              <div className="w-11 h-11 rounded-[12px] flex items-center justify-center shrink-0" style={{ background: `${k.color}1A`, color: k.color }}>
+                <Icon name={k.icon} size={20} />
+              </div>
+              <div className="min-w-0">
+                <p className={`text-[22px] font-bold leading-none ${dark ? "text-white" : "text-gray-900"}`}>{k.value}</p>
+                <p className="text-[12.5px] text-gray-500 mt-1.5 font-medium">{k.label}</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">{k.sub}</p>
+              </div>
+            </div>
+          ))}
+          <div className="col-span-2 rounded-2xl p-6" style={{ background: dark ? "#1A1C25" : "#FFFFFF", boxShadow: "0 2px 12px rgba(20,20,43,0.05)" }}>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className={`font-semibold text-[15px] ${dark ? "text-white" : "text-gray-900"}`}>Progresso dos projetos</h3>
+              <button className="text-[12px] text-gray-500 flex items-center gap-1"><Icon name="filter" size={13} /> Filtrar</button>
+            </div>
+            <div className="flex items-end gap-4 h-44">
+              {[62, 84, 45, 90, 30, 70, 55, 95, 40, 78].map((v, i) => (
+                <div key={i} className="flex-1 rounded-t-lg transition-all hover:opacity-80" style={{ height: `${v}%`, background: i % 3 === 0 ? "#3B82F6" : i % 3 === 1 ? "#7C3AED" : "#22C55E" }} />
+              ))}
+            </div>
+          </div>
+          <div className="rounded-2xl p-6" style={{ background: dark ? "#1A1C25" : "#FFFFFF", boxShadow: "0 2px 12px rgba(20,20,43,0.05)" }}>
+            <h3 className={`font-semibold text-[15px] mb-5 ${dark ? "text-white" : "text-gray-900"}`}>Status geral</h3>
+            <div className="space-y-3.5">
+              {[{ l: "Concluídas", v: 63, c: "#22C55E" }, { l: "Em andamento", v: 28, c: "#F59E0B" }, { l: "Atrasadas", v: 9, c: "#EF4444" }].map(s => (
+                <div key={s.l}>
+                  <div className="flex justify-between text-[12px] mb-1.5">
+                    <span className="text-gray-500 font-medium">{s.l}</span>
+                    <span className="font-semibold" style={{ color: s.c }}>{s.v}%</span>
+                  </div>
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: `${s.v}%`, background: s.c }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── BOARDS (Monday-style table) ────────────────────────────────── */
+    function Boards({ dark, searchQuery = '' }) {
+      const [rows, setRows] = useState(initialRows);
+      const updateStatus = (id, status) => setRows(r => r.map(row => row.id === id ? { ...row, status } : row));
+      const cols = ["Nome", "Responsável", "Status", "Timeline", "Data", "Prioridade", "Tags", "Progresso", "Comentários", "Arquivos"];
+
+      const filteredRows = searchQuery
+        ? rows.filter(r => r.name.toLowerCase().includes(searchQuery) || r.tags.some(t => t.toLowerCase().includes(searchQuery)) || r.status.toLowerCase().includes(searchQuery))
+        : rows;
+      return (
+        <div className="rounded-2xl overflow-hidden" style={{ background: dark ? "#1A1C25" : "#FFFFFF", boxShadow: "0 2px 12px rgba(20,20,43,0.05)" }}>
+          <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: dark ? "#22242E" : "#F0F1F5" }}>
+            <div className="flex items-center gap-2.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+              <h3 className={`font-semibold text-[15px] ${dark ? "text-white" : "text-gray-900"}`}>Lista de Atividades</h3>
+            </div>
+            <button className="text-[12.5px] text-blue-500 font-medium flex items-center gap-1 hover:underline"><Icon name="plus" size={14} /> Adicionar item</button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr style={{ background: dark ? "#15171F" : "#FAFBFD" }}>
+                  {cols.map(c => <th key={c} className="text-left px-4 py-3 text-[11.5px] font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">{c}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRows.map(row => (
+                  <tr key={row.id} className="group border-t transition-colors" style={{ borderColor: dark ? "#22242E" : "#F3F4F7" }}
+                    onMouseEnter={e => e.currentTarget.style.background = dark ? "#1F212C" : "#FAFBFD"}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                    <td className="px-4 py-4 min-w-[220px]"><span className={`text-[13.5px] font-medium ${dark ? "text-white" : "text-gray-900"}`}>{row.name}</span></td>
+                    <td className="px-4 py-4"><AvatarStack ids={row.owners} /></td>
+                    <td className="px-4 py-4"><StatusPill status={row.status} onChange={s => updateStatus(row.id, s)} /></td>
+                    <td className="px-4 py-4"><TimelineBar start={row.start} len={row.len} /></td>
+                    <td className="px-4 py-4 text-[12.5px] text-gray-500 whitespace-nowrap">{row.date}</td>
+                    <td className="px-4 py-4"><PriorityStars level={row.priority} /></td>
+                    <td className="px-4 py-4"><div className="flex gap-1.5 flex-wrap max-w-[140px]">{row.tags.map(t => <Tag key={t}>{t}</Tag>)}</div></td>
+                    <td className="px-4 py-4"><ProgressBar value={row.progress} /></td>
+                    <td className="px-4 py-4"><span className="flex items-center gap-1.5 text-[12.5px] text-gray-500"><Icon name="message-square" size={13} />{row.comments}</span></td>
+                    <td className="px-4 py-4"><span className="flex items-center gap-1.5 text-[12.5px] text-gray-500"><Icon name="paperclip" size={13} />{row.files}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── KANBAN ─────────────────────────────────────────────────────── */
+    function KanbanCard({ card, dark, onDragStart }) {
+      const [done, total] = card.checklist;
+      return (
+        <div draggable onDragStart={e => onDragStart(e, card.id)}
+          className="rounded-[14px] p-4 mb-3 cursor-grab active:cursor-grabbing transition-all hover:-translate-y-0.5"
+          style={{ background: dark ? "#1F212C" : "#FFFFFF", boxShadow: "0 2px 8px rgba(20,20,43,0.06)" }}>
+          <div className="flex items-start justify-between gap-2 mb-1.5">
+            <p className={`text-[13.5px] font-semibold leading-snug ${dark ? "text-white" : "text-gray-900"}`}>{card.title}</p>
+            <Icon name="more-horizontal" size={15} className="text-gray-400 shrink-0" />
+          </div>
+          <p className="text-[12px] text-gray-400 leading-snug mb-3 line-clamp-2">{card.desc}</p>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-full rounded-full bg-blue-500" style={{ width: `${total ? (done / total) * 100 : 0}%` }} />
+            </div>
+            <span className="text-[10.5px] text-gray-400 font-medium">{done}/{total}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <AvatarStack ids={card.owners} />
+            <div className="flex items-center gap-2.5 text-gray-400">
+              <span className="flex items-center gap-1 text-[11px]"><Icon name="message-square" size={12} />{card.comments}</span>
+              <span className="flex items-center gap-1 text-[11px]"><Icon name="paperclip" size={12} />{card.files}</span>
+              <span className="flex items-center gap-1 text-[11px]"><Icon name="clock" size={12} />{card.time}</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function Kanban({ dark, searchQuery = '' }) {
+      const [cards, setCards] = useState(initialCards);
+      const dragId = useRef(null);
+      const onDragStart = (e, id) => { dragId.current = id; };
+      const onDrop = (e, colKey) => { e.preventDefault(); setCards(cs => cs.map(c => c.id === dragId.current ? { ...c, col: colKey } : c)); };
+
+      const filteredCards = searchQuery
+        ? cards.filter(c => c.title.toLowerCase().includes(searchQuery) || c.desc.toLowerCase().includes(searchQuery))
+        : cards;
+      return (
+        <div className="flex gap-5 overflow-x-auto pb-4" style={{ minHeight: "70vh" }}>
+          {KANBAN_COLUMNS.map(col => {
+            const colCards = filteredCards.filter(c => c.col === col.key);
+            return (
+              <div key={col.key} onDragOver={e => e.preventDefault()} onDrop={e => onDrop(e, col.key)}
+                className="w-[290px] shrink-0 rounded-2xl p-3.5" style={{ background: dark ? "#15171F" : "#F7F8FC" }}>
+                <div className="flex items-center justify-between px-1.5 mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full" style={{ background: col.color }} />
+                    <span className={`text-[13px] font-semibold ${dark ? "text-white" : "text-gray-900"}`}>{col.label}</span>
+                    <span className="text-[11px] text-gray-400 font-medium bg-gray-200/60 px-1.5 py-0.5 rounded-md">{colCards.length}</span>
+                  </div>
+                  <Icon name="plus" size={15} className="text-gray-400 cursor-pointer hover:text-blue-500 transition-colors" />
+                </div>
+                {colCards.map(card => <KanbanCard key={card.id} card={card} dark={dark} onDragStart={onDragStart} />)}
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    /* ── CRONOGRAMA (Gantt-style timeline) ──────────────────────────── */
+    const GANTT_DATA = [
+      { id: 1, name: "Redesign do site", owner: "AS", color: "#3B82F6", start: 5, duration: 25, progress: 62, status: "Working On It" },
+      { id: 2, name: "App mobile - financeiro", owner: "CD", color: "#F59E0B", start: 0, duration: 18, progress: 24, status: "Stuck" },
+      { id: 3, name: "Migração AWS", owner: "DA", color: "#7C3AED", start: 20, duration: 22, progress: 8, status: "Planning" },
+      { id: 4, name: "Campanha Q3", owner: "BL", color: "#22C55E", start: 3, duration: 30, progress: 85, status: "Review" },
+      { id: 5, name: "API pagamentos", owner: "AS", color: "#3B82F6", start: 0, duration: 35, progress: 100, status: "Done" },
+      { id: 6, name: "Onboarding clientes", owner: "EN", color: "#EF4444", start: 30, duration: 12, progress: 0, status: "Waiting" },
+      { id: 7, name: "Design system v2", owner: "BL", color: "#7C3AED", start: 10, duration: 20, progress: 45, status: "Working On It" },
+      { id: 8, name: "Testes automatizados", owner: "DA", color: "#22C55E", start: 25, duration: 15, progress: 10, status: "Planning" },
+    ];
+
+    const GANTT_WEEKS = ["Sem 1", "Sem 2", "Sem 3", "Sem 4", "Sem 5", "Sem 6", "Sem 7", "Sem 8"];
+
+    function Cronograma({ dark }) {
+      const [hoveredRow, setHoveredRow] = useState(null);
+      return (
+        <div className="rounded-2xl overflow-hidden" style={{ background: dark ? "#1A1C25" : "#FFFFFF", boxShadow: "0 2px 12px rgba(20,20,43,0.05)" }}>
+          <div className="px-6 py-4 border-b flex items-center justify-between" style={{ borderColor: dark ? "#22242E" : "#F0F1F5" }}>
+            <div className="flex items-center gap-2.5">
+              <Icon name="calendar-clock" size={18} className="text-blue-500" />
+              <h3 className={`font-semibold text-[15px] ${dark ? "text-white" : "text-gray-900"}`}>Cronograma do Projeto</h3>
+            </div>
+            <div className="flex items-center gap-2">
+              {[
+                { l: "Concluído", c: "#22C55E" }, { l: "Em andamento", c: "#3B82F6" },
+                { l: "Atrasado", c: "#EF4444" }, { l: "Planejado", c: "#9CA3AF" },
+              ].map(s => (
+                <span key={s.l} className="flex items-center gap-1.5 text-[10px] font-medium text-gray-500">
+                  <span className="w-2 h-2 rounded-full" style={{ background: s.c }} />{s.l}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex">
+            {/* Left: task names */}
+            <div className="w-[220px] shrink-0 border-r" style={{ borderColor: dark ? "#22242E" : "#F0F1F5" }}>
+              <div className="h-10 px-4 flex items-center text-[10px] font-bold text-gray-400 uppercase tracking-widest" style={{ background: dark ? "#15171F" : "#FAFBFD" }}>Atividade</div>
+              {GANTT_DATA.map((row, i) => (
+                <div key={row.id} className="h-12 px-4 flex items-center gap-3 border-t transition-colors"
+                  style={{ borderColor: dark ? "#22242E" : "#F3F4F7", background: hoveredRow === i ? (dark ? "#1F212C" : "#FAFBFD") : "transparent" }}
+                  onMouseEnter={() => setHoveredRow(i)} onMouseLeave={() => setHoveredRow(null)}>
+                  <span className="w-6 h-6 rounded-full text-[9px] font-bold text-white flex items-center justify-center shrink-0" style={{ background: row.color }}>{row.owner}</span>
+                  <span className={`text-[12.5px] font-medium truncate ${dark ? "text-white" : "text-gray-900"}`}>{row.name}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Right: timeline bars */}
+            <div className="flex-1 overflow-x-auto">
+              <div className="flex" style={{ minWidth: "600px" }}>
+                {GANTT_WEEKS.map((w, i) => (
+                  <div key={w} className="flex-1 h-10 px-2 flex items-center text-[10px] font-bold text-gray-400 uppercase tracking-widest border-r border-b"
+                    style={{ borderColor: dark ? "#22242E" : "#F0F1F5", background: dark ? "#15171F" : "#FAFBFD" }}>{w}</div>
+                ))}
+              </div>
+              {GANTT_DATA.map((row, i) => {
+                const barColor = row.progress === 100 ? "#22C55E" : row.progress > 50 ? "#3B82F6" : row.progress > 0 ? "#F59E0B" : "#9CA3AF";
+                return (
+                  <div key={row.id} className="relative h-12 flex border-t transition-colors"
+                    style={{ borderColor: dark ? "#22242E" : "#F3F4F7", background: hoveredRow === i ? (dark ? "#1F212C" : "#FAFBFD") : "transparent" }}
+                    onMouseEnter={() => setHoveredRow(i)} onMouseLeave={() => setHoveredRow(null)}>
+                    {GANTT_WEEKS.map((_, wi) => (
+                      <div key={wi} className="flex-1 border-r" style={{ borderColor: dark ? "#22242E" : "#F3F4F7" }} />
+                    ))}
+                    {/* Bar */}
+                    <div className="absolute top-1/2 -translate-y-1/2 h-6 rounded-md flex items-center overflow-hidden"
+                      style={{ left: `${(row.start / 56) * 100}%`, width: `${(row.duration / 56) * 100}%`, background: `${barColor}20`, border: `1px solid ${barColor}40` }}>
+                      <div className="h-full rounded-md transition-all" style={{ width: `${row.progress}%`, background: barColor }} />
+                      <span className="text-[9px] font-bold px-2 shrink-0" style={{ color: barColor }}>{row.progress}%</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── CALENDÁRIO EDITORIAL ───────────────────────────────────────── */
+    const PLATFORMS = [
+      { id: 'ig', name: 'Instagram', color: '#E1306C' },
+      { id: 'fb', name: 'Facebook', color: '#1877F2' },
+      { id: 'li', name: 'LinkedIn', color: '#0A66C2' },
+      { id: 'blog', name: 'WordPress', color: '#21759B' },
+    ];
+
+    function PlatformLogo({ id, size = 16, rounded = false }) {
+      const urls = {
+        ig: 'https://cdn.simpleicons.org/instagram/E1306C',
+        fb: 'https://cdn.simpleicons.org/facebook/1877F2',
+        li: 'https://cdn.simpleicons.org/linkedin/0A66C2',
+        blog: 'https://cdn.simpleicons.org/wordpress/21759B',
+      };
+      return (
+        <img src={urls[id]} alt={id} width={size} height={size}
+          style={{ borderRadius: rounded ? '4px' : '0', display: 'block' }} />
+      );
+    }
+
+    const POST_STATUS = {
+      rascunho: { label: 'Rascunho', bg: '#F3F4F6', text: '#6B7280', dot: '#9CA3AF' },
+      agendado: { label: 'Agendado', bg: '#DBEAFE', text: '#1D4ED8', dot: '#3B82F6' },
+      publicando: { label: 'Publicando', bg: '#FEF3C7', text: '#B45309', dot: '#F59E0B' },
+      publicado: { label: 'Publicado', bg: '#DCFCE7', text: '#15803D', dot: '#22C55E' },
+      erro: { label: 'Erro', bg: '#FEE2E2', text: '#B91C1C', dot: '#EF4444' },
+    };
+
+    let editorialIdCounter = 100;
+    const EDITORIAL_POSTS = [
+      { id: 1, date: "2026-07-02", time: "10:00", title: "Post Instagram - Lançamento Q3", desc: "Carrossel com fotos do novo produto.", platforms: ['ig'], status: "publicado", publishedAt: "2026-07-02T10:00:00" },
+      { id: 2, date: "2026-07-02", time: "14:00", title: "Artigo Blog - Tendências Tech", desc: "Post longo sobre IA e automação.", platforms: ['blog'], status: "publicado", publishedAt: "2026-07-02T14:00:00" },
+      { id: 3, date: "2026-07-05", time: "09:00", title: "Post LinkedIn - Case de sucesso", desc: "Case do cliente X com resultados.", platforms: ['li'], status: "agendado" },
+      { id: 4, date: "2026-07-08", time: "11:00", title: "Reel - Bastidores do projeto", desc: "Vídeo curto mostrando o processo.", platforms: ['ig', 'fb'], status: "agendado" },
+      { id: 5, date: "2026-07-10", time: "08:30", title: "Story - Enquete produtos", desc: "Enquete interativa sobre preferências.", platforms: ['ig'], status: "rascunho" },
+      { id: 6, date: "2026-07-12", time: "10:00", title: "Artigo Blog - SEO avançado", desc: "Guia completo de SEO para 2026.", platforms: ['blog'], status: "rascunho" },
+      { id: 7, date: "2026-07-15", time: "15:00", title: "Post Facebook - Promoção", desc: "Promoção de verão com desconto.", platforms: ['fb', 'ig'], status: "agendado" },
+      { id: 8, date: "2026-07-18", time: "09:00", title: "Post LinkedIn - Vaga aberta", desc: "Divulgação de vaga de dev.", platforms: ['li'], status: "rascunho" },
+      { id: 9, date: "2026-07-22", time: "12:00", title: "Post Instagram - Dica rápida", desc: "Carousel de 5 dicas práticas.", platforms: ['ig'], status: "agendado" },
+      { id: 10, date: "2026-07-25", time: "10:00", title: "Artigo Blog - Review produto", desc: "Review completo do produto Y.", platforms: ['blog', 'li'], status: "rascunho" },
+    ];
+
+    const MONTHS_PT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+
+    function Calendario({ dark }) {
+      const [calDate, setCalDate] = useState(new Date(2026, 6, 1));
+      const [selectedDay, setSelectedDay] = useState(null);
+      const [posts, setPosts] = useState(EDITORIAL_POSTS);
+      const [showPostModal, setShowPostModal] = useState(false);
+      const [editingPost, setEditingPost] = useState(null);
+      const [filterStatus, setFilterStatus] = useState('todos');
+
+      const y = calDate.getFullYear(), m = calDate.getMonth();
+      const firstDay = new Date(y, m, 1).getDay();
+      const daysInMonth = new Date(y, m + 1, 0).getDate();
+      const daysInPrev = new Date(y, m, 0).getDate();
+      const today = new Date().toISOString().split('T')[0];
+
+      const filteredPosts = filterStatus === 'todos' ? posts : posts.filter(p => p.status === filterStatus);
+
+      const days = [];
+      for (let i = firstDay - 1; i >= 0; i--) days.push({ day: daysInPrev - i, other: true });
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const dayPosts = filteredPosts.filter(p => p.date === dateStr);
+        days.push({ day: d, date: dateStr, posts: dayPosts, isToday: dateStr === today });
+      }
+      const remaining = 42 - days.length;
+      for (let d = 1; d <= remaining; d++) days.push({ day: d, other: true });
+
+      const selectedPosts = selectedDay ? filteredPosts.filter(p => p.date === selectedDay) : [];
+
+      const publishPost = (post) => {
+        setPosts(prev => prev.map(p => p.id === post.id ? { ...p, status: 'publicando' } : p));
+        // Simula publicação (em produção, chamaria n8n webhook)
+        setTimeout(() => {
+          setPosts(prev => prev.map(p => p.id === post.id ? { ...p, status: 'publicado', publishedAt: new Date().toISOString() } : p));
+        }, 2000);
+      };
+
+      const savePost = (form) => {
+        if (editingPost) {
+          setPosts(prev => prev.map(p => p.id === editingPost.id ? { ...p, ...form } : p));
+        } else {
+          const newPost = { id: ++editorialIdCounter, ...form, status: 'rascunho' };
+          setPosts(prev => [...prev, newPost]);
+        }
+        setShowPostModal(false);
+        setEditingPost(null);
+      };
+
+      const deletePost = (id) => {
+        setPosts(prev => prev.filter(p => p.id !== id));
+      };
+
+      // Stats
+      const stats = {
+        total: posts.length,
+        agendados: posts.filter(p => p.status === 'agendado').length,
+        publicados: posts.filter(p => p.status === 'publicado').length,
+        rascunhos: posts.filter(p => p.status === 'rascunho').length,
+      };
+
+      return (
+        <div className="space-y-6">
+          {/* Stats bar */}
+          <div className="grid grid-cols-4 gap-4">
+            {[
+              { l: 'Total', v: stats.total, c: '#3B82F6' },
+              { l: 'Agendados', v: stats.agendados, c: '#3B82F6' },
+              { l: 'Publicados', v: stats.publicados, c: '#22C55E' },
+              { l: 'Rascunhos', v: stats.rascunhos, c: '#9CA3AF' },
+            ].map(s => (
+              <div key={s.l} className="rounded-xl p-4 flex items-center gap-3" style={{ background: dark ? '#1A1C25' : '#FFF', boxShadow: '0 2px 8px rgba(20,20,43,0.04)' }}>
+                <span className="w-1 h-8 rounded-full" style={{ background: s.c }} />
+                <div>
+                  <p className={`text-[20px] font-bold ${dark ? 'text-white' : 'text-gray-900'}`}>{s.v}</p>
+                  <p className="text-[11px] text-gray-500 font-medium">{s.l}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-6">
+            {/* Calendar */}
+            <div className="flex-1 rounded-2xl overflow-hidden" style={{ background: dark ? "#1A1C25" : "#FFFFFF", boxShadow: "0 2px 12px rgba(20,20,43,0.05)" }}>
+              <div className="px-6 py-4 border-b flex items-center justify-between" style={{ borderColor: dark ? "#22242E" : "#F0F1F5" }}>
+                <div className="flex items-center gap-3">
+                  <h3 className={`font-semibold text-[15px] ${dark ? "text-white" : "text-gray-900"}`}>{MONTHS_PT[m]} {y}</h3>
+                  <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+                    className="text-[11px] font-semibold px-2 py-1 rounded-lg border outline-none cursor-pointer"
+                    style={{ background: dark ? '#15171F' : '#F9FAFB', borderColor: dark ? '#22242E' : '#E5E7EB', color: dark ? '#fff' : '#222' }}>
+                    <option value="todos">Todos</option>
+                    {Object.entries(POST_STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setCalDate(new Date(y, m - 1, 1))} className="p-2 rounded-lg hover:bg-gray-100 transition"><Icon name="chevron-left" size={16} className="text-gray-500" /></button>
+                  <button onClick={() => setCalDate(new Date())} className="px-3 py-1.5 text-[11px] font-bold bg-gray-100 rounded-lg hover:bg-gray-200 transition">Hoje</button>
+                  <button onClick={() => setCalDate(new Date(y, m + 1, 1))} className="p-2 rounded-lg hover:bg-gray-100 transition"><Icon name="chevron-right" size={16} className="text-gray-500" /></button>
+                  <button onClick={() => { setEditingPost(null); setShowPostModal(true); }} className="ml-2 px-3 py-1.5 rounded-lg bg-blue-500 text-white text-[11px] font-bold hover:bg-blue-600 transition flex items-center gap-1"><Icon name="plus" size={13} /> Novo Post</button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-7 border-b" style={{ borderColor: dark ? "#22242E" : "#F0F1F5" }}>
+                {["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"].map(d => (
+                  <div key={d} className="py-2 text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">{d}</div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-7">
+                {days.map((d, i) => {
+                  const hasPosts = d.posts && d.posts.length > 0;
+                  const isSelected = selectedDay === d.date;
+                  return (
+                    <div key={i} onClick={() => d.date && setSelectedDay(d.date)}
+                      className={`min-h-[90px] p-2 border-b border-r cursor-pointer transition-all ${d.other ? 'opacity-30' : ''}`}
+                      style={{ borderColor: dark ? "#22242E" : "#F0F1F5", background: isSelected ? (dark ? "rgba(59,130,246,0.08)" : "#EFF4FF") : d.isToday ? (dark ? "rgba(239,68,68,0.06)" : "#FEF2F2") : "transparent" }}>
+                      <span className={`text-[11px] font-bold ${d.isToday ? 'text-red-500' : dark ? 'text-gray-400' : 'text-gray-600'}`}>{d.day}</span>
+                      {hasPosts && (
+                        <div className="mt-1 space-y-0.5">
+                          {d.posts.slice(0, 3).map((p, pi) => (
+                            <div key={pi} className="flex items-center gap-1">
+                              <span className="w-4 h-4 rounded flex items-center justify-center shrink-0" style={{ color: PLATFORMS.find(x => x.id === p.platforms[0])?.color || '#9CA3AF' }}>
+                                <PlatformLogo id={p.platforms[0]} size={10} />
+                              </span>
+                              <span className="text-[9px] font-medium truncate" style={{ color: dark ? '#9CA3AF' : '#6B7280' }}>{p.title.split(' - ')[0]}</span>
+                            </div>
+                          ))}
+                          {d.posts.length > 3 && <span className="text-[8px] text-gray-400 font-bold">+{d.posts.length - 3} mais</span>}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Sidebar: posts do dia */}
+            <div className="w-[320px] shrink-0 rounded-2xl p-5" style={{ background: dark ? "#1A1C25" : "#FFFFFF", boxShadow: "0 2px 12px rgba(20,20,43,0.05)" }}>
+              <h3 className={`font-semibold text-[13px] uppercase tracking-widest mb-4 ${dark ? "text-white" : "text-gray-900"}`}>
+                {selectedDay ? `Posts: ${selectedDay.split('-').reverse().join('/')}` : 'Selecione um dia'}
+              </h3>
+              {selectedPosts.length > 0 ? (
+                <div className="space-y-3">
+                  {selectedPosts.map((p) => (
+                    <div key={p.id} className="p-4 rounded-xl border transition-all hover:shadow-sm"
+                      style={{ borderColor: dark ? "#22242E" : "#F0F1F5", background: dark ? "#15171F" : "#FAFBFD" }}>
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        {p.platforms.map(pid => {
+                          const pl = PLATFORMS.find(x => x.id === pid);
+                          return pl ? (
+                            <span key={pid} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${pl.color}18`, color: pl.color }}>
+                              <PlatformLogo id={pid} size={15} />
+                            </span>
+                          ) : null;
+                        })}
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full ml-auto"
+                          style={{ background: POST_STATUS[p.status]?.bg, color: POST_STATUS[p.status]?.text }}>{POST_STATUS[p.status]?.label}</span>
+                      </div>
+                      <p className={`text-[12.5px] font-semibold mb-1 ${dark ? "text-white" : "text-gray-900"}`}>{p.title}</p>
+                      <p className="text-[11px] text-gray-400 mb-2">{p.desc}</p>
+                      <p className="text-[10px] text-gray-500 mb-3">Horário: {p.time}</p>
+
+                      <div className="flex items-center gap-2">
+                        {(p.status === 'rascunho' || p.status === 'agendado') && (
+                          <button onClick={() => { setEditingPost(p); setShowPostModal(true); }}
+                            className="flex-1 py-1.5 rounded-lg text-[10px] font-bold border hover:bg-gray-50 transition"
+                            style={{ borderColor: dark ? '#22242E' : '#E5E7EB', color: dark ? '#9CA3AF' : '#6B7280' }}>Editar</button>
+                        )}
+                        {(p.status === 'agendado' || p.status === 'rascunho') && (
+                          <button onClick={() => publishPost(p)}
+                            className="flex-1 py-1.5 rounded-lg text-[10px] font-bold bg-emerald-500 text-white hover:bg-emerald-600 transition">Publicar Agora</button>
+                        )}
+                        {p.status === 'publicando' && (
+                          <div className="flex-1 py-1.5 text-center text-[10px] font-bold text-amber-500">Publicando...</div>
+                        )}
+                        {p.status === 'publicado' && (
+                          <div className="flex-1 py-1.5 text-center text-[10px] font-bold text-emerald-500">Publicado</div>
+                        )}
+                        <button onClick={() => deletePost(p.id)}
+                          className="p-1.5 rounded-lg hover:bg-red-50 transition text-gray-400 hover:text-red-500">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[11px] text-gray-400 italic text-center py-8">Nenhum post agendado.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Modal Novo/Editar Post */}
+          {showPostModal && (
+            <EditorialPostModal dark={dark} post={editingPost} onClose={() => { setShowPostModal(false); setEditingPost(null); }} onSave={savePost} />
+          )}
+        </div>
+      );
+    }
+
+    /* ── EDITORIAL POST MODAL ──────────────────────────────────────── */
+    function EditorialPostModal({ dark, post, onClose, onSave }) {
+      const [form, setForm] = useState({
+        title: post?.title || '',
+        desc: post?.desc || '',
+        date: post?.date || new Date().toISOString().split('T')[0],
+        time: post?.time || '10:00',
+        platforms: post?.platforms || [],
+      });
+
+      const togglePlatform = (id) => {
+        setForm(f => ({
+          ...f,
+          platforms: f.platforms.includes(id) ? f.platforms.filter(p => p !== id) : [...f.platforms, id]
+        }));
+      };
+
+      return (
+        <div className="modal-overlay" onClick={onClose}>
+          <div className={`modal-content ${dark ? 'dark' : ''}`} onClick={e => e.stopPropagation()} style={{ maxWidth: '480px' }}>
+            <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: dark ? '#22242E' : '#F0F1F5' }}>
+              <h2 className={`text-[16px] font-bold ${dark ? 'text-white' : 'text-gray-900'}`}>{post ? 'Editar Post' : 'Novo Post'}</h2>
+              <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100 transition" style={dark ? { background: '#1C1E27' } : {}}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block" style={{ color: dark ? '#6B7280' : '#9CA3AF' }}>Título</label>
+                <input className="modal-input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Ex: Post Instagram - Lançamento" />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block" style={{ color: dark ? '#6B7280' : '#9CA3AF' }}>Descrição</label>
+                <textarea className="modal-input" rows="2" value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} placeholder="Conteúdo do post..." style={{ resize: 'none' }} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block" style={{ color: dark ? '#6B7280' : '#9CA3AF' }}>Data</label>
+                  <input type="date" className="modal-input" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block" style={{ color: dark ? '#6B7280' : '#9CA3AF' }}>Horário</label>
+                  <input type="time" className="modal-input" value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} />
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-widest mb-2 block" style={{ color: dark ? '#6B7280' : '#9CA3AF' }}>Plataformas</label>
+                <div className="flex gap-2">
+                  {PLATFORMS.map(pl => {
+                    const selected = form.platforms.includes(pl.id);
+                    return (
+                      <button key={pl.id} onClick={() => togglePlatform(pl.id)}
+                        className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[11px] font-bold border-2 transition-all"
+                        style={{
+                          borderColor: selected ? pl.color : (dark ? '#22242E' : '#E5E7EB'),
+                          background: selected ? `${pl.color}12` : 'transparent',
+                          color: selected ? pl.color : (dark ? '#9CA3AF' : '#6B7280'),
+                        }}>
+                        <span className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: selected ? `${pl.color}20` : 'transparent' }}>
+                          <PlatformLogo id={pl.id} size={14} />
+                        </span>
+                        {pl.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t" style={{ borderColor: dark ? '#22242E' : '#F0F1F5' }}>
+              <button onClick={onClose} className="px-4 py-2 rounded-xl text-[12.5px] font-semibold transition hover:bg-gray-100" style={{ color: dark ? '#9CA3AF' : '#6B7280' }}>Cancelar</button>
+              <button onClick={() => onSave(form)} className="px-5 py-2.5 rounded-xl bg-blue-500 text-white text-[12.5px] font-semibold hover:bg-blue-600 transition active:scale-[0.97] shadow-[0_4px_14px_rgba(59,130,246,0.35)]">
+                {post ? 'Salvar' : 'Agendar Post'}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+        </div>
+      );
+    }
+
+    /* ── ACTIVITY MODAL ─────────────────────────────────────────────── */
+    const CATEGORIES = [
+      { id: 1, nome: 'Editorial', cor: '#3B82F6' },
+      { id: 2, nome: 'Administrativo', cor: '#F59E0B' },
+      { id: 3, nome: 'Design', cor: '#A855F7' },
+    ];
+
+    const STAGES = [
+      { value: 'afazer', label: 'A Fazer' },
+      { value: 'execucao', label: 'Em Execução' },
+      { value: 'espera', label: 'Em Espera' },
+      { value: 'validando', label: 'Validando' },
+      { value: 'concluido', label: 'Concluído' },
+    ];
+
+    function ActivityModal({ dark, show, onClose, onSave, editData = null }) {
+      const [form, setForm] = useState({
+        titulo: '', descricao: '', categoria: 1, stage: 'afazer',
+        dataEntrega: new Date().toISOString().split('T')[0], dataPostagem: '',
+      });
+
+      useEffect(() => {
+        if (editData) {
+          setForm({
+            titulo: editData.titulo || '',
+            descricao: editData.descricao || '',
+            categoria: editData.categoria || 1,
+            stage: editData.stage || 'afazer',
+            dataEntrega: editData.dataVencimento || new Date().toISOString().split('T')[0],
+            dataPostagem: editData.dataPostagem || '',
+          });
+        } else {
+          setForm({
+            titulo: '', descricao: '', categoria: 1, stage: 'afazer',
+            dataEntrega: new Date().toISOString().split('T')[0], dataPostagem: '',
+          });
+        }
+      }, [show, editData]);
+
+      if (!show) return null;
+
+      const handleSubmit = () => {
+        if (!form.titulo.trim()) return;
+        onSave(form);
+        onClose();
+      };
+
+      return (
+        <div className="modal-overlay" onClick={onClose}>
+          <div className={`modal-content ${dark ? 'dark' : ''}`} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: dark ? '#22242E' : '#F0F1F5' }}>
+              <h2 className={`text-[16px] font-bold ${dark ? 'text-white' : 'text-gray-900'}`}>{editData ? 'Editar Atividade' : 'Nova Atividade'}</h2>
+              <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100 transition" style={dark ? { background: '#1C1E27' } : {}}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 overflow-y-auto" style={{ maxHeight: '60vh' }}>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block" style={{ color: dark ? '#6B7280' : '#9CA3AF' }}>Título</label>
+                <input className="modal-input" value={form.titulo} onChange={e => setForm({ ...form, titulo: e.target.value })} placeholder="Nome da atividade" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block" style={{ color: dark ? '#6B7280' : '#9CA3AF' }}>Categoria</label>
+                  <select className="modal-select" value={form.categoria} onChange={e => setForm({ ...form, categoria: parseInt(e.target.value) })}>
+                    {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block" style={{ color: dark ? '#6B7280' : '#9CA3AF' }}>Status</label>
+                  <select className="modal-select" value={form.stage} onChange={e => setForm({ ...form, stage: e.target.value })}>
+                    {STAGES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block" style={{ color: dark ? '#6B7280' : '#9CA3AF' }}>Data de Entrega</label>
+                  <input type="date" className="modal-input" value={form.dataEntrega} onChange={e => setForm({ ...form, dataEntrega: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block" style={{ color: dark ? '#6B7280' : '#9CA3AF' }}>Data de Postagem</label>
+                  <input type="date" className="modal-input" value={form.dataPostagem} onChange={e => setForm({ ...form, dataPostagem: e.target.value })} />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block" style={{ color: dark ? '#6B7280' : '#9CA3AF' }}>Descrição</label>
+                <textarea className="modal-input" rows="3" value={form.descricao} onChange={e => setForm({ ...form, descricao: e.target.value })} placeholder="Detalhes da atividade..." style={{ resize: 'none' }} />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t" style={{ borderColor: dark ? '#22242E' : '#F0F1F5' }}>
+              <button onClick={onClose} className="px-4 py-2 rounded-xl text-[12.5px] font-semibold transition hover:bg-gray-100" style={{ color: dark ? '#9CA3AF' : '#6B7280' }}>Cancelar</button>
+              <button onClick={handleSubmit} className="px-5 py-2.5 rounded-xl bg-blue-500 text-white text-[12.5px] font-semibold hover:bg-blue-600 transition active:scale-[0.97] shadow-[0_4px_14px_rgba(59,130,246,0.35)]">
+                {editData ? 'Salvar' : 'Criar Atividade'}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── LOGIN ──────────────────────────────────────────────────────── */
+    function LoginScreen({ onLogin }) {
+      const [email, setEmail] = useState('');
+      const [password, setPassword] = useState('');
+      const [isRegister, setIsRegister] = useState(false);
+      const [error, setError] = useState('');
+      const [loading, setLoading] = useState(false);
+
+      const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+        try {
+          const { auth, signInWithEmailAndPassword, createUserWithEmailAndPassword } = window.fb;
+          let cred;
+          if (isRegister) {
+            cred = await createUserWithEmailAndPassword(auth, email, password);
+          } else {
+            cred = await signInWithEmailAndPassword(auth, email, password);
+          }
+          onLogin(cred.user);
+        } catch (err) {
+          const msgs = {
+            'auth/user-not-found': 'Usuário não encontrado',
+            'auth/wrong-password': 'Senha incorreta',
+            'auth/email-already-in-use': 'E-mail já cadastrado',
+            'auth/weak-password': 'Senha muito fraca (mín. 6 caracteres)',
+            'auth/invalid-email': 'E-mail inválido',
+            'auth/too-many-requests': 'Muitas tentativas. Tente mais tarde.',
+          };
+          setError(msgs[err.code] || err.message);
+        }
+        setLoading(false);
+      };
+
+      return (
+        <div className="login-bg">
+          <div className="login-card">
+            <div className="text-center mb-8">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mx-auto mb-4">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+              </div>
+              <h1 className="text-[22px] font-bold text-gray-900">Flowspace</h1>
+              <p className="text-[13px] text-gray-500 mt-1">{isRegister ? 'Crie sua conta' : 'Entre na sua conta'}</p>
+            </div>
+
+            {error && (
+              <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-[12px] font-medium text-center">{error}</div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">E-mail</label>
+                <input type="email" className="login-input" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" required />
+              </div>
+              <div>
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Senha</label>
+                <input type="password" className="login-input" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} />
+              </div>
+              <button type="submit" className="login-btn" disabled={loading}>
+                {loading ? 'Entrando...' : isRegister ? 'Criar Conta' : 'Entrar'}
+              </button>
+            </form>
+
+            <p className="text-center mt-6 text-[12px] text-gray-500">
+              {isRegister ? 'Já tem conta?' : 'Não tem conta?'}
+              <button onClick={() => { setIsRegister(!isRegister); setError(''); }} className="ml-1 text-blue-500 font-bold hover:underline">
+                {isRegister ? 'Entrar' : 'Criar conta'}
+              </button>
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── CONFIGURAÇÕES ──────────────────────────────────────────────── */
+    const API_CONFIGS = [
+      {
+        id: 'meta',
+        name: 'Meta (Instagram + Facebook)',
+        desc: 'Conecte sua conta Business do Facebook para publicar no Instagram e Facebook.',
+        color: '#1877F2',
+        icon: 'fb',
+        fields: [
+          { key: 'accessToken', label: 'Access Token', placeholder: 'EAAxxxxxxxxxx' },
+          { key: 'pageId', label: 'Page ID', placeholder: '123456789' },
+          { key: 'igAccountId', label: 'Instagram Account ID', placeholder: '17841400xxxxxxx' },
+        ],
+        docsUrl: 'https://developers.facebook.com/docs/instagram-api',
+      },
+      {
+        id: 'linkedin',
+        name: 'LinkedIn',
+        desc: 'Conecte sua página da empresa para publicar posts no LinkedIn.',
+        color: '#0A66C2',
+        icon: 'li',
+        fields: [
+          { key: 'accessToken', label: 'Access Token', placeholder: 'AQxxxxxxxxxx' },
+          { key: 'orgId', label: 'Organization ID', placeholder: 'urn:li:organization:xxxx' },
+        ],
+        docsUrl: 'https://learn.microsoft.com/en-us/linkedin/marketing/',
+      },
+      {
+        id: 'wordpress',
+        name: 'WordPress',
+        desc: 'Conecte seu site WordPress para publicar artigos automaticamente.',
+        color: '#21759B',
+        icon: 'blog',
+        fields: [
+          { key: 'siteUrl', label: 'URL do Site', placeholder: 'https://seusite.com.br' },
+          { key: 'username', label: 'Usuário', placeholder: 'admin' },
+          { key: 'appPassword', label: 'Application Password', placeholder: 'xxxx xxxx xxxx xxxx' },
+        ],
+        docsUrl: 'https://developer.wordpress.org/rest-api/',
+      },
+    ];
+
+    function Configuracoes({ dark }) {
+      const [configs, setConfigs] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('api_configs') || '{}'); } catch { return {}; }
+      });
+      const [expandedApi, setExpandedApi] = useState(null);
+      const [testResults, setTestResults] = useState({});
+
+      const saveConfig = (apiId, data) => {
+        const newConfigs = { ...configs, [apiId]: { ...configs[apiId], ...data } };
+        setConfigs(newConfigs);
+        localStorage.setItem('api_configs', JSON.stringify(newConfigs));
+      };
+
+      const testConnection = async (apiId) => {
+        setTestResults(prev => ({ ...prev, [apiId]: 'testing' }));
+        // Simula teste (em produção, faria chamada real à API)
+        setTimeout(() => {
+          const cfg = configs[apiId];
+          const hasAllFields = API_CONFIGS.find(a => a.id === apiId)?.fields.every(f => cfg?.[f.key]);
+          setTestResults(prev => ({ ...prev, [apiId]: hasAllFields ? 'success' : 'error' }));
+        }, 1500);
+      };
+
+      const disconnect = (apiId) => {
+        const newConfigs = { ...configs };
+        delete newConfigs[apiId];
+        setConfigs(newConfigs);
+        localStorage.setItem('api_configs', JSON.stringify(newConfigs));
+        setTestResults(prev => { const n = { ...prev }; delete n[apiId]; return n; });
+      };
+
+      return (
+        <div className="space-y-6">
+          <div className="rounded-2xl p-6" style={{ background: dark ? '#1A1C25' : '#FFF', boxShadow: '0 2px 12px rgba(20,20,43,0.05)' }}>
+            <h2 className={`text-[16px] font-bold mb-2 ${dark ? 'text-white' : 'text-gray-900'}`}>Conexões de API</h2>
+            <p className="text-[12px] text-gray-500 mb-6">Configure as integrações para publicar conteúdo diretamente do painel.</p>
+
+            <div className="space-y-4">
+              {API_CONFIGS.map(api => {
+                const cfg = configs[api.id] || {};
+                const isConnected = api.fields.every(f => cfg[f.key]);
+                const isExpanded = expandedApi === api.id;
+                const testStatus = testResults[api.id];
+
+                return (
+                  <div key={api.id} className="settings-card border" style={{ background: dark ? '#15171F' : '#FAFBFD', borderColor: dark ? '#22242E' : '#F0F1F5' }}>
+                    <div className="flex items-center justify-between cursor-pointer" onClick={() => setExpandedApi(isExpanded ? null : api.id)}>
+                      <div className="flex items-center gap-3">
+                        <span className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${api.color}15` }}>
+                          <PlatformLogo id={api.icon} size={20} />
+                        </span>
+                        <div>
+                          <p className={`text-[13px] font-bold ${dark ? 'text-white' : 'text-gray-900'}`}>{api.name}</p>
+                          <p className="text-[11px] text-gray-500">{api.desc}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {isConnected ? (
+                          <span className="api-status api-connected">● Conectado</span>
+                        ) : (
+                          <span className="api-status api-disconnected">● Desconectado</span>
+                        )}
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                          className="text-gray-400 transition-transform" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                          <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                      </div>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="mt-5 pt-5 border-t space-y-4" style={{ borderColor: dark ? '#22242E' : '#F0F1F5' }}>
+                        {api.fields.map(field => (
+                          <div key={field.key}>
+                            <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block text-gray-500">{field.label}</label>
+                            <input className="modal-input" type={field.key.toLowerCase().includes('token') || field.key.toLowerCase().includes('password') ? 'password' : 'text'}
+                              value={cfg[field.key] || ''} onChange={e => saveConfig(api.id, { [field.key]: e.target.value })}
+                              placeholder={field.placeholder} />
+                          </div>
+                        ))}
+
+                        <div className="flex items-center gap-3 pt-2">
+                          <button onClick={() => testConnection(api.id)}
+                            className="px-4 py-2 rounded-xl text-[11px] font-bold border hover:bg-gray-50 transition flex items-center gap-2"
+                            style={{ borderColor: dark ? '#22242E' : '#E5E7EB', color: dark ? '#9CA3AF' : '#6B7280' }}>
+                            {testStatus === 'testing' ? (
+                              <><span className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></span> Testando...</>
+                            ) : testStatus === 'success' ? (
+                              <><span className="text-emerald-500">✓</span> Conexão OK</>
+                            ) : testStatus === 'error' ? (
+                              <><span className="text-red-500">✗</span> Falhou</>
+                            ) : (
+                              'Testar Conexão'
+                            )}
+                          </button>
+                          {isConnected && (
+                            <button onClick={() => disconnect(api.id)}
+                              className="px-4 py-2 rounded-xl text-[11px] font-bold text-red-500 hover:bg-red-50 transition">
+                              Desconectar
+                            </button>
+                          )}
+                          <a href={api.docsUrl} target="_blank" rel="noopener"
+                            className="ml-auto text-[11px] text-blue-500 hover:underline flex items-center gap-1">
+                            Documentação <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Webhook n8n */}
+          <div className="rounded-2xl p-6" style={{ background: dark ? '#1A1C25' : '#FFF', boxShadow: '0 2px 12px rgba(20,20,43,0.05)' }}>
+            <h2 className={`text-[16px] font-bold mb-2 ${dark ? 'text-white' : 'text-gray-900'}`}>Webhook de Automação</h2>
+            <p className="text-[12px] text-gray-500 mb-4">Configure um webhook (n8n, Make, Zapier) para receber eventos de agendamento.</p>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block text-gray-500">URL do Webhook</label>
+              <input className="modal-input" placeholder="https://seu-n8n.com/webhook/xxxx"
+                value={configs.webhookUrl || ''} onChange={e => saveConfig('webhookUrl', e.target.value)} />
+            </div>
+            <p className="text-[10px] text-gray-400 mt-3">Quando um post for agendado, o painel enviará um POST para esta URL com os dados do post.</p>
+          </div>
+
+          {/* Conta */}
+          <div className="rounded-2xl p-6" style={{ background: dark ? '#1A1C25' : '#FFF', boxShadow: '0 2px 12px rgba(20,20,43,0.05)' }}>
+            <h2 className={`text-[16px] font-bold mb-4 ${dark ? 'text-white' : 'text-gray-900'}`}>Conta</h2>
+            <button onClick={() => { window.fb.signOut(window.fb.auth); }}
+              className="px-5 py-2.5 rounded-xl text-[12px] font-bold text-red-500 border border-red-200 hover:bg-red-50 transition flex items-center gap-2">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              Sair da conta
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── APP ────────────────────────────────────────────────────────── */
+    const ATIVIDADES_TABS = [
+      { key: "lista", label: "Lista" },
+      { key: "kanban", label: "Kanban" },
+      { key: "cronograma", label: "Cronograma" },
+    ];
+
+    const CRUMBS = {
+      dashboard: ["Workspace", "Dashboard"],
+      projetos: ["Workspace", "Projetos"],
+      lista: ["Workspace", "Atividades", "Lista"],
+      kanban: ["Workspace", "Atividades", "Kanban"],
+      cronograma: ["Workspace", "Atividades", "Cronograma"],
+      editorial: ["Workspace", "Editorial"],
+      configuracoes: ["Workspace", "Configurações"],
+    };
+
+    const TITLES = {
+      dashboard: "Visão geral",
+      projetos: "Projetos",
+      lista: "Atividades — Lista",
+      kanban: "Atividades — Kanban",
+      cronograma: "Atividades — Cronograma",
+      editorial: "Editorial",
+      configuracoes: "Configurações",
+    };
+
+    const SUBTITLES = {
+      dashboard: "Acompanhe o desempenho de todos os projetos em tempo real.",
+      projetos: "Gerencie todos os projetos da equipe.",
+      lista: "Gerencie tarefas, prazos e responsáveis em formato de tabela.",
+      kanban: "Arraste os cards entre as colunas para atualizar o progresso.",
+      cronograma: "Visualize o progresso das atividades ao longo do tempo.",
+      editorial: "Publicações editoriais organizadas por data de postagem.",
+      configuracoes: "Preferências e configurações do sistema.",
+    };
+
+    function App() {
+      const [active, setActive] = useState("dashboard");
+      const [dark, setDark] = useState(false);
+      const [searchQuery, setSearchQuery] = useState('');
+      const [showModal, setShowModal] = useState(false);
+      const [fbActivities, setFbActivities] = useState([]);
+      const [user, setUser] = useState(null);
+      const [authLoading, setAuthLoading] = useState(true);
+
+      const handleSearch = (query) => setSearchQuery(query.toLowerCase());
+
+      // Auth state listener
+      useEffect(() => {
+        const waitForFirebase = () => {
+          if (!window.fb) { setTimeout(waitForFirebase, 200); return; }
+          window.fb.onAuthStateChanged(window.fb.auth, (u) => {
+            setUser(u);
+            setAuthLoading(false);
+          });
+        };
+        waitForFirebase();
+      }, []);
+
+      // Firebase load
+      useEffect(() => {
+        if (!user) return;
+        const loadFirebase = () => {
+          if (!window.fb) { setTimeout(loadFirebase, 200); return; }
+          try {
+            window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, 'activities')), (snap) => {
+              const acts = [];
+              snap.forEach(d => acts.push({ ...d.data(), _fbId: d.id }));
+              setFbActivities(acts);
+            });
+          } catch (e) { console.error('Firebase error:', e); }
+        };
+        loadFirebase();
+      }, [user]);
+
+      const handleSaveActivity = async (form) => {
+        if (!window.fb) return;
+        try {
+          const data = {
+            titulo: form.titulo,
+            descricao: form.descricao,
+            categoria: form.categoria,
+            stage: form.stage,
+            dataVencimento: form.dataEntrega,
+            dataPostagem: form.dataPostagem || null,
+            canais: [],
+            progress: 0,
+            checklist: [],
+            attachments: [],
+            createdAt: Date.now(),
+            ownerUid: user?.uid || '',
+          };
+          await window.fb.addDoc(window.fb.collection(window.fb.db, 'activities'), data);
+        } catch (e) { console.error('Erro ao salvar:', e); }
+      };
+
+      // Loading
+      if (authLoading) {
+        return (
+          <div className="login-bg">
+            <div className="text-center">
+              <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-white font-bold text-sm">Carregando...</p>
+            </div>
+          </div>
+        );
+      }
+
+      // Not logged in
+      if (!user) {
+        return <LoginScreen onLogin={setUser} />;
+      }
+
+      const isAtividades = ["lista", "kanban", "cronograma"].includes(active);
+      const activeCount = initialRows.filter(r => r.status !== "Done").length;
+      const doneCount = initialRows.filter(r => r.status === "Done").length;
+      const totalCount = initialRows.length;
+      const donePct = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
+
+      return (
+        <div style={{ background: dark ? "#0E0F14" : "#F7F8FC", minHeight: "100vh" }}>
+          <Sidebar active={active} setActive={setActive} dark={dark} activeCount={activeCount} donePct={donePct} />
+          <Header dark={dark} setDark={setDark} crumbs={CRUMBS[active] || CRUMBS.dashboard} active={active} onSearch={handleSearch} onNewActivity={() => setShowModal(true)} user={user} />
+          <main className="ml-[250px] pt-16 px-8 pb-10">
+            <div className="pt-6 flex items-center justify-between">
+              <div>
+                <h1 className={`text-[22px] font-bold tracking-tight ${dark ? "text-white" : "text-gray-900"}`}>
+                  {TITLES[active] || "Flowspace"}
+                </h1>
+                <p className="text-[13px] text-gray-400 mt-1">
+                  {SUBTITLES[active] || ""}
+                </p>
+              </div>
+              {isAtividades && (
+                <div className="flex gap-1 p-1 rounded-full" style={{ background: dark ? "#1A1C25" : "#EEF0F5" }}>
+                  {ATIVIDADES_TABS.map(t => (
+                    <button key={t.key} onClick={() => setActive(t.key)}
+                      className="px-4 py-1.5 rounded-full text-[12.5px] font-semibold transition-all"
+                      style={{
+                        background: active === t.key ? (dark ? "#2A2D3A" : "#FFFFFF") : "transparent",
+                        color: active === t.key ? "#3B82F6" : "#9CA3AF",
+                        boxShadow: active === t.key ? "0 2px 8px rgba(20,20,43,0.08)" : "none",
+                      }}>
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="mt-6">
+              {active === "dashboard" && <Dashboard dark={dark} />}
+              {active === "lista" && <Boards dark={dark} searchQuery={searchQuery} />}
+              {active === "kanban" && <Kanban dark={dark} searchQuery={searchQuery} />}
+              {active === "cronograma" && <Cronograma dark={dark} />}
+              {active === "editorial" && <Calendario dark={dark} />}
+              {active === "configuracoes" && <Configuracoes dark={dark} />}
+              {!["dashboard", "lista", "kanban", "cronograma", "editorial", "configuracoes"].includes(active) && (
+                <div className="rounded-2xl p-16 text-center" style={{ background: dark ? "#1A1C25" : "#FFFFFF", boxShadow: "0 2px 12px rgba(20,20,43,0.05)" }}>
+                  <p className={`font-semibold text-[15px] ${dark ? "text-white" : "text-gray-900"}`}>Módulo "{TITLES[active]}" em construção</p>
+                  <p className="text-[13px] text-gray-400 mt-1.5">Este módulo segue a mesma linguagem visual — posso detalhá-lo no próximo passo.</p>
+                </div>
+              )}
+            </div>
+          </main>
+          <ActivityModal dark={dark} show={showModal} onClose={() => setShowModal(false)} onSave={handleSaveActivity} />
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

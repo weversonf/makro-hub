@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Makro Editorial · Premium</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            300: '#a5b4fc',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #f8fafc;
+            color: #0f172a;
+            -webkit-font-smoothing: antialiased;
+            touch-action: manipulation;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .sidebar-item.active {
+            background-color: #6366f1;
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .kanban-column {
+            min-width: 280px;
+            width: 280px;
+            height: calc(100vh - 220px);
+        }
+
+        @media (max-width: 768px) {
+            .kanban-column {
+                min-width: 85vw;
+                width: 85vw;
+                height: calc(100vh - 250px);
+            }
+        }
+
+        .day-cell {
+            min-height: 80px;
+            transition: all 0.2s;
+        }
+
+        .day-cell:hover:not(.other-month) {
+            background-color: #f1f5f9;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+
+        .loader {
+            border-top-color: #6366f1;
+            animation: spinner 1.5s linear infinite;
+        }
+
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .modal-enter {
+            animation: modalFadeIn 0.3s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+
+        .drop-zone-active {
+            background-color: rgba(99, 102, 241, 0.05) !important;
+            border: 2px dashed #6366f1 !important;
+        }
+
+        /* Mobile Bottom Nav */
+        .mobile-nav {
+            display: none;
+        }
+
+        /* Mobile Drawer */
+        #mobileDrawer {
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-100%);
+        }
+        #mobileDrawer.active {
+            transform: translateX(0);
+        }
+
+        @media (max-width: 768px) {
+            .mobile-nav {
+                display: flex;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: white;
+                border-top: 1px solid #e2e8f0;
+                padding: 10px 0;
+                z-index: 100;
+                justify-content: space-around;
+                box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
+            }
+            
+            .sidebar {
+                display: none;
+            }
+            
+            .main-content {
+                padding-bottom: 80px;
+            }
+            
+            .view-header {
+                padding: 20px 16px !important;
+            }
+            
+            .view-content {
+                padding: 16px !important;
+            }
+        }
+    </style>
+</head>
+<body class="font-sans overflow-hidden">
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center">
+        <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
+        <h2 class="text-xl font-display font-bold text-gray-800">Makro Editorial</h2>
+    </div>
+
+    <!-- Mobile Drawer Overlay -->
+    <div id="drawerOverlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden" onclick="toggleDrawer(false)"></div>
+    
+    <!-- Mobile Drawer Menu -->
+    <aside id="mobileDrawer" class="fixed top-0 left-0 bottom-0 w-72 bg-white z-[70] shadow-2xl flex flex-col md:hidden">
+        <div class="h-20 px-6 flex items-center justify-between border-b border-slate-100">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center text-white">
+                    <i data-lucide="calendar" class="w-5 h-5"></i>
+                </div>
+                <span class="font-display font-bold text-lg">Makro</span>
+            </div>
+            <button onclick="toggleDrawer(false)" class="p-2 text-slate-400">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+        <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+            <button onclick="showView('dashboard'); toggleDrawer(false)" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard
+            </button>
+            <button onclick="showView('kanban'); toggleDrawer(false)" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                <i data-lucide="columns" class="w-5 h-5"></i> Fluxo de Trabalho
+            </button>
+            <button onclick="showView('calendar'); toggleDrawer(false)" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                <i data-lucide="calendar-days" class="w-5 h-5"></i> Calendário Editorial
+            </button>
+            <button onclick="showView('categories'); toggleDrawer(false)" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                <i data-lucide="tags" class="w-5 h-5"></i> Categorias
+            </button>
+            <div class="h-px bg-slate-100 my-4"></div>
+            <button onclick="showView('export'); toggleDrawer(false)" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                <i data-lucide="download" class="w-5 h-5"></i> Exportar Dados
+            </button>
+        </nav>
+        <div class="p-4 border-t border-slate-100 bg-slate-50">
+            <p class="text-[10px] font-bold text-slate-400 uppercase text-center">Makro Editorial v2.1</p>
+        </div>
+    </aside>
+
+    <div class="flex h-screen w-full">
+        <!-- Sidebar (Desktop) -->
+        <aside class="sidebar w-64 bg-white border-r border-slate-200 flex flex-col z-50">
+            <div class="h-20 px-6 flex items-center gap-3 border-b border-slate-100">
+                <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center text-white shadow-lg">
+                    <i data-lucide="calendar" class="w-6 h-6"></i>
+                </div>
+                <span class="font-display font-extrabold text-xl tracking-tight text-slate-900">Makro <span class="text-primary-600">Editorial</span></span>
+            </div>
+
+            <nav class="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
+                <button onclick="showView('dashboard')" id="nav-dashboard" class="sidebar-item active w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard
+                </button>
+                <button onclick="showView('kanban')" id="nav-kanban" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all duration-200">
+                    <i data-lucide="columns" class="w-5 h-5"></i> Fluxo de Trabalho
+                </button>
+                <button onclick="showView('calendar')" id="nav-calendar" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all duration-200">
+                    <i data-lucide="calendar-days" class="w-5 h-5"></i> Calendário Editorial
+                </button>
+                <button onclick="showView('categories')" id="nav-categories" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all duration-200">
+                    <i data-lucide="tags" class="w-5 h-5"></i> Categorias
+                </button>
+                <button onclick="showView('export')" id="nav-export" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all duration-200">
+                    <i data-lucide="download" class="w-5 h-5"></i> Exportar
+                </button>
+            </nav>
+
+            <div class="p-4 border-t border-slate-100">
+                <div class="bg-slate-50 rounded-2xl p-4 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-xs">ME</div>
+                    <div class="overflow-hidden">
+                        <p class="text-xs font-bold text-slate-900 truncate">Usuário Makro</p>
+                        <p class="text-[10px] text-slate-500">Premium v2.1</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content flex-1 flex flex-col min-w-0 overflow-hidden">
+            <!-- Header -->
+            <header class="view-header h-20 glass px-8 flex items-center justify-between z-40">
+                <div class="flex items-center gap-4">
+                    <button onclick="toggleDrawer(true)" class="md:hidden p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                    <div>
+                        <h1 id="viewTitle" class="text-xl md:text-2xl font-display font-bold text-slate-900">Dashboard</h1>
+                        <p id="viewSubtitle" class="hidden md:block text-xs text-slate-500 font-medium">Gestão inteligente de atividades.</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <button onclick="openNewActivity()" class="w-10 h-10 flex items-center justify-center rounded-full bg-primary-600 text-white shadow-lg">
+                        <i data-lucide="plus" class="w-5 h-5"></i>
+                    </button>
+                    <button class="hidden md:flex w-10 h-10 items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600">
+                        <i data-lucide="bell" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <div class="view-content flex-1 overflow-y-auto p-8 custom-scrollbar">
+                
+                <!-- View: Dashboard -->
+                <div id="view-dashboard" class="view-section">
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+                        <div class="bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
+                            <h3 class="text-2xl md:text-3xl font-display font-extrabold text-slate-900" id="dashTotal">0</h3>
+                            <p class="text-[10px] md:text-sm text-slate-500 font-medium uppercase tracking-wider">Atividades</p>
+                        </div>
+                        <div class="bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
+                            <h3 class="text-2xl md:text-3xl font-display font-extrabold text-amber-600" id="dashPending">0</h3>
+                            <p class="text-[10px] md:text-sm text-slate-500 font-medium uppercase tracking-wider">Pendentes</p>
+                        </div>
+                        <div class="bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
+                            <h3 class="text-2xl md:text-3xl font-display font-extrabold text-emerald-600" id="dashCompleted">0</h3>
+                            <p class="text-[10px] md:text-sm text-slate-500 font-medium uppercase tracking-wider">Concluídas</p>
+                        </div>
+                        <div class="bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
+                            <h3 class="text-2xl md:text-3xl font-display font-extrabold text-primary-600" id="dashRate">0%</h3>
+                            <p class="text-[10px] md:text-sm text-slate-500 font-medium uppercase tracking-wider">Sucesso</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                            <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                                <h3 class="font-display font-bold text-slate-900">Próximas Atividades</h3>
+                                <button onclick="showView('kanban')" class="text-xs font-bold text-primary-600">Ver Fluxo</button>
+                            </div>
+                            <div id="dashboardUpcoming" class="divide-y divide-slate-50"></div>
+                        </div>
+                        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                            <h3 class="font-display font-bold text-slate-900 mb-4">Canais de Distribuição</h3>
+                            <div id="dashboardChannels" class="space-y-4"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- View: Kanban -->
+                <div id="view-kanban" class="view-section hidden">
+                    <div class="flex gap-4 md:gap-6 overflow-x-auto pb-6 custom-scrollbar" id="kanbanBoard"></div>
+                </div>
+
+                <!-- View: Calendar -->
+                <div id="view-calendar" class="view-section hidden">
+                    <div class="flex flex-col lg:flex-row gap-8">
+                        <div class="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                            <div class="p-4 md:p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                                <h2 id="calMonthLabel" class="text-lg md:text-xl font-display font-bold text-slate-900">Junho 2026</h2>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="changeMonth(-1)" class="p-2 rounded-lg hover:bg-white border border-transparent hover:border-slate-200">
+                                        <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                                    </button>
+                                    <button onclick="goToday()" class="px-3 py-1.5 text-xs font-bold bg-white border border-slate-200 rounded-lg">Hoje</button>
+                                    <button onclick="changeMonth(1)" class="p-2 rounded-lg hover:bg-white border border-transparent hover:border-slate-200">
+                                        <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-7 border-b border-slate-100 text-[10px] font-bold uppercase tracking-widest text-slate-400 text-center py-2">
+                                <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
+                            </div>
+                            <div id="calendarGrid" class="grid grid-cols-7 auto-rows-fr"></div>
+                        </div>
+                        <div class="w-full lg:w-80 bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                            <h3 id="dailyTitle" class="font-display font-bold text-slate-900 mb-4 text-sm uppercase tracking-wider">Posts do Dia</h3>
+                            <div id="dailyPostsList" class="space-y-3"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- View: Categories -->
+                <div id="view-categories" class="view-section hidden">
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                            <h3 class="font-display font-bold text-slate-900">Categorias</h3>
+                            <button onclick="openNewCategoryModal()" class="px-4 py-2 bg-primary-600 text-white text-sm font-bold rounded-xl shadow-md">Nova Categoria</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="bg-slate-50 text-slate-500 text-[10px] font-bold uppercase tracking-widest">
+                                    <tr><th class="px-6 py-4">Nome</th><th class="px-6 py-4 text-right">Ações</th></tr>
+                                </thead>
+                                <tbody id="categoriesTableBody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- View: Export -->
+                <div id="view-export" class="view-section hidden">
+                    <div class="max-w-md mx-auto bg-white rounded-2xl border border-slate-200 p-8 text-center">
+                        <div class="w-16 h-16 bg-primary-50 text-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                            <i data-lucide="download" class="w-8 h-8"></i>
+                        </div>
+                        <h2 class="text-xl font-display font-bold text-slate-900 mb-2">Exportar Dados</h2>
+                        <p class="text-xs text-slate-500 mb-8">Baixe o backup completo em formato JSON.</p>
+                        <button onclick="exportData()" class="w-full py-3 bg-primary-600 text-white font-bold rounded-xl shadow-lg shadow-primary-200">Baixar Backup</button>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Mobile Navigation -->
+    <nav class="mobile-nav">
+        <button onclick="showView('dashboard')" class="flex flex-col items-center gap-1 text-primary-600" id="mob-dashboard">
+            <i data-lucide="layout-dashboard" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold">Início</span>
+        </button>
+        <button onclick="showView('kanban')" class="flex flex-col items-center gap-1 text-slate-400" id="mob-kanban">
+            <i data-lucide="columns" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold">Fluxo</span>
+        </button>
+        <button onclick="showView('calendar')" class="flex flex-col items-center gap-1 text-slate-400" id="mob-calendar">
+            <i data-lucide="calendar-days" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold">Agenda</span>
+        </button>
+        <button onclick="showView('categories')" class="flex flex-col items-center gap-1 text-slate-400" id="mob-categories">
+            <i data-lucide="tags" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold">Tags</span>
+        </button>
+    </nav>
+
+    <!-- Modals -->
+    <div id="modalActivity" class="fixed inset-0 z-[100] hidden flex items-end md:items-center justify-center p-0 md:p-4">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('modalActivity')"></div>
+        <div class="bg-white w-full max-w-2xl rounded-t-3xl md:rounded-2xl shadow-2xl z-10 overflow-hidden modal-enter">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h2 id="activityModalTitle" class="text-lg font-display font-bold text-slate-900">Nova Atividade</h2>
+                <button onclick="closeModal('modalActivity')" class="p-2 text-slate-400"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                <input type="hidden" id="actId">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Título</label>
+                    <input type="text" id="actTitle" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-primary-500">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Categoria</label>
+                        <select id="actCategory" onchange="togglePostDate()" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none"></select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status</label>
+                        <select id="actStage" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
+                            <option value="criar">Criar</option><option value="revisar">Revisar</option><option value="aprovar">Aprovação</option><option value="concluido">Concluído</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Vencimento</label>
+                        <input type="date" id="actDue" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
+                    </div>
+                    <div id="postDateGroup" class="hidden">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Postagem</label>
+                        <input type="date" id="actPostDate" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Canais</label>
+                    <div id="actChannels" class="flex flex-wrap gap-2 mt-1"></div>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Descrição</label>
+                    <textarea id="actDesc" rows="6" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 font-sans text-sm leading-relaxed" placeholder="Descreva os detalhes da atividade aqui..."></textarea>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+                <button id="btnDeleteAct" onclick="deleteActivity()" class="text-xs font-bold text-red-500 hidden">Excluir</button>
+                <div class="flex gap-3 ml-auto">
+                    <button onclick="closeModal('modalActivity')" class="px-4 py-2 text-xs font-bold text-slate-600">Cancelar</button>
+                    <button onclick="saveActivity()" class="px-6 py-2 bg-primary-600 text-white text-xs font-bold rounded-xl shadow-lg shadow-primary-200">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div id="modalCategory" class="fixed inset-0 z-[100] hidden flex items-end md:items-center justify-center p-0 md:p-4">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('modalCategory')"></div>
+        <div class="bg-white w-full max-w-md rounded-t-3xl md:rounded-2xl shadow-2xl z-10 overflow-hidden modal-enter">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h2 class="text-lg font-display font-bold text-slate-900">Nova Categoria</h2>
+                <button onclick="closeModal('modalCategory')" class="p-2 text-slate-400"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Nome</label>
+                    <input type="text" id="catNameInput" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Cor</label>
+                    <div class="flex items-center gap-4">
+                        <input type="color" id="catColorInput" class="w-12 h-12 rounded-lg cursor-pointer border-none p-0 bg-transparent">
+                        <span class="text-[10px] text-slate-500 font-medium">Cor de identificação visual</span>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                <button onclick="closeModal('modalCategory')" class="px-4 py-2 text-xs font-bold text-slate-600">Cancelar</button>
+                <button onclick="saveCategory()" class="px-6 py-2 bg-primary-600 text-white text-xs font-bold rounded-xl shadow-lg shadow-primary-200">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-24 md:bottom-8 right-8 z-[200] transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3">
+            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+            <span id="toastMessage" class="text-xs font-bold">Sucesso!</span>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyCGemp_OA8savCmLZfX7Us0nmDpdbpv4N0",
+            authDomain: "mytasks-saturday.firebaseapp.com",
+            projectId: "mytasks-saturday",
+            storageBucket: "mytasks-saturday.firebasestorage.app",
+            messagingSenderId: "647554172397",
+            appId: "1:647554172397:web:aac3ef00938ee7cd8f13e4"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        window.fb = { db, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, writeBatch };
+        window.initApp();
+    </script>
+
+    <script>
+        const STAGES = ['criar', 'revisar', 'aprovar', 'concluido'];
+        const STAGE_LABELS = { 'criar': 'Produção', 'revisar': 'Revisão', 'aprovar': 'Aprovação', 'concluido': 'Concluído' };
+        const STAGE_COLORS = { 'criar': 'bg-amber-50 text-amber-600', 'revisar': 'bg-blue-50 text-blue-600', 'aprovar': 'bg-purple-50 text-purple-600', 'concluido': 'bg-emerald-50 text-emerald-600' };
+        const CHANNELS = [
+            { id: 'ig', label: 'IG', color: '#E1306C' }, { id: 'fb', label: 'FB', color: '#1877F2' },
+            { id: 'li', label: 'LI', color: '#0A66C2' }, { id: 'site', label: 'Site', color: '#3B82F6' },
+            { id: 'materia', label: 'Blog', color: '#1E293B' }
+        ];
+
+        let state = { activities: [], categories: [], currentView: 'dashboard', calDate: new Date(), activityIdCounter: 1, categoryIdCounter: 1 };
+
+        window.initApp = async () => {
+            try {
+                await loadFromFirebase();
+                if (state.categories.length === 0) await initDefaultCategories();
+                renderUI();
+                hideLoading();
+                lucide.createIcons();
+            } catch (e) { showToast("Erro ao carregar dados."); }
+        };
+
+        async function loadFromFirebase() {
+            const actSnap = await fb.getDocs(fb.collection(fb.db, 'activities'));
+            state.activities = []; actSnap.forEach(d => state.activities.push({ ...d.data(), _fbId: d.id }));
+            const catSnap = await fb.getDocs(fb.collection(fb.db, 'categories'));
+            state.categories = []; catSnap.forEach(d => state.categories.push({ ...d.data(), _fbId: d.id }));
+            if (state.activities.length) state.activityIdCounter = Math.max(...state.activities.map(a => a.id || 0)) + 1;
+            if (state.categories.length) state.categoryIdCounter = Math.max(...state.categories.map(c => c.id || 0)) + 1;
+        }
+
+        async function initDefaultCategories() {
+            const defaults = [{ id: 1, nome: 'Conteúdo', cor: '#3b82f6' }, { id: 2, nome: 'Tarefa', cor: '#8b5cf6' }];
+            for (const cat of defaults) { const d = await fb.addDoc(fb.collection(fb.db, 'categories'), cat); state.categories.push({ ...cat, _fbId: d.id }); }
+            state.categoryIdCounter = 3;
+        }
+
+        function toggleDrawer(open) {
+            const drawer = document.getElementById('mobileDrawer');
+            const overlay = document.getElementById('drawerOverlay');
+            if(open) {
+                drawer.classList.add('active');
+                overlay.classList.remove('hidden');
+            } else {
+                drawer.classList.remove('active');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function showView(viewId) {
+            document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
+            document.getElementById('view-' + viewId).classList.remove('hidden');
+            
+            // Desktop Nav
+            document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+            const activeBtn = document.getElementById('nav-' + viewId);
+            if(activeBtn) activeBtn.classList.add('active');
+            
+            // Mobile Nav
+            document.querySelectorAll('.mobile-nav button').forEach(b => { b.classList.remove('text-primary-600'); b.classList.add('text-slate-400'); });
+            const mobBtn = document.getElementById('mob-' + viewId);
+            if(mobBtn) { mobBtn.classList.remove('text-slate-400'); mobBtn.classList.add('text-primary-600'); }
+            
+            state.currentView = viewId;
+            const titles = { 'dashboard': 'Dashboard', 'kanban': 'Fluxo de Trabalho', 'calendar': 'Calendário Editorial', 'categories': 'Categorias', 'export': 'Exportar Dados' };
+            document.getElementById('viewTitle').textContent = titles[viewId];
+            renderUI();
+            lucide.createIcons();
+        }
+
+        function renderUI() {
+            if (state.currentView === 'dashboard') renderDashboard();
+            if (state.currentView === 'kanban') renderKanban();
+            if (state.currentView === 'calendar') renderCalendar();
+            if (state.currentView === 'categories') renderCategories();
+            
+            document.getElementById('actCategory').innerHTML = state.categories.map(c => `<option value="${c.id}">${esc(c.nome)}</option>`).join('');
+            document.getElementById('actChannels').innerHTML = CHANNELS.map(ch => `
+                <label class="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer text-[10px] font-bold">
+                    <input type="checkbox" value="${ch.id}" class="w-3 h-3 rounded text-primary-600"> ${ch.label}
+                </label>
+            `).join('');
+        }
+
+        function renderDashboard() {
+            const done = state.activities.filter(a => a.stage === 'concluido').length;
+            const total = state.activities.length;
+            document.getElementById('dashTotal').textContent = total;
+            document.getElementById('dashPending').textContent = total - done;
+            document.getElementById('dashCompleted').textContent = done;
+            document.getElementById('dashRate').textContent = total ? Math.round((done/total)*100)+'%' : '0%';
+            
+            const upcoming = [...state.activities].filter(a => a.stage !== 'concluido').sort((a,b) => new Date(a.dataVencimento) - new Date(b.dataVencimento)).slice(0, 5);
+            document.getElementById('dashboardUpcoming').innerHTML = upcoming.length ? upcoming.map(a => {
+                const cat = state.categories.find(c => c.id == a.categoria) || { nome: 'Geral', cor: '#cbd5e1' };
+                return `<div class="p-4 hover:bg-slate-50 transition-all cursor-pointer flex items-center justify-between" onclick="openEditActivity(${a.id})">
+                    <div class="flex items-center gap-3"><div class="w-1.5 h-6 rounded-full" style="background-color:${cat.cor}"></div>
+                    <div><h4 class="text-xs font-bold text-slate-900">${esc(a.titulo)}</h4><p class="text-[10px] text-slate-500">${fmtDate(a.dataVencimento)}</p></div></div>
+                    <span class="text-[9px] font-bold uppercase ${STAGE_COLORS[a.stage]} px-2 py-1 rounded-full">${STAGE_LABELS[a.stage]}</span>
+                </div>`;
+            }).join('') : '<div class="p-8 text-center text-xs text-slate-400">Nenhuma pendência.</div>';
+            
+            document.getElementById('dashboardChannels').innerHTML = CHANNELS.map(ch => {
+                const count = state.activities.filter(a => a.canais && a.canais.includes(ch.id)).length;
+                const pct = total ? Math.round((count/total)*100) : 0;
+                return `<div><div class="flex justify-between text-[10px] font-bold text-slate-600 mb-1"><span>${ch.label}</span><span>${count}</span></div>
+                <div class="w-full bg-slate-100 h-1 rounded-full"><div class="h-full rounded-full" style="width:${pct}%; background-color:${ch.color}"></div></div></div>`;
+            }).join('');
+        }
+
+        function renderKanban() {
+            const board = document.getElementById('kanbanBoard'); board.innerHTML = '';
+            STAGES.forEach(stage => {
+                const acts = state.activities.filter(a => a.stage === stage);
+                const col = document.createElement('div');
+                col.className = 'kanban-column flex flex-col bg-slate-100/50 rounded-2xl border border-slate-200 p-4 transition-all';
+                col.dataset.stage = stage;
+                col.ondragover = e => { e.preventDefault(); col.classList.add('drop-zone-active'); };
+                col.ondragleave = () => col.classList.remove('drop-zone-active');
+                col.ondrop = async e => { e.preventDefault(); col.classList.remove('drop-zone-active'); await updateActivityStage(parseInt(e.dataTransfer.getData('text')), col.dataset.stage); };
+                
+                col.innerHTML = `<div class="flex items-center justify-between mb-4 px-1">
+                    <h3 class="font-display font-extrabold text-slate-900 uppercase tracking-wider text-[10px]">${STAGE_LABELS[stage]} (${acts.length})</h3>
+                    <button onclick="openNewActivity('${stage}')" class="text-slate-400"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                </div>
+                <div class="flex-1 overflow-y-auto custom-scrollbar space-y-3">
+                    ${acts.map(a => {
+                        const cat = state.categories.find(c => c.id == a.categoria) || { nome: 'Geral', cor: '#cbd5e1' };
+                        return `<div onclick="openEditActivity(${a.id})" draggable="true" ondragstart="e => { e.dataTransfer.setData('text', ${a.id}); e.currentTarget.classList.add('dragging'); }" ondragend="e => e.currentTarget.classList.remove('dragging')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm hover:border-primary-200 transition-all cursor-grab active:cursor-grabbing">
+                            <div class="flex items-center gap-2 mb-1 pointer-events-none"><div class="w-2 h-2 rounded-full" style="background-color:${cat.cor}"></div><span class="text-[8px] font-bold text-slate-400 uppercase">${cat.nome}</span></div>
+                            <h4 class="text-xs font-bold text-slate-900 mb-2 pointer-events-none">${esc(a.titulo)}</h4>
+                            <div class="flex items-center justify-between pointer-events-none">
+                                <span class="text-[9px] text-slate-400 font-medium">${fmtDate(a.dataVencimento)}</span>
+                                <div class="flex -space-x-1">${(a.canais || []).map(chId => `<div class="w-4 h-4 rounded-full border border-white text-[7px] text-white font-bold flex items-center justify-center" style="background-color:${CHANNELS.find(c=>c.id===chId).color}">${chId.toUpperCase().charAt(0)}</div>`).join('')}</div>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>`;
+                board.appendChild(col);
+            });
+            lucide.createIcons();
+        }
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid'); grid.innerHTML = '';
+            const y = state.calDate.getFullYear(), m = state.calDate.getMonth();
+            const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+            document.getElementById('calMonthLabel').textContent = `${months[m]} ${y}`;
+            const first = new Date(y, m, 1).getDay(), last = new Date(y, m + 1, 0).getDate(), prevLast = new Date(y, m, 0).getDate();
+            for (let i = first - 1; i >= 0; i--) grid.appendChild(Object.assign(document.createElement('div'), { className: 'day-cell other-month p-2 border-b border-r border-slate-50 text-slate-200 text-[10px]', textContent: prevLast - i }));
+            const today = new Date().toISOString().split('T')[0];
+            const conteudoCat = state.categories.find(c => c.nome === 'Conteúdo');
+            for (let d = 1; d <= last; d++) {
+                const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const dayActs = state.activities.filter(a => a.dataPostagem === dateStr && (conteudoCat && a.categoria == conteudoCat.id));
+                const cell = document.createElement('div');
+                cell.className = `day-cell p-2 border-b border-r border-slate-100 relative cursor-pointer ${dateStr === today ? 'bg-primary-50/30' : 'bg-white'}`;
+                cell.onclick = () => showDailyPosts(dateStr);
+                cell.innerHTML = `<span class="text-[10px] font-bold ${dateStr === today ? 'text-primary-600' : 'text-slate-500'}">${d}</span>
+                    <div class="flex flex-col gap-0.5 mt-1">${dayActs.slice(0, 3).map(a => `<div class="h-1 rounded-full bg-primary-500 w-full"></div>`).join('')}</div>`;
+                grid.appendChild(cell);
+            }
+            const total = grid.children.length;
+            for (let i = 1; i <= (42 - total); i++) grid.appendChild(Object.assign(document.createElement('div'), { className: 'day-cell other-month p-2 border-b border-r border-slate-50 text-slate-200 text-[10px]', textContent: i }));
+            showDailyPosts(today);
+        }
+
+        function showDailyPosts(dateStr) {
+            document.getElementById('dailyTitle').textContent = `Posts: ${dateStr.split('-').reverse().join('/')}`;
+            const conteudoCat = state.categories.find(c => c.nome === 'Conteúdo');
+            const posts = state.activities.filter(a => a.dataPostagem === dateStr && (conteudoCat && a.categoria == conteudoCat.id));
+            const list = document.getElementById('dailyPostsList');
+            list.innerHTML = posts.length ? posts.map(a => `<div onclick="openEditActivity(${a.id})" class="p-3 bg-slate-50 rounded-xl border border-slate-100 cursor-pointer">
+                <h4 class="text-xs font-bold text-slate-900">${esc(a.titulo)}</h4>
+                <div class="flex justify-between mt-2 text-[8px] font-bold uppercase text-slate-400"><span>${STAGE_LABELS[a.stage]}</span><span>${(a.canais||[]).join(', ')}</span></div>
+            </div>`).join('') : '<div class="text-[10px] text-slate-400 italic text-center py-4">Nenhum post agendado.</div>';
+        }
+
+        function renderCategories() {
+            document.getElementById('categoriesTableBody').innerHTML = state.categories.map(c => `<tr class="hover:bg-slate-50/50 transition-colors">
+                <td class="px-6 py-4 text-xs font-bold text-slate-900">${esc(c.nome)}</td>
+                <td class="px-6 py-4 text-right"><button onclick="deleteCategory(${c.id})" class="text-slate-400 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>
+            </tr>`).join('');
+            lucide.createIcons();
+        }
+
+        async function saveActivity() {
+            const id = document.getElementById('actId').value, titulo = document.getElementById('actTitle').value;
+            if (!titulo) return showToast("Insira um título.");
+            const data = {
+                id: id ? parseInt(id) : state.activityIdCounter++, titulo,
+                categoria: parseInt(document.getElementById('actCategory').value), descricao: document.getElementById('actDesc').value,
+                stage: document.getElementById('actStage').value, dataVencimento: document.getElementById('actDue').value,
+                dataPostagem: document.getElementById('actPostDate').value || null,
+                canais: Array.from(document.querySelectorAll('#actChannels input:checked')).map(cb => cb.value)
+            };
+            try {
+                if (id) {
+                    const idx = state.activities.findIndex(a => a.id == id);
+                    await fb.updateDoc(fb.doc(fb.db, 'activities', state.activities[idx]._fbId), data);
+                    state.activities[idx] = { ...data, _fbId: state.activities[idx]._fbId };
+                } else {
+                    const d = await fb.addDoc(fb.collection(fb.db, 'activities'), data);
+                    state.activities.push({ ...data, _fbId: d.id });
+                }
+                closeModal('modalActivity'); renderUI(); showToast("Salvo com sucesso!");
+            } catch (e) { showToast("Erro ao salvar."); }
+        }
+
+        async function updateActivityStage(id, newStage) {
+            const a = state.activities.find(x => x.id === id); if (!a || a.stage === newStage) return;
+            const old = a.stage; a.stage = newStage; renderKanban();
+            try { await fb.updateDoc(fb.doc(fb.db, 'activities', a._fbId), { stage: newStage }); showToast("Status atualizado!"); }
+            catch (e) { a.stage = old; renderKanban(); showToast("Erro ao atualizar."); }
+        }
+
+        async function deleteActivity() {
+            const id = document.getElementById('actId').value; if (!id || !confirm("Excluir?")) return;
+            try {
+                const a = state.activities.find(x => x.id == id);
+                await fb.deleteDoc(fb.doc(fb.db, 'activities', a._fbId));
+                state.activities = state.activities.filter(x => x.id != id);
+                closeModal('modalActivity'); renderUI(); showToast("Excluído.");
+            } catch (e) { showToast("Erro ao excluir."); }
+        }
+
+        async function saveCategory() {
+            const nome = document.getElementById('catNameInput').value; if (!nome) return;
+            const data = { id: state.categoryIdCounter++, nome, cor: document.getElementById('catColorInput').value };
+            try {
+                const d = await fb.addDoc(fb.collection(fb.db, 'categories'), data);
+                state.categories.push({ ...data, _fbId: d.id });
+                closeModal('modalCategory'); renderUI(); showToast("Categoria criada!");
+            } catch (e) { showToast("Erro ao salvar."); }
+        }
+
+        async function deleteCategory(id) {
+            if (!confirm("Excluir categoria?")) return;
+            try {
+                const c = state.categories.find(x => x.id == id);
+                await fb.deleteDoc(fb.doc(fb.db, 'categories', c._fbId));
+                state.categories = state.categories.filter(x => x.id != id);
+                renderUI(); showToast("Removida.");
+            } catch (e) { showToast("Erro ao remover."); }
+        }
+
+        function openNewActivity(stage = 'criar') {
+            document.getElementById('activityModalTitle').textContent = 'Nova Atividade';
+            document.getElementById('actId').value = ''; document.getElementById('actTitle').value = ''; document.getElementById('actDesc').value = '';
+            document.getElementById('actStage').value = stage; document.getElementById('actDue').value = new Date().toISOString().split('T')[0];
+            document.getElementById('actPostDate').value = ''; document.getElementById('btnDeleteAct').classList.add('hidden');
+            document.querySelectorAll('#actChannels input').forEach(cb => cb.checked = false);
+            togglePostDate(); openModal('modalActivity');
+        }
+
+        function openEditActivity(id) {
+            const a = state.activities.find(x => x.id === id); if (!a) return;
+            document.getElementById('activityModalTitle').textContent = 'Editar Atividade';
+            document.getElementById('actId').value = a.id; document.getElementById('actTitle').value = a.titulo; document.getElementById('actDesc').value = a.descricao || '';
+            document.getElementById('actCategory').value = a.categoria; document.getElementById('actStage').value = a.stage;
+            document.getElementById('actDue').value = a.dataVencimento; document.getElementById('actPostDate').value = a.dataPostagem || '';
+            document.getElementById('btnDeleteAct').classList.remove('hidden');
+            document.querySelectorAll('#actChannels input').forEach(cb => cb.checked = (a.canais || []).includes(cb.value));
+            togglePostDate(); openModal('modalActivity');
+        }
+
+        function openNewCategoryModal() { document.getElementById('catNameInput').value = ''; openModal('modalCategory'); }
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); lucide.createIcons(); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
+        function togglePostDate() {
+            const cat = state.categories.find(c => c.id == document.getElementById('actCategory').value);
+            document.getElementById('postDateGroup').classList.toggle('hidden', !(cat && cat.nome === 'Conteúdo'));
+        }
+        function esc(t) { return t ? t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+        function fmtDate(s) { if(!s) return ''; const p=s.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+        function changeMonth(d) { state.calDate.setMonth(state.calDate.getMonth() + d); renderCalendar(); }
+        function goToday() { state.calDate = new Date(); renderCalendar(); }
+        function showToast(m) {
+            const t = document.getElementById('toast'); document.getElementById('toastMessage').textContent = m;
+            t.classList.remove('translate-y-20', 'opacity-0'); t.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => { t.classList.add('translate-y-20', 'opacity-0'); t.classList.remove('translate-y-0', 'opacity-100'); }, 3000);
+        }
+        function hideLoading() { const l = document.getElementById('loadingOverlay'); l.style.opacity = '0'; setTimeout(() => l.style.display = 'none', 500); }
+        function exportData() {
+            const data = { activities: state.activities, categories: state.categories, exportedAt: new Date().toISOString() };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `makro_backup_${new Date().getTime()}.json`; a.click();
+            showToast("Backup iniciado!");
+        }
+    </script>
+</body>
+</html>
