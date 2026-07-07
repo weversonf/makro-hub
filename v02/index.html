@@ -681,7 +681,7 @@
     <!-- HEADER -->
     <header class="app-header h-20 flex-shrink-0 border-b border-[var(--border)] flex items-center justify-between px-6 lg:px-8 bg-[var(--bg-elev)]/80 backdrop-blur-xl z-40">
       <div class="flex items-center gap-4 flex-1 min-w-0">
-        <img src="http://makroengenharia.com.br/wp-content/uploads/2023/03/logo-1.png" class="h-6 hidden md:block" alt="Logo">
+        <img src="https://makroengenharia.com.br/wp-content/uploads/2023/03/logo-1.png" class="h-6 hidden md:block" alt="Logo">
         <div class="header-divider h-6 w-px bg-[var(--surface-3)] hidden md:block mx-2"></div>
         <h2 id="header-title" class="text-sm font-semibold text-[var(--ink-2)] hidden lg:block"><i data-lucide="briefcase" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Board Operacional</h2>
         <div class="header-search-wrap relative flex-1 max-w-md ml-2">
@@ -1009,23 +1009,23 @@
       </button>
       <button class="mob-tab nav-item-kanban active" onclick="changeView('kanban')">
         <div class="mob-tab-bubble"><i data-lucide="columns" class="w-5 h-5"></i></div>
-        <span class="mob-tab-label">Board</span>
+        <span class="mob-tab-label">Kanban</span>
       </button>
       <button class="mob-tab nav-item-calendar" onclick="changeView('calendar')">
         <div class="mob-tab-bubble"><i data-lucide="calendar-days" class="w-5 h-5"></i></div>
-        <span class="mob-tab-label">Agenda</span>
-      </button>
-      <button class="mob-tab nav-item-gantt" onclick="changeView('gantt')">
-        <div class="mob-tab-bubble"><i data-lucide="gantt-chart" class="w-5 h-5"></i></div>
-        <span class="mob-tab-label">Gantt</span>
+        <span class="mob-tab-label">Calendario</span>
       </button>
       <button class="mob-tab nav-item-nps" onclick="changeView('nps')">
         <div class="mob-tab-bubble"><i data-lucide="bar-chart-2" class="w-5 h-5"></i></div>
         <span class="mob-tab-label">NPS</span>
       </button>
+      <button class="mob-tab nav-item-banco-horas" onclick="changeView('banco-horas')">
+        <div class="mob-tab-bubble"><i data-lucide="clock" class="w-5 h-5"></i></div>
+        <span class="mob-tab-label">Ponto</span>
+      </button>
       <button class="mob-tab nav-item-configuracoes" onclick="changeView('configuracoes')">
         <div class="mob-tab-bubble"><i data-lucide="settings" class="w-5 h-5"></i></div>
-        <span class="mob-tab-label">Config</span>
+        <span class="mob-tab-label">Confg</span>
       </button>
     </div>
   </nav>
@@ -2582,7 +2582,7 @@
       };
       title.innerHTML = titles[view] || titles.dashboard;
 
-      if (view === 'nps' || view === 'configuracoes' || view === 'search' || view === 'gantt') btn.classList.add('hidden-view');
+      if (view === 'nps' || view === 'configuracoes' || view === 'search' || view === 'gantt' || view === 'banco-horas') btn.classList.add('hidden-view');
       else btn.classList.remove('hidden-view');
 
       if (view !== 'nps' && view !== 'configuracoes' && view !== 'search' && view !== 'gantt') renderAllActivities();
