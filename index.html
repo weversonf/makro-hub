@@ -1125,8 +1125,20 @@
       } catch (e) { showToast("Erro ao carregar dados.", "error"); }
     };
 
+    function userPath(path) {
+      const uid = auth.currentUser?.uid;
+      if(!uid) return window.fb.collection(window.fb.db, path);
+      const ref = window.fb.db.collection('users').doc(uid);
+      if(path) return ref.collection(path);
+      return ref;
+    }
+
+    function userDoc(collectionName, docId) {
+      return userPath(collectionName).doc(docId);
+    }
+
     function loadFromFirebase() {
-      window.fb.onSnapshot(window.fb.collection(window.fb.db, 'activities'), (actSnap) => {
+      window.fb.onSnapshot(userPath('activities'), (actSnap) => {
         state.activities = []; actSnap.forEach(d => {
           const a = { ...d.data(), _fbId: d.id };
           a.stage = normalizeStage(a.stage);
@@ -1136,7 +1148,7 @@
         renderAllActivities();
       });
 
-      window.fb.onSnapshot(window.fb.collection(window.fb.db, 'categories'), (catSnap) => {
+      window.fb.onSnapshot(userPath('categories'), (catSnap) => {
         state.categories = []; catSnap.forEach(d => state.categories.push({ ...d.data(), _fbId: d.id }));
         if (state.categories.length === 0) initDefaultCategories().then(() => renderAllActivities());
         else if (state.categories.length) {
@@ -1152,7 +1164,7 @@
         { id: 2, nome: 'Administrativo', cor: '#f59e0b' },
         { id: 3, nome: 'Design', cor: '#a855f7' },
       ];
-      for (const cat of defaults) { const d = await window.fb.addDoc(window.fb.collection(window.fb.db, 'categories'), cat); state.categories.push({ ...cat, _fbId: d.id }); }
+      for (const cat of defaults) { const d = await window.fb.addDoc(userPath('categories'), cat); state.categories.push({ ...cat, _fbId: d.id }); }
       state.categoryIdCounter = 4;
     }
 
@@ -1456,10 +1468,10 @@
       try {
         if (id) {
           const idx = state.activities.findIndex(a => a.id == id);
-          await window.fb.updateDoc(window.fb.doc(window.fb.db, 'activities', state.activities[idx]._fbId), data);
+          await window.fb.updateDoc(userDoc('activities', state.activities[idx]._fbId), data);
           state.activities[idx] = { ...data, _fbId: state.activities[idx]._fbId };
         } else {
-          const d = await window.fb.addDoc(window.fb.collection(window.fb.db, 'activities'), data);
+          const d = await window.fb.addDoc(userPath('activities'), data);
           state.activities.push({ ...data, _fbId: d.id });
         }
         closeModal('modalActivity'); renderAllActivities(); showToast("Salvo com sucesso!");
@@ -1477,7 +1489,7 @@
       try {
         const update = { stage: mapped };
         if (mapped === 'concluido') update.progress = 100;
-        await window.fb.updateDoc(window.fb.doc(window.fb.db, 'activities', a._fbId), update);
+        await window.fb.updateDoc(userDoc('activities', a._fbId), update);
         showToast(mapped === 'concluido' ? "Concluído! Progresso em 100%." : "Status atualizado!");
       }
       catch (e) { a.stage = old.stage; a.progress = old.progress; showToast("Erro ao atualizar.", "error"); }
@@ -1488,7 +1500,7 @@
       const id = document.getElementById('actId').value; if (!id || !confirm("Excluir atividade?")) return;
       try {
         const a = state.activities.find(x => x.id == id);
-        await window.fb.deleteDoc(window.fb.doc(window.fb.db, 'activities', a._fbId));
+        await window.fb.deleteDoc(userDoc('activities', a._fbId));
         state.activities = state.activities.filter(x => x.id != id);
         closeModal('modalActivity'); renderAllActivities(); showToast("Excluído.");
       } catch (e) { showToast("Erro ao excluir.", "error"); }
@@ -1523,12 +1535,12 @@
       try {
         if (id) {
           const c = state.categories.find(x => x.id == id);
-          await window.fb.updateDoc(window.fb.doc(window.fb.db, 'categories', c._fbId), { nome, cor });
+          await window.fb.updateDoc(userDoc('categories', c._fbId), { nome, cor });
           c.nome = nome; c.cor = cor;
           showToast("Categoria atualizada!");
         } else {
           const data = { id: state.categoryIdCounter++, nome, cor };
-          const d = await window.fb.addDoc(window.fb.collection(window.fb.db, 'categories'), data);
+          const d = await window.fb.addDoc(userPath('categories'), data);
           state.categories.push({ ...data, _fbId: d.id });
           showToast("Categoria criada!");
         }
@@ -1549,7 +1561,7 @@
       if (!confirm("Excluir categoria?")) return;
       try {
         const c = state.categories.find(x => x.id == id);
-        await window.fb.deleteDoc(window.fb.doc(window.fb.db, 'categories', c._fbId));
+        await window.fb.deleteDoc(userDoc('categories', c._fbId));
         state.categories = state.categories.filter(x => x.id != id);
         renderAllActivities(); showToast("Removida.");
       } catch (e) { showToast("Erro ao remover.", "error"); }
@@ -2448,7 +2460,7 @@
             notaFiscal: null,
             valor: null,
           };
-          const d = await window.fb.addDoc(window.fb.collection(window.fb.db, 'activities'), data);
+          const d = await window.fb.addDoc(userPath('activities'), data);
           state.activities.push({ ...data, _fbId: d.id });
           success++;
         } catch (e) { errors++; }
