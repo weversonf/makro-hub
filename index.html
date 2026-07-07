@@ -1110,6 +1110,10 @@
       { id: 'materia', label: 'Blog', color: '#8B5CF6' }
     ];
 
+    const POST_STATUS = { rascunho: 'Rascunho', agendado: 'Agendado', publicado: 'Publicado', erro: 'Erro' };
+    const POST_STATUS_COLORS = { rascunho: 'bg-gray-500/20 text-gray-400', agendado: 'bg-blue-500/20 text-blue-400', publicado: 'bg-green-500/20 text-green-400', erro: 'bg-red-500/20 text-red-400' };
+    function getPostStatus(aid) { return 'rascunho'; }
+
     const STAGE_MIGRATION = { criar: 'afazer', revisar: 'validando', aprovar: 'validando' };
 
     function normalizeStage(stage) {
