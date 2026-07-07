@@ -1137,7 +1137,45 @@
       return userPath(collectionName).doc(docId);
     }
 
+    async function migrateIfNeeded() {
+      const uid = auth.currentUser?.uid;
+      if(!uid) return;
+      const migrated = localStorage.getItem('migrated_' + uid);
+      if(migrated) return;
+
+      try {
+        const rootActs = await window.fb.collection(window.fb.db, 'activities').get();
+        const userActs = await userPath('activities').get();
+        if(!rootActs.empty && userActs.empty) {
+          const batch = window.fb.db.batch();
+          rootActs.forEach(d => {
+            const ref = userPath('activities').doc(d.id);
+            batch.set(ref, d.data());
+          });
+          await batch.commit();
+          showToast('Atividades migradas!', 'success');
+        }
+
+        const rootCats = await window.fb.collection(window.fb.db, 'categories').get();
+        const userCats = await userPath('categories').get();
+        if(!rootCats.empty && userCats.empty) {
+          const batch = window.fb.db.batch();
+          rootCats.forEach(d => {
+            const ref = userPath('categories').doc(d.id);
+            batch.set(ref, d.data());
+          });
+          await batch.commit();
+          showToast('Categorias migradas!', 'success');
+        }
+      } catch(e) { console.error('Migration error:', e); }
+
+      localStorage.setItem('migrated_' + uid, '1');
+    }
+
     function loadFromFirebase() {
+      // Migration: copy root data to user path once
+      migrateIfNeeded();
+      
       window.fb.onSnapshot(userPath('activities'), (actSnap) => {
         state.activities = []; actSnap.forEach(d => {
           const a = { ...d.data(), _fbId: d.id };
