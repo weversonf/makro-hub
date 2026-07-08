@@ -32,6 +32,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 
   <style>
     :root {
@@ -506,6 +507,18 @@
               </button>
             </div>
             <input type="hidden" id="actPostDate">
+          </div>
+        </div>
+        <div id="scheduleGroup" class="hidden-view">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs font-medium text-[var(--ink-3)] mb-2 block">Hora de Publicação</label>
+              <input type="time" id="actPostTime" class="w-full p-3 rounded-xl text-sm font-bold">
+            </div>
+            <div>
+              <label class="text-xs font-medium text-[var(--ink-3)] mb-2 block">Publicar em</label>
+              <div id="actPublishTargets" class="flex flex-wrap gap-2 mt-1"></div>
+            </div>
           </div>
         </div>
         <div>
@@ -1016,10 +1029,61 @@
                 </div>
               </div>
             </div>
+            <!-- LinkedIn Section -->
+            <div id="linkedinHero" class="glass-card overflow-hidden">
+              <div id="linkedinNotConnected" class="p-8 text-center">
+                <div class="w-20 h-20 mx-auto mb-5 rounded-2xl flex items-center justify-center" style="background:#0A66C2">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="white"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                </div>
+                <h2 class="text-xl font-black text-[var(--ink)] mb-2">Conectar LinkedIn</h2>
+                <p class="text-[13px] text-[var(--ink-2)] max-w-md mx-auto mb-6">Conecte sua conta do LinkedIn para agendar e publicar conteúdo diretamente pelo painel.</p>
+                <div class="max-w-lg mx-auto mb-6 p-5 rounded-2xl" style="background:var(--surface);border:1px solid var(--border)">
+                  <h3 class="text-sm font-bold text-[var(--ink)] mb-3">Login com LinkedIn</h3>
+                  <p class="text-[10px] text-[var(--ink-3)] mb-4">Você será redirecionado ao LinkedIn para autorizar o acesso. (Requer App LinkedIn Developer)</p>
+                  <button onclick="startLinkedinOAuth()" class="w-full px-8 py-4 rounded-xl font-black uppercase text-xs tracking-widest text-white shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3" style="background:#0A66C2">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                    Conectar com LinkedIn
+                  </button>
+                  <button onclick="promptLinkedinAppId()" class="mt-2 text-[10px] text-blue-400 hover:text-blue-300 font-bold transition">Configurar Client ID</button>
+                  <span id="savedLinkedinAppIdIndicator" class="hidden text-[9px] text-emerald-500 ml-2">● Client ID configurado</span>
+                </div>
+                <div class="max-w-lg mx-auto">
+                  <div class="flex items-center gap-2 mb-3 justify-center">
+                    <span class="h-px flex-1" style="background:var(--border)"></span>
+                    <span class="text-xs font-medium text-[var(--ink-3)]">ou</span>
+                    <span class="h-px flex-1" style="background:var(--border)"></span>
+                  </div>
+                  <button onclick="document.getElementById('liTokenInput').classList.toggle('hidden')" class="px-6 py-3 bg-[var(--surface-2)] hover:bg-[var(--surface-3)] rounded-xl text-xs font-semibold text-[var(--ink)] transition-all">Usar token manual</button>
+                  <div id="liTokenInput" class="hidden mt-4">
+                    <div class="flex gap-3">
+                      <input id="manualLiToken" class="flex-1 p-3 rounded-xl text-sm font-bold" placeholder="AQX...">
+                      <button onclick="connectLinkedinManual()" class="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-lg transition-all">Conectar</button>
+                    </div>
+                    <p class="text-[10px] text-[var(--ink-3)] mt-2">Cole o Access Token gerado no <a href="https://www.linkedin.com/developers/tools/oauth/token-generator" target="_blank" class="text-blue-400 hover:text-blue-300">LinkedIn OAuth Token Generator</a></p>
+                  </div>
+                </div>
+              </div>
+              <div id="linkedinConnected" class="hidden">
+                <div class="p-6 border-b border-[var(--border)]">
+                  <div class="flex items-center gap-5">
+                    <div id="liProfilePic" class="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-black text-2xl" style="background:#0A66C2">in</div>
+                    <div class="flex-1">
+                      <div class="flex items-center gap-3">
+                        <h2 id="liName" class="text-lg font-black text-[var(--ink)]">Nome</h2>
+                        <span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold rounded border border-emerald-500/30">● Conectado</span>
+                      </div>
+                      <p id="liHeadline" class="text-[13px] text-[var(--ink-2)] mt-0.5">Headline</p>
+                    </div>
+                    <button onclick="disconnectLinkedin()" class="px-4 py-2 bg-[var(--surface-2)] hover:bg-red-600 rounded-xl text-xs font-semibold text-[var(--ink-2)] hover:text-[var(--ink)] transition-all">Desconectar</button>
+                  </div>
+                </div>
+                <div class="p-6">
+                  <p class="text-[11px] text-[var(--ink-3)]">Pronto para publicar posts no LinkedIn a partir do calendário editorial.</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-
-        <!-- VIEW: SEARCH -->
         <div id="search-view" class="hidden-view">
           <div class="space-y-6">
             <div>
@@ -1122,6 +1186,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const auth = firebase.auth();
+    const storage = firebase.storage();
     const googleProvider = new firebase.auth.GoogleAuthProvider();
 
     window.fb = {
@@ -1191,7 +1256,18 @@
 
     const POST_STATUS = { rascunho: 'Rascunho', agendado: 'Agendado', publicado: 'Publicado', erro: 'Erro' };
     const POST_STATUS_COLORS = { rascunho: 'bg-gray-500/20 text-gray-400', agendado: 'bg-blue-500/20 text-blue-400', publicado: 'bg-green-500/20 text-green-400', erro: 'bg-red-500/20 text-red-400' };
-    function getPostStatus(aid) { return 'rascunho'; }
+    const postStatusMap = {};
+    function getPostStatus(aid) { return postStatusMap[aid] || 'rascunho'; }
+    function setPostStatus(aid, status) {
+      postStatusMap[aid] = status;
+      const act = state.activities.find(a => a.id == aid);
+      if (act && act._fbId) {
+        userDoc('activities', act._fbId).update({ postStatus: status, postStatusAt: firebase.firestore.FieldValue.serverTimestamp() }).catch(()=>{});
+      }
+    }
+    function loadPostStatuses() {
+      state.activities.forEach(a => { if (a.postStatus) postStatusMap[a.id] = a.postStatus; });
+    }
 
     const STAGE_MIGRATION = { criar: 'afazer', revisar: 'validando', aprovar: 'validando' };
 
@@ -1274,6 +1350,7 @@
           state.activities.push(a);
         });
         if (state.activities.length) state.activityIdCounter = Math.max(...state.activities.map(a => a.id || 0)) + 1;
+        loadPostStatuses();
         renderAllActivities();
       });
 
@@ -1551,6 +1628,12 @@
         const stLabel = POST_STATUS[st] || 'Rascunho';
         const stColor = POST_STATUS_COLORS[st] || POST_STATUS_COLORS.rascunho;
         const canShowPublish = st === 'rascunho' || st === 'agendado';
+        const igOk = !!getIgProfile();
+        const liOk = !!getLiProfile();
+        const targets = [];
+        if (igOk) targets.push('ig');
+        if (liOk) targets.push('li');
+        const targetsAttr = JSON.stringify(targets).replace(/"/g, '&quot;');
         return `<div class="p-3 bg-[var(--surface-2)] rounded-xl border border-[var(--border)] cursor-pointer hover:bg-[var(--surface-3)] transition" onclick="openEditActivity(${a.id})">
           <h4 class="text-xs font-bold text-[var(--ink)]">${esc(a.titulo)}</h4>
           <div class="flex justify-between items-center mt-2 text-[8px] font-black uppercase text-[var(--ink-3)]">
@@ -1560,9 +1643,14 @@
           <div class="flex items-center gap-2 mt-2 flex-wrap">
             ${(a.canais || []).map(chId => { const ch = CHANNELS.find(c => c.id === chId); return ch ? `<span class="px-1.5 py-0.5 rounded text-[7px] font-bold text-[var(--ink)]" style="background:${ch.color}">${ch.label}</span>` : ''; }).join('')}
           </div>
-          ${canShowPublish ? `<button onclick="event.stopPropagation();publishNow(${a.id})" class="mt-2 w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-[11px] font-semibold rounded-lg transition-all shadow-lg flex items-center justify-center gap-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Publicar no Instagram
-          </button>` : ''}
+          ${canShowPublish && targets.length ? `<div class="flex gap-2 mt-2">
+            <button onclick="event.stopPropagation();publishNow(${a.id},${targetsAttr})" class="flex-1 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-[10px] font-semibold rounded-lg transition-all shadow-lg flex items-center justify-center gap-1">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Publicar Agora
+            </button>
+            <button onclick="event.stopPropagation();schedulePost(${a.id})" class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-semibold rounded-lg transition-all shadow-lg flex items-center justify-center gap-1">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Agendar
+            </button>
+          </div>` : canShowPublish && !targets.length ? `<p class="mt-2 text-[9px] text-[var(--ink-3)] text-center font-bold">Conecte uma rede nas Configurações</p>` : ''}
         </div>`;
       }).join('') : '<div class="text-[10px] text-[var(--ink-3)] italic text-center py-4 font-bold uppercase tracking-widest">Nenhum post agendado.</div>');
     }
@@ -1587,6 +1675,8 @@
         categoria: parseInt(document.getElementById('actCategory').value), descricao: document.getElementById('actDesc').value,
         stage: document.getElementById('actStage').value, dataVencimento: document.getElementById('actDue').value,
         dataPostagem: document.getElementById('actPostDate').value || null,
+        postTime: document.getElementById('actPostTime')?.value || null,
+        publishTargets: Array.from(document.querySelectorAll('#actPublishTargets input:checked')).map(cb => cb.value),
         canais: Array.from(document.querySelectorAll('#actChannels input:checked')).map(cb => cb.value),
         notaFiscal: document.getElementById('actNotaFiscal').value || null,
         valor: document.getElementById('actValor').value || null,
@@ -1849,6 +1939,9 @@
       const today = new Date().toISOString().split('T')[0];
       setDatePickerValue('dpDue', today);
       clearDatePicker('dpPost');
+      const timeEl = document.getElementById('actPostTime');
+      if (timeEl) timeEl.value = '12:00';
+      renderPublishTargets();
       currentProgress = 0; renderProgressSteps();
       currentChecklist = []; renderChecklist();
       currentFiles = []; renderFilesList();
@@ -1870,6 +1963,12 @@
       setCustomSelectValue('csStage', a.stage);
       setDatePickerValue('dpDue', a.dataVencimento || '');
       setDatePickerValue('dpPost', a.dataPostagem || '');
+      const timeEl = document.getElementById('actPostTime');
+      if (timeEl) timeEl.value = a.postTime || '12:00';
+      renderPublishTargets();
+      setTimeout(() => {
+        document.querySelectorAll('#actPublishTargets input').forEach(cb => cb.checked = (a.publishTargets || []).includes(cb.value));
+      }, 50);
       currentProgress = a.progress || 0; renderProgressSteps();
       currentChecklist = (a.checklist || []).map(i => ({ ...i })); renderChecklist();
       currentFiles = (a.attachments || []).map(f => ({ ...f })); renderFilesList();
@@ -1891,7 +1990,10 @@
 
     function togglePostDate() {
       const cat = state.categories.find(c => c.id == document.getElementById('actCategory').value);
-      document.getElementById('postDateGroup').classList.toggle('hidden-view', !(cat && cat.nome === 'Conteúdo'));
+      const isContent = cat && (cat.nome === 'Conteúdo' || cat.nome === 'Editorial');
+      document.getElementById('postDateGroup').classList.toggle('hidden-view', !isContent);
+      const scheduleGrp = document.getElementById('scheduleGroup');
+      if (scheduleGrp) scheduleGrp.classList.toggle('hidden-view', !isContent);
     }
     window.togglePostDate = togglePostDate;
 
@@ -2937,6 +3039,25 @@
       return grid;
     }
 
+    // ── SAVE TOKENS TO FIRESTORE (for Cloud Functions) ─────────────────
+    async function saveTokensToFirestore() {
+      const uid = auth.currentUser?.uid;
+      if (!uid) return;
+      const userRef = db.collection('users').doc(uid);
+      const data = {};
+      const igToken = getIgToken();
+      const igUserId = getIgUserId();
+      const liToken = getLiToken();
+      const liUrn = getLiUrn();
+      if (igToken) data.igToken = igToken;
+      if (igUserId) data.igUserId = igUserId;
+      if (liToken) data.liToken = liToken;
+      if (liUrn) data.liUrn = liUrn;
+      if (Object.keys(data).length) {
+        await userRef.set(data, { merge: true });
+      }
+    }
+
     // ── CONNECT / DISCONNECT ───────────────────────────────────────────
     async function connectInstagramManual() {
       const tokenInput = document.getElementById('manualIgToken');
@@ -2993,6 +3114,7 @@
         localStorage.setItem('hub_instagram_analytics', JSON.stringify(analytics));
         renderConfiguracoes();
         showToast(`Instagram @${profile.username} conectado!`);
+        await saveTokensToFirestore();
       } catch (e) {
         console.error('Erro conexão Instagram:', e);
         showToast(`Erro: ${e.message}`, 'error');
@@ -3016,22 +3138,17 @@
     }
 
     function startInstagramOAuth() {
-      let appId = localStorage.getItem('hub_meta_app_id');
-      if (!appId) {
-        appId = prompt('Qual seu App ID do Meta (Facebook Developers)?\n\nPrecisa criar um app em https://developers.facebook.com');
-        if (!appId) return;
-        localStorage.setItem('hub_meta_app_id', appId.trim());
-        updateAppIdIndicator();
-      }
+      let appId = localStorage.getItem('hub_meta_app_id') || '1908920499776438';
+      localStorage.setItem('hub_meta_app_id', appId);
+      updateAppIdIndicator();
       const redirectUri = window.location.href.split('#')[0].split('?')[0];
 
-      // Verificar se está rodando em file:// - não funciona com OAuth
       if (redirectUri.startsWith('file://')) {
         showToast('OAuth não funciona em file://. Use http-server ou token manual.', 'error');
         return;
       }
 
-      const scope = 'instagram_basic,instagram_content_publish,pages_read_engagement,pages_show_list';
+      const scope = 'public_profile,pages_show_list';
       const oauthUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=token&state=hub_oauth`;
       showToast('Redirecionando para Facebook...');
       setTimeout(() => { window.location.href = oauthUrl; }, 500);
@@ -3052,100 +3169,361 @@
           setTimeout(() => connectInstagramManual(), 300);
         }
       }
-      // Update App ID indicator on load
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('state') === 'hub_li_oauth' && urlParams.get('code')) {
+        const code = urlParams.get('code');
+        const appId = localStorage.getItem('hub_linkedin_app_id');
+        const redirectUri = window.location.href.split('?')[0].split('#')[0];
+        const fnUrl = `https://us-central1-mytasks-saturday.cloudfunctions.net/linkedinOAuth`;
+        fetch(fnUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, client_id: appId, redirect_uri: redirectUri })
+        }).then(r => r.json()).then(data => {
+          if (data.access_token) {
+            const el = document.getElementById('manualLiToken');
+            if (el) el.value = data.access_token;
+            history.replaceState(null, '', window.location.pathname);
+            showToast('Token LinkedIn capturado! Conectando...');
+            setTimeout(() => connectLinkedinManual(), 300);
+          } else {
+            showToast('Erro ao obter token LinkedIn: ' + (data.error || 'desconhecido'), 'error');
+          }
+        }).catch(e => showToast('Erro OAuth LinkedIn: ' + e.message, 'error'));
+      }
       setTimeout(updateAppIdIndicator, 500);
+      setTimeout(updateLinkedinAppIdIndicator, 500);
     })();
 
     function disconnectInstagram() {
       clearIgProfile();
       renderConfiguracoes();
       showToast('Instagram desconectado.');
+      const uid = auth.currentUser?.uid;
+      if (uid) db.collection('users').doc(uid).update({ igToken: null, igUserId: null }).catch(()=>{});
     }
     window.disconnectInstagram = disconnectInstagram;
 
-    // ── PUBLISH REAL ───────────────────────────────────────────────────
-    async function publishNow(activityId) {
-      const token = getIgToken();
-      const igId = getIgUserId();
-      const profile = getIgProfile();
+    // ── FIREBASE STORAGE UPLOAD ────────────────────────────────────────
+    async function uploadToStorage(base64Data, fileName, contentType) {
+      const uid = auth.currentUser?.uid;
+      if (!uid) throw new Error('Usuário não autenticado');
+      const byteString = atob(base64Data.split(',')[1] || base64Data);
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+      const blob = new Blob([ab], { type: contentType || 'image/png' });
+      const ref = storage.ref().child(`posts/${uid}/${Date.now()}_${fileName}`);
+      const snap = await ref.put(blob);
+      return await snap.ref.getDownloadURL();
+    }
 
-      if (!token || !igId || !profile) {
-        showToast('Conecte o Instagram primeiro!','error');
+    // ── LINKEDIN INTEGRATION ───────────────────────────────────────────
+    const LI_API_BASE = 'https://api.linkedin.com/v2';
+
+    function getLiToken() { return localStorage.getItem('hub_linkedin_token') || ''; }
+    function setLiToken(t) { localStorage.setItem('hub_linkedin_token', t); }
+    function getLiProfile() { try { return JSON.parse(localStorage.getItem('hub_linkedin_profile') || 'null'); } catch { return null; } }
+    function setLiProfile(data) { localStorage.setItem('hub_linkedin_profile', JSON.stringify(data)); }
+    function clearLiProfile() {
+      localStorage.removeItem('hub_linkedin_profile');
+      localStorage.removeItem('hub_linkedin_token');
+      localStorage.removeItem('hub_linkedin_urn');
+    }
+    function getLiUrn() { return localStorage.getItem('hub_linkedin_urn') || ''; }
+    function setLiUrn(urn) { localStorage.setItem('hub_linkedin_urn', urn); }
+
+    function promptLinkedinAppId() {
+      const current = localStorage.getItem('hub_linkedin_app_id');
+      const id = prompt('Digite seu Client ID do LinkedIn (LinkedIn Developers):', current || '');
+      if (!id) return;
+      localStorage.setItem('hub_linkedin_app_id', id.trim());
+      updateLinkedinAppIdIndicator();
+      showToast('Client ID salvo!');
+    }
+    window.promptLinkedinAppId = promptLinkedinAppId;
+
+    function updateLinkedinAppIdIndicator() {
+      const el = document.getElementById('savedLinkedinAppIdIndicator');
+      if (el) el.classList.toggle('hidden', !localStorage.getItem('hub_linkedin_app_id'));
+    }
+
+    function startLinkedinOAuth() {
+      let appId = localStorage.getItem('hub_linkedin_app_id');
+      if (!appId) {
+        appId = prompt('Qual seu Client ID do LinkedIn Developer?\n\nCrie um app em https://www.linkedin.com/developers/');
+        if (!appId) return;
+        localStorage.setItem('hub_linkedin_app_id', appId.trim());
+        updateLinkedinAppIdIndicator();
+      }
+      const redirectUri = window.location.href.split('#')[0].split('?')[0];
+      if (redirectUri.startsWith('file://')) {
+        showToast('OAuth não funciona em file://. Use http-server ou token manual.', 'error');
         return;
       }
+      const scope = 'openid profile w_member_social email';
+      const oauthUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=hub_li_oauth`;
+      showToast('Redirecionando para LinkedIn...');
+      setTimeout(() => { window.location.href = oauthUrl; }, 500);
+    }
+    window.startLinkedinOAuth = startLinkedinOAuth;
 
+    async function connectLinkedinManual() {
+      const tokenInput = document.getElementById('manualLiToken');
+      const token = tokenInput?.value?.trim();
+      if (!token) { showToast('Insira um Access Token do LinkedIn.', 'error'); return; }
+      showToast('Conectando ao LinkedIn...');
+      try {
+        setLiToken(token);
+        const res = await fetch(`${LI_API_BASE}/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Token inválido');
+        const data = await res.json();
+        const urn = data.id;
+        setLiUrn(urn);
+        const profile = {
+          name: data.localizedFirstName + ' ' + data.localizedLastName,
+          headline: '',
+          urn: `urn:li:person:${urn}`
+        };
+        setLiProfile(profile);
+        renderConfiguracoes();
+        showToast(`LinkedIn conectado: ${profile.name}`);
+        await saveTokensToFirestore();
+      } catch (e) {
+        console.error('Erro conexão LinkedIn:', e);
+        showToast(`Erro: ${e.message}`, 'error');
+      }
+    }
+    window.connectLinkedinManual = connectLinkedinManual;
+
+    function disconnectLinkedin() {
+      clearLiProfile();
+      renderConfiguracoes();
+      showToast('LinkedIn desconectado.');
+      const uid = auth.currentUser?.uid;
+      if (uid) db.collection('users').doc(uid).update({ liToken: null, liUrn: null }).catch(()=>{});
+    }
+    window.disconnectLinkedin = disconnectLinkedin;
+
+    async function publishToLinkedin(activity, imageUrl) {
+      const token = getLiToken();
+      const urn = getLiUrn();
+      if (!token || !urn) throw new Error('LinkedIn não conectado');
+
+      const caption = `${activity.titulo}${activity.descricao ? '\n\n' + activity.descricao : ''}`;
+      const personUrn = `urn:li:person:${urn}`;
+
+      const shareContent = {
+        author: personUrn,
+        lifecycleState: 'PUBLISHED',
+        specificContent: {
+          'com.linkedin.ugc.ShareContent': {
+            shareCommentary: { text: caption },
+            shareMediaCategory: imageUrl ? 'ARTICLE' : 'NONE',
+            ...(imageUrl ? {
+              media: [{
+                status: 'READY',
+                originalUrl: imageUrl,
+                title: { attributes: [], text: activity.titulo }
+              }]
+            } : {})
+          }
+        },
+        visibility: {
+          'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
+        }
+      };
+
+      const res = await fetch(`${LI_API_BASE}/ugcPosts`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'X-Restli-Protocol-Version': '2.0.0'
+        },
+        body: JSON.stringify(shareContent)
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `LinkedIn API error: ${res.status}`);
+      }
+      return await res.json();
+    }
+
+    // ── PUBLISH REAL (Instagram + LinkedIn) ─────────────────────────────
+    async function publishNow(activityId, targets) {
       const activity = state.activities.find(a => a.id == activityId);
-      if (!activity) { showToast('Atividade não encontrada.','error'); return; }
+      if (!activity) { showToast('Atividade não encontrada.', 'error'); return; }
+
+      if (!targets || !targets.length) {
+        targets = ['ig'];
+      }
 
       setPostStatus(activityId, 'publicando');
       renderCalendar();
       renderKanban();
 
       const caption = `${activity.titulo}${activity.descricao ? '\n\n' + activity.descricao : ''}\n\n#makroengenharia`;
+      let publicImageUrl = null;
 
-      // Publicar via Instagram Content Publishing API
-      // Passo 1: Criar media container
-      // Para IMAGE: POST /{ig-user-id}/media?image_url=URL&caption=caption
-      // Para VIDEO: POST /{ig-user-id}/media?video_url=URL&caption=caption&media_type=VIDEO
-      // Passo 2: POST /{ig-user-id}/media_publish?creation_id=CONTAINER_ID
-
-      // Sem imagem, simulamos publicação (API real exige URL de mídia)
-      const isRealPublish = activity.attachments && activity.attachments.length > 0;
-
-      if (isRealPublish) {
+      if (activity.attachments && activity.attachments.length > 0) {
         try {
+          showToast('Fazendo upload da mídia...');
           const attach = activity.attachments[0];
-          const mediaType = attach.type?.startsWith('video') ? 'VIDEO' : 'IMAGE';
-          const mediaUrl = attach.data; // base64 - precisaria de um servidor para hospedar
-
-          // Nota: Para publicação REAL, a imagem precisa estar em uma URL pública
-          // O base64 não funciona diretamente com a Graph API
-          showToast('Mídia detectada. A API Graph exige URL pública.', 'error');
-          showToast('Publicando apenas texto (sem mídia)...');
-
-          // Fallback: criar container só com caption (apenas para teste)
-          const containerRes = await callGraphApi(`/${igId}/media`, {
-            caption: caption,
-            media_type: 'IMAGE',
-            image_url: 'https://via.placeholder.com/1080x1080.png?text=Makro+Engenharia'
-          });
-
-          if (containerRes.id) {
-            await callGraphApi(`/${igId}/media_publish`, { creation_id: containerRes.id });
-          }
-          setPostStatus(activityId, 'publicado');
-          showToast('Post publicado no Instagram!');
+          publicImageUrl = await uploadToStorage(attach.data, attach.name || 'post.png', attach.type || 'image/png');
+          showToast('Upload concluído!');
         } catch (e) {
-          console.error('Erro publicação:', e);
-          setPostStatus(activityId, 'erro');
-          showToast(`Erro: ${e.message}`, 'error');
+          console.error('Erro upload:', e);
+          showToast(`Erro no upload: ${e.message}`, 'error');
         }
-      } else {
-        // Sem mídia - modo texto apenas (cria container com placeholder)
-        try {
-          const containerRes = await callGraphApi(`/${igId}/media`, {
-            caption: caption,
-            media_type: 'IMAGE',
-            image_url: 'https://via.placeholder.com/1080x1080.png?text=Makro+Engenharia'
-          });
-          if (containerRes.id) {
-            const publishRes = await callGraphApi(`/${igId}/media_publish`, { creation_id: containerRes.id });
-            if (publishRes.id) {
-              setPostStatus(activityId, 'publicado');
-              showToast('Post publicado no Instagram!');
+      }
+
+      const results = [];
+
+      for (const target of targets) {
+        if (target === 'ig') {
+          const token = getIgToken();
+          const igId = getIgUserId();
+          if (!token || !igId) { results.push({ target: 'Instagram', ok: false, error: 'Não conectado' }); continue; }
+
+          try {
+            const mediaParams = {
+              caption: caption,
+              media_type: 'IMAGE',
+              image_url: publicImageUrl || 'https://via.placeholder.com/1080x1080.png?text=Makro+Engenharia'
+            };
+            const containerRes = await callGraphApi(`/${igId}/media`, mediaParams);
+            if (containerRes.id) {
+              let attempts = 0;
+              let status = 'IN_PROGRESS';
+              while (status === 'IN_PROGRESS' && attempts < 30) {
+                await new Promise(r => setTimeout(r, 2000));
+                const check = await callGraphApi(`/${containerRes.id}`, { fields: 'status_code' });
+                status = check.status_code || 'FINISHED';
+                attempts++;
+              }
+              await callGraphApi(`/${igId}/media_publish`, { creation_id: containerRes.id });
+              results.push({ target: 'Instagram', ok: true });
             }
+          } catch (e) {
+            results.push({ target: 'Instagram', ok: false, error: e.message });
           }
-        } catch (e) {
-          console.error('Erro publicação:', e);
-          setPostStatus(activityId, 'erro');
-          showToast(`Erro: ${e.message}`, 'error');
         }
+
+        if (target === 'li') {
+          const liToken = getLiToken();
+          if (!liToken) { results.push({ target: 'LinkedIn', ok: false, error: 'Não conectado' }); continue; }
+          try {
+            await publishToLinkedin(activity, publicImageUrl);
+            results.push({ target: 'LinkedIn', ok: true });
+          } catch (e) {
+            results.push({ target: 'LinkedIn', ok: false, error: e.message });
+          }
+        }
+      }
+
+      const allOk = results.every(r => r.ok);
+      if (allOk) {
+        setPostStatus(activityId, 'publicado');
+        showToast('Publicado com sucesso!');
+      } else {
+        const errors = results.filter(r => !r.ok).map(r => `${r.target}: ${r.error}`).join(', ');
+        const successes = results.filter(r => r.ok).map(r => r.target).join(', ');
+        if (successes) showToast(`Publicado em: ${successes}`);
+        if (errors) showToast(`Erros: ${errors}`, 'error');
+        setPostStatus(activityId, results.some(r => r.ok) ? 'publicado' : 'erro');
       }
 
       renderCalendar();
       renderKanban();
     }
     window.publishNow = publishNow;
+
+    // ── SCHEDULE POST ──────────────────────────────────────────────────
+    async function schedulePost(activityId) {
+      const activity = state.activities.find(a => a.id == activityId);
+      if (!activity) { showToast('Atividade não encontrada.', 'error'); return; }
+
+      const postDate = activity.dataPostagem;
+      const postTime = activity.postTime || '12:00';
+      const targets = activity.publishTargets || ['ig'];
+
+      if (!postDate) {
+        showToast('Defina a data de postagem.', 'error');
+        return;
+      }
+
+      const scheduledAt = new Date(`${postDate}T${postTime}:00`);
+      if (scheduledAt <= new Date()) {
+        showToast('Data/hora deve ser futura. Use "Publicar Agora".', 'error');
+        return;
+      }
+
+      const uid = auth.currentUser?.uid;
+      if (!uid) return;
+
+      let publicImageUrl = null;
+      if (activity.attachments && activity.attachments.length > 0) {
+        try {
+          showToast('Fazendo upload da mídia para agendamento...');
+          const attach = activity.attachments[0];
+          publicImageUrl = await uploadToStorage(attach.data, attach.name || 'post.png', attach.type || 'image/png');
+        } catch (e) {
+          console.error('Erro upload:', e);
+        }
+      }
+
+      const scheduleData = {
+        activityId: activityId,
+        titulo: activity.titulo,
+        descricao: activity.descricao || '',
+        scheduledAt: firebase.firestore.Timestamp.fromDate(scheduledAt),
+        targets: targets,
+        imageUrl: publicImageUrl || null,
+        status: 'agendado',
+        userId: uid,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      try {
+        await userPath('scheduledPosts').add(scheduleData);
+        setPostStatus(activityId, 'agendado');
+        await userDoc('activities', activity._fbId).update({
+          postStatus: 'agendado',
+          postTime: postTime,
+          publishTargets: targets,
+          scheduledAt: firebase.firestore.Timestamp.fromDate(scheduledAt)
+        });
+        showToast(`Agendado para ${postDate} às ${postTime}!`);
+        renderCalendar();
+        renderKanban();
+      } catch (e) {
+        showToast(`Erro ao agendar: ${e.message}`, 'error');
+      }
+    }
+    window.schedulePost = schedulePost;
+
+    // ── PUBLISH TARGETS UI ─────────────────────────────────────────────
+    function renderPublishTargets() {
+      const container = document.getElementById('actPublishTargets');
+      if (!container) return;
+      const igConnected = !!getIgProfile();
+      const liConnected = !!getLiProfile();
+      container.innerHTML = `
+        <label class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all ${igConnected ? 'border-[var(--border-strong)] hover:border-pink-500/50' : 'border-[var(--border)] opacity-40 cursor-not-allowed'}" style="background:var(--surface)">
+          <input type="checkbox" value="ig" ${igConnected ? '' : 'disabled'} class="accent-pink-500 w-3.5 h-3.5">
+          <span class="text-[10px] font-bold text-[var(--ink)]">Instagram</span>
+        </label>
+        <label class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all ${liConnected ? 'border-[var(--border-strong)] hover:border-blue-500/50' : 'border-[var(--border)] opacity-40 cursor-not-allowed'}" style="background:var(--surface)">
+          <input type="checkbox" value="li" ${liConnected ? '' : 'disabled'} class="accent-blue-600 w-3.5 h-3.5">
+          <span class="text-[10px] font-bold text-[var(--ink)]">LinkedIn</span>
+        </label>
+      `;
+    }
+    window.renderPublishTargets = renderPublishTargets;
 
     // ── BEST TIME GRID ─────────────────────────────────────────────────
     function renderBestTimeGrid(analytics) {
@@ -3182,28 +3560,26 @@
       const profile = getIgProfile();
       const notConnected = document.getElementById('instagramNotConnected');
       const connected = document.getElementById('instagramConnected');
-      if (!notConnected || !connected) return;
 
-      if (!profile) {
-        notConnected.classList.remove('hidden');
-        connected.classList.add('hidden');
-        return;
-      }
+      if (notConnected && connected) {
+        if (!profile) {
+          notConnected.classList.remove('hidden');
+          connected.classList.add('hidden');
+        } else {
+          notConnected.classList.add('hidden');
+          connected.classList.remove('hidden');
 
-      notConnected.classList.add('hidden');
-      connected.classList.remove('hidden');
-
-      const initial = profile.username ? profile.username.charAt(0).toUpperCase() : '?';
-      const picEl = document.getElementById('igProfilePic');
-      if (profile.profilePic) {
-        picEl.style.background = 'transparent';
-        picEl.innerHTML = `<img src="${profile.profilePic}" class="w-full h-full rounded-2xl object-cover">`;
-      } else {
-        picEl.style.background = 'linear-gradient(135deg,#833AB4,#FD1D1D)';
-        picEl.textContent = initial;
-      }
-      document.getElementById('igUsername').textContent = '@' + (profile.username || 'usuário');
-      document.getElementById('igFullName').textContent = profile.fullName || '';
+          const initial = profile.username ? profile.username.charAt(0).toUpperCase() : '?';
+          const picEl = document.getElementById('igProfilePic');
+          if (profile.profilePic) {
+            picEl.style.background = 'transparent';
+            picEl.innerHTML = `<img src="${profile.profilePic}" class="w-full h-full rounded-2xl object-cover">`;
+          } else {
+            picEl.style.background = 'linear-gradient(135deg,#833AB4,#FD1D1D)';
+            picEl.textContent = initial;
+          }
+          document.getElementById('igUsername').textContent = '@' + (profile.username || 'usuário');
+          document.getElementById('igFullName').textContent = profile.fullName || '';
 
       // Refresh analytics from API (async, não bloqueia)
       let analytics;
@@ -3247,6 +3623,28 @@
 
       // Refresh data from API in background
       refreshIgData();
+        }
+      }
+
+      const liNotConnected = document.getElementById('linkedinNotConnected');
+      const liConnected = document.getElementById('linkedinConnected');
+      if (liNotConnected && liConnected) {
+        const liProfile = getLiProfile();
+        if (!liProfile) {
+          liNotConnected.classList.remove('hidden');
+          liConnected.classList.add('hidden');
+        } else {
+          liNotConnected.classList.add('hidden');
+          liConnected.classList.remove('hidden');
+          document.getElementById('liName').textContent = liProfile.name || 'Usuário';
+          document.getElementById('liHeadline').textContent = liProfile.headline || '';
+          const picEl = document.getElementById('liProfilePic');
+          if (liProfile.profilePic && picEl) {
+            picEl.style.background = 'transparent';
+            picEl.innerHTML = `<img src="${liProfile.profilePic}" class="w-full h-full rounded-2xl object-cover">`;
+          }
+        }
+      }
     }
 
     async function refreshIgData() {
@@ -3408,7 +3806,7 @@
       const [view, setView] = useState('loading');
       const [rawData, setRawData] = useState([]);
       const [contractsList, setContractsList] = useState([]);
-      const [filters, setFilters] = useState({ mes:'Ano 26', unidade:'Todas', estrategico:'Todos', empresa:'Todas', cliente:'Todos', contrato:'Todos', verNA: false });
+      const [filters, setFilters] = useState({ mes:'Ano 26', unidade:'Todas', estrategico:'Todos', empresa:'MKE', cliente:'Todos', contrato:'Todos', verNA: false });
       const [selectedMonthInChart, setSelectedMonthInChart] = useState(null);
       const [exportMenuOpen, setExportMenuOpen] = useState(false);
       const [searchText, setSearchText] = useState('');
