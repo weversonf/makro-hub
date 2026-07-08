@@ -3136,13 +3136,12 @@
       updateAppIdIndicator();
       const redirectUri = window.location.href.split('#')[0].split('?')[0];
 
-      // Verificar se está rodando em file:// - não funciona com OAuth
       if (redirectUri.startsWith('file://')) {
         showToast('OAuth não funciona em file://. Use http-server ou token manual.', 'error');
         return;
       }
 
-      const scope = 'instagram_basic,instagram_content_publish,pages_read_engagement,pages_show_list';
+      const scope = 'public_profile,pages_show_list';
       const oauthUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=token&state=hub_oauth`;
       showToast('Redirecionando para Facebook...');
       setTimeout(() => { window.location.href = oauthUrl; }, 500);
