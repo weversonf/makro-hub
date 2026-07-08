@@ -2,8 +2,15 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Makro Hub</title>
+  <meta name="theme-color" content="#ED1C24">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Makro Hub">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="ASS_01.png">
+  <link rel="apple-touch-icon" href="ASS_01.png">
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Montserrat:wght@400;500;700;900&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -402,6 +409,13 @@
     .mob-tab.active .mob-tab-bubble i { color: #fff; }
     .mob-tab.active .mob-tab-label { color: var(--makro-red-bright); }
 
+    /* Image Editor */
+    #imgEditorDrop.dragover { border-color: var(--makro-red); background: var(--brand-soft); }
+    .frame-btn.ring-red-500 { ring-color: var(--makro-red); }
+    input[type=range] { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 4px; background: var(--surface-3); outline: none; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--makro-red); cursor: pointer; box-shadow: 0 2px 6px rgba(237,28,36,0.4); }
+    input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--makro-red); cursor: pointer; border: none; }
+
     /* Gantt View */
     .gantt-grid { position: relative; }
     .gantt-cell { border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); min-height: 44px; display: flex; align-items: center; }
@@ -661,6 +675,70 @@
     </div>
   </div>
 
+  <!-- MODAL EDITOR DE IMAGEM -->
+  <div id="imageEditorModal" class="hidden-view fixed inset-0 bg-black/85 backdrop-blur-md z-[160] flex items-center justify-center p-0 lg:p-4">
+    <div class="absolute inset-0" onclick="closeImageEditor()"></div>
+    <div class="bg-[var(--bg)] border border-[var(--border-strong)] w-full max-w-6xl rounded-t-3xl lg:rounded-3xl shadow-2xl z-10 overflow-hidden animate-fadeup flex flex-col max-h-[95vh]">
+      <div class="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between bg-[var(--surface)]">
+        <div class="flex items-center gap-3">
+          <i data-lucide="image-plus" class="text-red-400 w-5 h-5"></i>
+          <div>
+            <h2 class="text-lg font-extrabold tracking-tight text-[var(--ink)]">Editor de Imagens</h2>
+            <p class="text-xs text-[var(--ink-3)] font-medium mt-0.5">Ajuste a foto e aplique a moldura institucional Makro</p>
+          </div>
+        </div>
+        <button onclick="closeImageEditor()" class="p-2 text-[var(--ink-3)] hover:text-[var(--ink)] bg-[var(--surface)] hover:bg-red-600 rounded-lg transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div class="flex-1 overflow-y-auto lg:overflow-hidden custom-scrollbar p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
+        <!-- Canvas/Preview -->
+        <div class="flex flex-col gap-3 min-h-0">
+          <div id="imgEditorDrop" class="relative rounded-2xl border-2 border-dashed border-[var(--border-strong)] flex items-center justify-center overflow-hidden bg-[var(--surface)] mx-auto" style="aspect-ratio:4/5; height:min(68vh, calc(95vh - 200px)); width:auto;">
+            <canvas id="imgEditorCanvas" class="hidden max-h-full max-w-full" style="touch-action:none;"></canvas>
+            <div id="imgEditorPlaceholder" class="text-center px-6">
+              <i data-lucide="image-up" class="w-10 h-10 text-[var(--ink-3)] mx-auto mb-3"></i>
+              <p class="text-sm font-semibold text-[var(--ink-2)]">Arraste uma imagem aqui</p>
+              <p class="text-xs text-[var(--ink-3)] mt-1">ou clique para selecionar</p>
+              <input type="file" id="imgEditorFile" accept="image/*" class="hidden">
+            </div>
+          </div>
+          <p class="text-[10px] text-[var(--ink-3)] text-center">Arraste a imagem para reposicionar • Scroll para zoom</p>
+        </div>
+        <!-- Controles -->
+        <div class="flex flex-col gap-5 min-h-0 lg:overflow-y-auto custom-scrollbar">
+          <div>
+            <label class="text-[10px] font-black uppercase tracking-widest text-[var(--ink-3)] mb-2 block">Moldura Makro</label>
+            <button onclick="toggleFrame()" id="frame-toggle-btn" class="w-full py-3 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-3)] border border-[var(--border)] text-[var(--ink)] text-xs font-semibold transition-all flex items-center justify-center gap-2">
+              <span id="frameToggleLabel">Nenhuma</span>
+            </button>
+          </div>
+          <div class="flex flex-col gap-4">
+            <div>
+              <div class="flex justify-between mb-1.5"><label class="text-[10px] font-black uppercase tracking-widest text-[var(--ink-3)]">Zoom</label><span id="zoomVal" class="text-[10px] font-bold text-[var(--ink-2)]">100%</span></div>
+              <input type="range" id="ieZoom" min="50" max="300" value="100" class="w-full">
+            </div>
+            <div>
+              <div class="flex justify-between mb-1.5"><label class="text-[10px] font-black uppercase tracking-widest text-[var(--ink-3)]">Brilho</label><span id="brightVal" class="text-[10px] font-bold text-[var(--ink-2)]">100%</span></div>
+              <input type="range" id="ieBrightness" min="50" max="150" value="100" class="w-full">
+            </div>
+            <div>
+              <div class="flex justify-between mb-1.5"><label class="text-[10px] font-black uppercase tracking-widest text-[var(--ink-3)]">Saturação</label><span id="satVal" class="text-[10px] font-bold text-[var(--ink-2)]">100%</span></div>
+              <input type="range" id="ieSaturation" min="0" max="200" value="100" class="w-full">
+            </div>
+            <div>
+              <div class="flex justify-between mb-1.5"><label class="text-[10px] font-black uppercase tracking-widest text-[var(--ink-3)]">Nitidez</label><span id="contrastVal" class="text-[10px] font-bold text-[var(--ink-2)]">100%</span></div>
+              <input type="range" id="ieContrast" min="50" max="200" value="100" class="w-full">
+            </div>
+          </div>
+          <button onclick="resetImageEditor()" class="text-xs font-semibold text-[var(--ink-3)] hover:text-[var(--ink)] py-2 rounded-lg hover:bg-[var(--surface)] transition flex items-center justify-center gap-2"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Resetar</button>
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-[var(--border)] flex items-center justify-between bg-[var(--surface)]">
+        <p class="text-[10px] text-[var(--ink-3)]">A foto ajustada + moldura será mesclada em alta resolução</p>
+        <button onclick="exportImageEditor()" class="px-6 py-2.5 bg-red-600 hover:bg-red-700 shadow-lg shadow-red-600/25 text-white text-xs font-bold rounded-xl transition-all active:scale-95 flex items-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> Exportar imagem</button>
+      </div>
+    </div>
+  </div>
+
   <!-- LOGIN OVERLAY -->
   <div id="auth-gate" class="fixed inset-0 z-[200] bg-[var(--bg)] flex items-center justify-center p-4">
     <div class="text-center max-w-sm w-full">
@@ -819,6 +897,7 @@
             </div>
             <div class="w-full lg:w-80 glass-card p-6">
               <h3 id="dailyTitle" class="font-bold text-sm text-[var(--ink)] mb-4">Posts do Dia</h3>
+              <button onclick="openImageEditor()" class="w-full mb-4 px-4 py-3 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-3)] border border-[var(--border-strong)] text-[var(--ink)] text-xs font-semibold transition-all flex items-center justify-center gap-2"><i data-lucide="image-plus" class="w-4 h-4 text-red-400"></i> Editor de Imagens</button>
               <div id="dailyPostsList" class="space-y-3"></div>
             </div>
           </div>
@@ -2601,6 +2680,134 @@
     }
     window.changeView = changeView;
 
+    // ── Image Editor (Calendário) ───────────────────────────────────────
+    let ieState = { img: null, frame: null, frameUrl: null, scale: 1, x: 0, y: 0, brightness: 100, saturation: 100, contrast: 100, dragging: false, lastX: 0, lastY: 0 };
+    const ieCanvas = () => document.getElementById('imgEditorCanvas');
+    const iePlaceholder = () => document.getElementById('imgEditorPlaceholder');
+
+    function openImageEditor() {
+      document.getElementById('imageEditorModal').classList.remove('hidden-view');
+      lucide.createIcons();
+    }
+    window.openImageEditor = openImageEditor;
+    function closeImageEditor() { document.getElementById('imageEditorModal').classList.add('hidden-view'); }
+    window.closeImageEditor = closeImageEditor;
+
+    function resetImageEditor() {
+      ieState = { img: null, frame: ieState.frame, frameUrl: ieState.frameUrl, scale: 1, x: 0, y: 0, brightness: 100, saturation: 100, contrast: 100, dragging: false, lastX: 0, lastY: 0 };
+      const z = document.getElementById('ieZoom'), b = document.getElementById('ieBrightness'), s = document.getElementById('ieSaturation'), c = document.getElementById('ieContrast');
+      z.value = 100; b.value = 100; s.value = 100; c.value = 100;
+      document.getElementById('zoomVal').textContent = '100%';
+      document.getElementById('brightVal').textContent = '100%';
+      document.getElementById('satVal').textContent = '100%';
+      document.getElementById('contrastVal').textContent = '100%';
+      drawEditor();
+    }
+    window.resetImageEditor = resetImageEditor;
+
+    function drawEditor() {
+      const canvas = ieCanvas();
+      if (!ieState.img) { canvas.classList.add('hidden'); iePlaceholder().classList.remove('hidden'); return; }
+      canvas.classList.remove('hidden'); iePlaceholder().classList.add('hidden');
+      const ctx = canvas.getContext('2d');
+      const W = 1080, H = 1350;
+      canvas.width = W; canvas.height = H;
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, W, H);
+      ctx.save();
+      ctx.filter = `brightness(${ieState.brightness}%) saturate(${ieState.saturation}%) contrast(${ieState.contrast}%)`;
+      const img = ieState.img;
+      const baseScale = Math.max(W / img.width, H / img.height) * ieState.scale;
+      const drawW = img.width * baseScale;
+      const drawH = img.height * baseScale;
+      const dx = (W - drawW) / 2 + ieState.x;
+      const dy = (H - drawH) / 2 + ieState.y;
+      ctx.drawImage(img, dx, dy, drawW, drawH);
+      ctx.restore();
+      if (ieState.frame) {
+        const f = ieState.frame, fr = f.width / f.height, cr = W / H;
+        let fw, fh;
+        if (fr > cr) { fh = H; fw = f.width * (H / f.height); } else { fw = W; fh = f.height * (W / f.width); }
+        ctx.drawImage(f, (W - fw) / 2, (H - fh) / 2, fw, fh);
+      }
+    }
+
+    function loadEditorImage(file) {
+      if (!file || !file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => { ieState.img = img; ieState.x = 0; ieState.y = 0; ieState.scale = 1; document.getElementById('ieZoom').value = 100; document.getElementById('zoomVal').textContent = '100%'; drawEditor(); };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    const FRAMES = [null, 'molduras/ASS_01.png', 'molduras/ASS_02.png'];
+    const FRAME_LABELS = ['Nenhuma', 'Moldura 1 (ASS_01)', 'Moldura 2 (ASS_02)'];
+
+    function applyFrame(url) {
+      if (!url) { ieState.frame = null; ieState.frameUrl = null; drawEditor(); return; }
+      if (ieState.frame && ieState.frameUrl === url) { drawEditor(); return; }
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => { ieState.frame = img; ieState.frameUrl = url; drawEditor(); };
+      img.onerror = () => { console.warn('Frame load failed:', url); showToast('Erro ao carregar moldura.', 'error'); };
+      img.src = url;
+    }
+
+    function toggleFrame() {
+      const cur = FRAMES.indexOf(ieState.frameUrl);
+      const nextIdx = (cur + 1) % FRAMES.length;
+      document.getElementById('frameToggleLabel').textContent = FRAME_LABELS[nextIdx];
+      applyFrame(FRAMES[nextIdx]);
+    }
+    window.toggleFrame = toggleFrame;
+
+    function exportImageEditor() {
+      if (!ieState.img) { showToast('Selecione uma imagem primeiro.', 'error'); return; }
+      const canvas = ieCanvas();
+      const link = document.createElement('a');
+      link.download = `makro_post_${Date.now()}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      showToast('Imagem exportada!');
+    }
+    window.exportImageEditor = exportImageEditor;
+
+    (function initEditorEvents() {
+      const drop = document.getElementById('imgEditorDrop');
+      const fileInput = document.getElementById('imgEditorFile');
+      if (!drop || !fileInput) return;
+      drop.addEventListener('click', (e) => { if (e.target.tagName !== 'INPUT') fileInput.click(); });
+      fileInput.addEventListener('change', (e) => { if (e.target.files[0]) loadEditorImage(e.target.files[0]); });
+      drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('dragover'); });
+      drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
+      drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('dragover'); if (e.dataTransfer.files[0]) loadEditorImage(e.dataTransfer.files[0]); });
+      const canvas = ieCanvas();
+      const startDrag = (clientX, clientY) => { ieState.dragging = true; ieState.lastX = clientX; ieState.lastY = clientY; };
+      const moveDrag = (clientX, clientY) => { if (!ieState.dragging) return; ieState.x += clientX - ieState.lastX; ieState.y += clientY - ieState.lastY; ieState.lastX = clientX; ieState.lastY = clientY; drawEditor(); };
+      const endDrag = () => { ieState.dragging = false; };
+      canvas.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
+      window.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY));
+      window.addEventListener('mouseup', endDrag);
+      canvas.addEventListener('touchstart', (e) => { if (e.touches[0]) startDrag(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+      canvas.addEventListener('touchmove', (e) => { if (e.touches[0]) { e.preventDefault(); moveDrag(e.touches[0].clientX, e.touches[0].clientY); } }, { passive: false });
+      canvas.addEventListener('touchend', endDrag);
+      canvas.addEventListener('wheel', (e) => { e.preventDefault(); const delta = e.deltaY > 0 ? -5 : 5; let v = parseInt(document.getElementById('ieZoom').value) + delta; v = Math.max(50, Math.min(300, v)); document.getElementById('ieZoom').value = v; document.getElementById('zoomVal').textContent = v + '%'; ieState.scale = v / 100; drawEditor(); }, { passive: false });
+      ['ieZoom','ieBrightness','ieSaturation','ieContrast'].forEach(id => {
+        document.getElementById(id).addEventListener('input', (e) => {
+          const v = parseInt(e.target.value);
+          if (id === 'ieZoom') { ieState.scale = v / 100; document.getElementById('zoomVal').textContent = v + '%'; }
+          if (id === 'ieBrightness') { ieState.brightness = v; document.getElementById('brightVal').textContent = v + '%'; }
+          if (id === 'ieSaturation') { ieState.saturation = v; document.getElementById('satVal').textContent = v + '%'; }
+          if (id === 'ieContrast') { ieState.contrast = v; document.getElementById('contrastVal').textContent = v + '%'; }
+          drawEditor();
+        });
+      });
+    })();
+
     // ── Theme Toggle ────────────────────────────────────────────────────
     function initTheme() {
       const saved = localStorage.getItem('makro_hub_theme');
@@ -3580,6 +3787,7 @@
         getUserRef().collection('registros').doc(pontoDate).set(rec,{merge:true});
         setPontoEntrada('');setPontoSaida('');setPontoDate(new Date().toISOString().split('T')[0]);
       };
+      const handleEditPonto = r => { setPontoDate(r.date); setPontoEntrada(r.entrada); setPontoSaida(r.saida); };
       const handleDeletePonto = d => { if(confirm('Excluir?')){setRegistros(registros.filter(r=>r.date!==d));getUserRef().collection('registros').doc(d).delete();} };
       const handleSaveManual = () => {
         if(!manualRef||!manualHrs) return;
@@ -3668,7 +3876,10 @@
                         <td className="p-3 text-center font-mono text-xs">{r.entrada||'--:--'}</td>
                         <td className="p-3 text-center font-mono text-xs">{r.saida||'--:--'}</td>
                         <td className={`p-3 text-center font-bold text-xs ${r.saldo?.startsWith('+')?'text-green-500':'text-red-500'}`}>{r.saldo||'--'}</td>
-                        <td className="p-3"><button onClick={()=>handleDeletePonto(r.date)} className="text-red-500 opacity-50 hover:opacity-100">{BH_ICONS.trash}</button></td>
+                        <td className="p-3 flex gap-1">
+                          <button onClick={()=>handleEditPonto(r)} className="opacity-50 hover:opacity-100">{BH_ICONS.edit}</button>
+                          <button onClick={()=>handleDeletePonto(r.date)} className="text-red-500 opacity-50 hover:opacity-100">{BH_ICONS.trash}</button>
+                        </td>
                       </tr>;
                     })}
                     {!filteredTime.length && <tr><td colSpan="5" className="p-6 text-center text-xs opacity-30">Nenhum registro</td></tr>}

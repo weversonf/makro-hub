@@ -2,8 +2,15 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Makro Hub</title>
+  <meta name="theme-color" content="#ED1C24">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Makro Hub">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="ASS_01.png">
+  <link rel="apple-touch-icon" href="ASS_01.png">
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Montserrat:wght@400;500;700;900&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -4178,6 +4185,7 @@
         getUserRef().collection('registros').doc(pontoDate).set(rec,{merge:true});
         setPontoEntrada('');setPontoSaida('');setPontoDate(new Date().toISOString().split('T')[0]);
       };
+      const handleEditPonto = r => { setPontoDate(r.date); setPontoEntrada(r.entrada); setPontoSaida(r.saida); };
       const handleDeletePonto = d => { if(confirm('Excluir?')){setRegistros(registros.filter(r=>r.date!==d));getUserRef().collection('registros').doc(d).delete();} };
       const handleSaveManual = () => {
         if(!manualRef||!manualHrs) return;
@@ -4266,7 +4274,10 @@
                         <td className="p-3 text-center font-mono text-xs">{r.entrada||'--:--'}</td>
                         <td className="p-3 text-center font-mono text-xs">{r.saida||'--:--'}</td>
                         <td className={`p-3 text-center font-bold text-xs ${r.saldo?.startsWith('+')?'text-green-500':'text-red-500'}`}>{r.saldo||'--'}</td>
-                        <td className="p-3"><button onClick={()=>handleDeletePonto(r.date)} className="text-red-500 opacity-50 hover:opacity-100">{BH_ICONS.trash}</button></td>
+                        <td className="p-3 flex gap-1">
+                          <button onClick={()=>handleEditPonto(r)} className="opacity-50 hover:opacity-100">{BH_ICONS.edit}</button>
+                          <button onClick={()=>handleDeletePonto(r.date)} className="text-red-500 opacity-50 hover:opacity-100">{BH_ICONS.trash}</button>
+                        </td>
                       </tr>;
                     })}
                     {!filteredTime.length && <tr><td colSpan="5" className="p-6 text-center text-xs opacity-30">Nenhum registro</td></tr>}

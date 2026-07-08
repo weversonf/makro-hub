@@ -1,0 +1,22 @@
+{
+  "name": "Makro Hub",
+  "short_name": "Makro Hub",
+  "description": "Painel Operacional Makro Engenharia",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#ED1C24",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "ASS_01.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "ASS_02.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
