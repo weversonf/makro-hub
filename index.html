@@ -754,7 +754,13 @@
 
   <!-- LOGIN OVERLAY -->
   <div id="auth-gate" class="fixed inset-0 z-[200] bg-[var(--bg)] flex items-center justify-center p-4">
-    <div class="text-center max-w-sm w-full">
+    <!-- Loading: visivel ate o Firebase confirmar o estado de auth -->
+    <div id="auth-loading" class="text-center">
+      <div class="w-10 h-10 border-[3px] border-[var(--surface-3)] border-t-[var(--makro-red)] rounded-full animate-spin mx-auto"></div>
+      <p class="text-xs text-[var(--ink-3)] mt-4 font-medium">Carregando…</p>
+    </div>
+    <!-- Login: so aparece quando o Firebase confirma que nao ha usuario -->
+    <div id="auth-login-form" class="text-center max-w-sm w-full hidden">
       <div class="text-6xl mb-4">⏱️</div>
       <h1 class="text-2xl font-black uppercase tracking-tight mb-2">Makro Hub</h1>
       <p class="text-sm opacity-50 mb-8">Faca login para acessar</p>
@@ -1188,6 +1194,7 @@
     const auth = firebase.auth();
     const storage = firebase.storage();
     const googleProvider = new firebase.auth.GoogleAuthProvider();
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(e => console.warn('Auth persistence:', e));
 
     window.fb = {
       db,
@@ -1219,8 +1226,11 @@
     });
 
     auth.onAuthStateChanged((user) => {
+      const authLoading = document.getElementById('auth-loading');
+      const authLoginForm = document.getElementById('auth-login-form');
       const avatar = document.getElementById('user-avatar');
       const userIcon = document.getElementById('user-icon');
+      if (authLoading) authLoading.classList.add('hidden');
       if (user) {
         authGate.style.display = 'none';
         appView.style.display = '';
@@ -1237,6 +1247,7 @@
       } else {
         authGate.style.display = '';
         appView.style.display = 'none';
+        if (authLoginForm) authLoginForm.classList.remove('hidden');
         if (avatar) avatar.classList.add('hidden');
         if (userIcon) userIcon.classList.remove('hidden');
       }
