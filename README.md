@@ -210,3 +210,51 @@ O `hub_makro.html` não possui tela de login. O acesso é feito diretamente pelo
 - O Babel Standalone transpila JSX em tempo real no navegador
 - Os dados do NPS são carregados via `fetch` para o Google Apps Script
 - As atividades usam Firebase Firestore com listener `onSnapshot` para atualização em tempo real
+
+---
+
+## Publicação em Redes Sociais (Instagram + LinkedIn)
+
+### Como funciona
+
+1. **Publicar Agora** — o cliente faz upload da imagem para o Firebase Storage e chama a Cloud Function `publishNow` (HTTP), que executa as chamadas à Graph API do Instagram e/ou API do LinkedIn **do lado do servidor** (evita CORS).
+2. **Agendar Post** — o cliente grava um documento em `users/{uid}/scheduledPosts` com `status: 'agendado'` e `scheduledAt`. A Cloud Function `scheduledPublish` (onSchedule, a cada 5 minutos) busca e publica automaticamente.
+
+### Cloud Functions (`functions/`)
+
+| Function | Tipo | Descrição |
+|----------|------|-----------|
+| `scheduledPublish` | `onSchedule` (5 min) | Executa posts agendados cujo `scheduledAt` já passou |
+| `publishNow` | `onRequest` (HTTP) | Publica imediatamente (recebe `{ post, targets }`) |
+| `linkedinOAuth` | `onRequest` (HTTP) | Troca `code` OAuth por `access_token` (server-side, segura `client_secret`) |
+| `saveSocialTokens` | `onCall` | Salva tokens IG/LI no Firestore |
+
+### Deploy
+
+```bash
+# 1. Configurar o client_secret do LinkedIn (secret)
+firebase functions:secrets:set LINKEDIN_CLIENT_SECRET
+
+# 2. Deploy das functions + storage rules
+firebase deploy --only functions,storage
+```
+
+### ⚠️ App Review da Meta (OBRIGATÓRIO para produção)
+
+O escopo `instagram_content_publish` **exige App Review aprovado** pela Meta para funcionar com contas que não sejam Admin/developer/tester do app.
+
+**Até a aprovação**, apenas contas cadastradas como **Testers** do app no [Meta for Developers](https://developers.facebook.com/apps/) conseguem publicar.
+
+Para submeter:
+1. Acesse App Review → Permissions and Features
+2. Solicite `instagram_content_publish` e `pages_read_engagement`
+3. Forneça instruções de uso e screencast demonstrando a funcionalidade
+4. Aguarde aprovação (pode levar dias a semanas)
+
+### Pré-requisitos
+
+- **App ID do Meta** — configure no app via botão "Configurar App ID" em Configurações. Sem isso, o OAuth do Instagram não inicia.
+- **Client ID do LinkedIn** — configure via "Configurar Client ID" em Configurações.
+- **Client Secret do LinkedIn** — configure via `firebase functions:secrets:set LINKEDIN_CLIENT_SECRET` (nunca no client).
+- **Redirect URIs** — cadastre a URL do app no Meta for Developers e no LinkedIn Developers.
+- **Firebase Storage** — as regras em `storage.rules` permitem leitura pública em `posts/` (necessário para a Graph API baixar a imagem).

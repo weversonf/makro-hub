@@ -1,9 +1,21 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    // Posts: leitura publica (Graph API do Instagram precisa baixar a imagem)
     match /posts/{userId}/{allPaths=**} {
-      allow read: if request.auth != null && request.auth.uid == userId;
+      allow read: if true;
       allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Imagem padrao: leitura publica
+    match /defaults/{allPaths=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Demais arquivos: apenas dono
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }

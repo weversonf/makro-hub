@@ -1,4 +1,22 @@
-const functions = require('firebase-functions');
+/**
+ * Makro Hub — Cloud Functions
+ * 
+ * Functions:
+ *   scheduledPublish  — onSchedule (5 min) executa posts agendados
+ *   publishNow        — onRequest  (HTTP)   publica imediatamente
+ *   linkedinOAuth     — onRequest  (HTTP)   troca code OAuth por access_token
+ *   saveSocialTokens  — onCall             salva tokens no Firestore
+ *
+ * Deploy:
+ *   firebase deploy --only functions
+ *
+ * Variavel de ambiente (client_secret do LinkedIn):
+ *   firebase functions:secrets:set LINKEDIN_CLIENT_SECRET
+ */
+
+const { onSchedule } = require('firebase-functions/v2/scheduler');
+const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
+const logger = require('firebase-functions/logger');
 const admin = require('firebase-admin');
 const fetch = require('node-fetch');
 
@@ -7,6 +25,8 @@ admin.initializeApp();
 const db = admin.firestore();
 const IG_API_BASE = 'https://graph.facebook.com/v18.0';
 const LI_API_BASE = 'https://api.linkedin.com/v2';
+
+/* ── HELPERS: publicacao server-side ─────────────────────────────── */
 
 async function publishToInstagram(post, userDoc) {
   const userData = (await userDoc.get()).data();
@@ -39,6 +59,8 @@ async function publishToInstagram(post, userDoc) {
     status = checkData.status_code || 'FINISHED';
     attempts++;
   }
+
+  if (status !== 'FINISHED') throw new Error('Timeout: container de mídia não ficou pronto');
 
   const publishParams = new URLSearchParams({
     access_token: token,
@@ -101,52 +123,56 @@ async function publishToLinkedin(post, userDoc) {
   return await res.json();
 }
 
-exports.scheduledPublish = functions.pubsub.schedule('every 5 minutes').onRun(async () => {
-  const now = admin.firestore.Timestamp.now();
-  const usersSnap = await db.collection('users').get();
+/* ── SCHEDULED PUBLISHER (Cloud Scheduler, 5 min) ────────────────── */
+/*  Problema 1: motor de execucao dos posts agendados                 */
 
-  for (const userDocRef of usersSnap.docs) {
-    const scheduledSnap = await userDocRef.ref
-      .collection('scheduledPosts')
-      .where('status', '==', 'agendado')
-      .where('scheduledAt', '<=', now)
-      .get();
+exports.scheduledPublish = onSchedule(
+  { schedule: 'every 5 minutes', region: 'us-central1' },
+  async (event) => {
+    const now = admin.firestore.Timestamp.now();
+    const usersSnap = await db.collection('users').get();
 
-    for (const postDoc of scheduledSnap.docs) {
-      const post = postDoc.data();
-      const targets = post.targets || ['ig'];
-      const results = [];
+    for (const userDocRef of usersSnap.docs) {
+      const scheduledSnap = await userDocRef.ref
+        .collection('scheduledPosts')
+        .where('status', '==', 'agendado')
+        .where('scheduledAt', '<=', now)
+        .get();
 
-      for (const target of targets) {
-        try {
-          if (target === 'ig') {
-            await publishToInstagram(post, userDocRef.ref);
-            results.push({ target: 'Instagram', ok: true });
+      for (const postDoc of scheduledSnap.docs) {
+        const post = postDoc.data();
+        const targets = post.targets || ['ig'];
+        const results = [];
+
+        for (const target of targets) {
+          try {
+            if (target === 'ig') {
+              await publishToInstagram(post, userDocRef.ref);
+              results.push({ target: 'Instagram', ok: true });
+            }
+            if (target === 'li') {
+              await publishToLinkedin(post, userDocRef.ref);
+              results.push({ target: 'LinkedIn', ok: true });
+            }
+          } catch (e) {
+            logger.error(`Error publishing to ${target}:`, e.message);
+            results.push({ target, ok: false, error: e.message });
           }
-          if (target === 'li') {
-            await publishToLinkedin(post, userDocRef.ref);
-            results.push({ target: 'LinkedIn', ok: true });
-          }
-        } catch (e) {
-          console.error(`Error publishing to ${target}:`, e.message);
-          results.push({ target, ok: false, error: e.message });
         }
-      }
 
-      const allOk = results.every(r => r.ok);
-      await postDoc.ref.update({
-        status: allOk ? 'publicado' : 'erro',
-        publishedAt: admin.firestore.FieldValue.serverTimestamp(),
-        results
-      });
+        const allOk = results.every(r => r.ok);
+        await postDoc.ref.update({
+          status: allOk ? 'publicado' : 'erro',
+          publishedAt: admin.firestore.FieldValue.serverTimestamp(),
+          results
+        });
 
-      const actId = post.activityId;
-      if (actId) {
-        const actRef = userDocRef.ref.collection('activities').doc(String(actId));
-        const actSnap = await actRef.get();
-        if (actSnap.exists) {
-          const actDocs = await userDocRef.ref.collection('activities')
-            .where('id', '==', actId).get();
+        const actId = post.activityId;
+        if (actId) {
+          const actDocs = await userDocRef.ref
+            .collection('activities')
+            .where('id', '==', actId)
+            .get();
           for (const actDoc of actDocs.docs) {
             await actDoc.ref.update({
               postStatus: allOk ? 'publicado' : 'erro'
@@ -155,75 +181,137 @@ exports.scheduledPublish = functions.pubsub.schedule('every 5 minutes').onRun(as
         }
       }
     }
+
+    return null;
   }
+);
 
-  return null;
-});
+/* ── PUBLISH NOW (HTTP trigger) ──────────────────────────────────── */
+/*  Problema 1+5: publicar imediatamente via servidor (evita CORS)    */
 
-exports.linkedinOAuth = functions.https.onRequest(async (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
+exports.publishNow = onRequest(
+  { region: 'us-central1', cors: true },
+  async (req, res) => {
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
-  if (req.method === 'OPTIONS') {
-    res.status(204).send('');
-    return;
-  }
-
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
-  }
-
-  const { code, client_id, redirect_uri } = req.body;
-
-  if (!code || !client_id || !redirect_uri) {
-    res.status(400).json({ error: 'Missing parameters' });
-    return;
-  }
-
-  const clientSecret = functions.config().linkedin?.client_secret;
-  if (!clientSecret) {
-    res.status(500).json({ error: 'LinkedIn client_secret not configured. Run: firebase functions:config:set linkedin.client_secret="YOUR_SECRET"' });
-    return;
-  }
-
-  try {
-    const tokenRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        code,
-        client_id,
-        client_secret: clientSecret,
-        redirect_uri
-      })
-    });
-
-    const tokenData = await tokenRes.json();
-
-    if (tokenData.error) {
-      res.status(400).json({ error: tokenData.error_description || tokenData.error });
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res.status(401).json({ error: 'Unauthorized' });
       return;
     }
 
-    res.json({ access_token: tokenData.access_token, expires_in: tokenData.expires_in });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+    const idToken = authHeader.split('Bearer ')[1];
+    let decodedToken;
+    try {
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+    } catch (e) {
+      res.status(401).json({ error: 'Token inválido' });
+      return;
+    }
+
+    const uid = decodedToken.uid;
+    const { post, targets } = req.body;
+
+    if (!post || !post.titulo) {
+      res.status(400).json({ error: 'Dados do post incompletos' });
+      return;
+    }
+
+    const userDocRef = db.collection('users').doc(uid);
+    const results = [];
+
+    for (const target of (targets || ['ig'])) {
+      try {
+        if (target === 'ig') {
+          await publishToInstagram(post, userDocRef);
+          results.push({ target: 'Instagram', ok: true });
+        }
+        if (target === 'li') {
+          await publishToLinkedin(post, userDocRef);
+          results.push({ target: 'LinkedIn', ok: true });
+        }
+      } catch (e) {
+        logger.error(`Error publishing to ${target}:`, e.message);
+        results.push({ target, ok: false, error: e.message });
+      }
+    }
+
+    res.json({ results });
   }
-});
+);
 
-exports.saveSocialTokens = functions.https.onCall(async (data, context) => {
-  if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Login required');
+/* ── LINKEDIN OAUTH (troca code por access_token) ────────────────── */
+/*  Problema 6: server-side para nao expor client_secret              */
 
-  const uid = context.auth.uid;
-  const userRef = db.collection('users').doc(uid);
+exports.linkedinOAuth = onRequest(
+  { region: 'us-central1', cors: true },
+  async (req, res) => {
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
-  if (data.igToken) await userRef.set({ igToken: data.igToken }, { merge: true });
-  if (data.igUserId) await userRef.set({ igUserId: data.igUserId }, { merge: true });
-  if (data.liToken) await userRef.set({ liToken: data.liToken }, { merge: true });
-  if (data.liUrn) await userRef.set({ liUrn: data.liUrn }, { merge: true });
+    const { code, client_id, redirect_uri } = req.body;
 
-  return { success: true };
-});
+    if (!code || !client_id || !redirect_uri) {
+      res.status(400).json({ error: 'Missing parameters' });
+      return;
+    }
+
+    const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
+    if (!clientSecret) {
+      res.status(500).json({
+        error: 'LINKEDIN_CLIENT_SECRET não configurado. Rode: firebase functions:secrets:set LINKEDIN_CLIENT_SECRET'
+      });
+      return;
+    }
+
+    try {
+      const tokenRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          code,
+          client_id,
+          client_secret: clientSecret,
+          redirect_uri
+        })
+      });
+
+      const tokenData = await tokenRes.json();
+
+      if (tokenData.error) {
+        res.status(400).json({ error: tokenData.error_description || tokenData.error });
+        return;
+      }
+
+      res.json({ access_token: tokenData.access_token, expires_in: tokenData.expires_in });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  }
+);
+
+/* ── SAVE SOCIAL TOKENS (callable) ───────────────────────────────── */
+
+exports.saveSocialTokens = onCall(
+  { region: 'us-central1' },
+  async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Login required');
+
+    const uid = request.auth.uid;
+    const userRef = db.collection('users').doc(uid);
+    const data = {};
+
+    if (request.data.igToken) data.igToken = request.data.igToken;
+    if (request.data.igUserId) data.igUserId = request.data.igUserId;
+    if (request.data.liToken) data.liToken = request.data.liToken;
+    if (request.data.liUrn) data.liUrn = request.data.liUrn;
+
+    if (Object.keys(data).length) {
+      await userRef.set(data, { merge: true });
+    }
+
+    return { success: true };
+  }
+);

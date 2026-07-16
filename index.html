@@ -3135,8 +3135,8 @@
 
     function promptAppId() {
       const current = localStorage.getItem('hub_meta_app_id');
-      const id = prompt('Digite seu App ID do Meta (Facebook Developers):', current || '');
-      if (!id) return;
+      const id = prompt('Digite seu App ID do Meta (Facebook Developers):\n\nEncontre em: https://developers.facebook.com/apps/', current || '');
+      if (!id || !id.trim()) { showToast('App ID não configurado.', 'error'); return; }
       localStorage.setItem('hub_meta_app_id', id.trim());
       updateAppIdIndicator();
       showToast('App ID salvo!');
@@ -3149,8 +3149,12 @@
     }
 
     function startInstagramOAuth() {
-      let appId = localStorage.getItem('hub_meta_app_id') || '1908920499776438';
-      localStorage.setItem('hub_meta_app_id', appId);
+      let appId = localStorage.getItem('hub_meta_app_id');
+      if (!appId) {
+        showToast('Configure o App ID do Meta antes de conectar.', 'error');
+        promptAppId();
+        return;
+      }
       updateAppIdIndicator();
       const redirectUri = window.location.href.split('#')[0].split('?')[0];
 
@@ -3159,7 +3163,7 @@
         return;
       }
 
-      const scope = 'public_profile,pages_show_list';
+      const scope = 'pages_show_list,instagram_basic,instagram_content_publish,pages_read_engagement,business_management';
       const oauthUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=token&state=hub_oauth`;
       showToast('Redirecionando para Facebook...');
       setTimeout(() => { window.location.href = oauthUrl; }, 500);
@@ -3319,52 +3323,10 @@
     window.disconnectLinkedin = disconnectLinkedin;
 
     async function publishToLinkedin(activity, imageUrl) {
-      const token = getLiToken();
-      const urn = getLiUrn();
-      if (!token || !urn) throw new Error('LinkedIn não conectado');
-
-      const caption = `${activity.titulo}${activity.descricao ? '\n\n' + activity.descricao : ''}`;
-      const personUrn = `urn:li:person:${urn}`;
-
-      const shareContent = {
-        author: personUrn,
-        lifecycleState: 'PUBLISHED',
-        specificContent: {
-          'com.linkedin.ugc.ShareContent': {
-            shareCommentary: { text: caption },
-            shareMediaCategory: imageUrl ? 'ARTICLE' : 'NONE',
-            ...(imageUrl ? {
-              media: [{
-                status: 'READY',
-                originalUrl: imageUrl,
-                title: { attributes: [], text: activity.titulo }
-              }]
-            } : {})
-          }
-        },
-        visibility: {
-          'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
-        }
-      };
-
-      const res = await fetch(`${LI_API_BASE}/ugcPosts`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'X-Restli-Protocol-Version': '2.0.0'
-        },
-        body: JSON.stringify(shareContent)
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || `LinkedIn API error: ${res.status}`);
-      }
-      return await res.json();
+      throw new Error('Use publishNow() — publicação via Cloud Function');
     }
 
-    // ── PUBLISH REAL (Instagram + LinkedIn) ─────────────────────────────
+    // ── PUBLISH REAL (via Cloud Function, evita CORS) ─────────────────
     async function publishNow(activityId, targets) {
       const activity = state.activities.find(a => a.id == activityId);
       if (!activity) { showToast('Atividade não encontrada.', 'error'); return; }
@@ -3377,7 +3339,6 @@
       renderCalendar();
       renderKanban();
 
-      const caption = `${activity.titulo}${activity.descricao ? '\n\n' + activity.descricao : ''}\n\n#makroengenharia`;
       let publicImageUrl = null;
 
       if (activity.attachments && activity.attachments.length > 0) {
@@ -3392,60 +3353,45 @@
         }
       }
 
-      const results = [];
+      const postData = {
+        titulo: activity.titulo,
+        descricao: activity.descricao || '',
+        imageUrl: publicImageUrl || null,
+        activityId: activityId
+      };
 
-      for (const target of targets) {
-        if (target === 'ig') {
-          const token = getIgToken();
-          const igId = getIgUserId();
-          if (!token || !igId) { results.push({ target: 'Instagram', ok: false, error: 'Não conectado' }); continue; }
+      try {
+        const user = auth.currentUser;
+        if (!user) { showToast('Não autenticado.', 'error'); return; }
+        const idToken = await user.getIdToken();
+        const fnUrl = 'https://us-central1-mytasks-saturday.cloudfunctions.net/publishNow';
+        const res = await fetch(fnUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+          body: JSON.stringify({ post: postData, targets })
+        });
+        const data = await res.json();
 
-          try {
-            const mediaParams = {
-              caption: caption,
-              media_type: 'IMAGE',
-              image_url: publicImageUrl || 'https://via.placeholder.com/1080x1080.png?text=Makro+Engenharia'
-            };
-            const containerRes = await callGraphApi(`/${igId}/media`, mediaParams);
-            if (containerRes.id) {
-              let attempts = 0;
-              let status = 'IN_PROGRESS';
-              while (status === 'IN_PROGRESS' && attempts < 30) {
-                await new Promise(r => setTimeout(r, 2000));
-                const check = await callGraphApi(`/${containerRes.id}`, { fields: 'status_code' });
-                status = check.status_code || 'FINISHED';
-                attempts++;
-              }
-              await callGraphApi(`/${igId}/media_publish`, { creation_id: containerRes.id });
-              results.push({ target: 'Instagram', ok: true });
-            }
-          } catch (e) {
-            results.push({ target: 'Instagram', ok: false, error: e.message });
-          }
+        if (!res.ok) {
+          throw new Error(data.error || `HTTP ${res.status}`);
         }
 
-        if (target === 'li') {
-          const liToken = getLiToken();
-          if (!liToken) { results.push({ target: 'LinkedIn', ok: false, error: 'Não conectado' }); continue; }
-          try {
-            await publishToLinkedin(activity, publicImageUrl);
-            results.push({ target: 'LinkedIn', ok: true });
-          } catch (e) {
-            results.push({ target: 'LinkedIn', ok: false, error: e.message });
-          }
+        const results = data.results || [];
+        const allOk = results.every(r => r.ok);
+        if (allOk) {
+          setPostStatus(activityId, 'publicado');
+          showToast('Publicado com sucesso!');
+        } else {
+          const errors = results.filter(r => !r.ok).map(r => `${r.target}: ${r.error}`).join(', ');
+          const successes = results.filter(r => r.ok).map(r => r.target).join(', ');
+          if (successes) showToast(`Publicado em: ${successes}`);
+          if (errors) showToast(`Erros: ${errors}`, 'error');
+          setPostStatus(activityId, results.some(r => r.ok) ? 'publicado' : 'erro');
         }
-      }
-
-      const allOk = results.every(r => r.ok);
-      if (allOk) {
-        setPostStatus(activityId, 'publicado');
-        showToast('Publicado com sucesso!');
-      } else {
-        const errors = results.filter(r => !r.ok).map(r => `${r.target}: ${r.error}`).join(', ');
-        const successes = results.filter(r => r.ok).map(r => r.target).join(', ');
-        if (successes) showToast(`Publicado em: ${successes}`);
-        if (errors) showToast(`Erros: ${errors}`, 'error');
-        setPostStatus(activityId, results.some(r => r.ok) ? 'publicado' : 'erro');
+      } catch (e) {
+        console.error('Erro publishNow:', e);
+        showToast(`Erro ao publicar: ${e.message}`, 'error');
+        setPostStatus(activityId, 'erro');
       }
 
       renderCalendar();
