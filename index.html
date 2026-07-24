@@ -780,7 +780,7 @@
       <div class="flex items-center gap-4 flex-1 min-w-0">
         <img src="https://makroengenharia.com.br/wp-content/uploads/2023/03/logo-1.png" class="h-6 hidden md:block" alt="Logo">
         <div class="header-divider h-6 w-px bg-[var(--surface-3)] hidden md:block mx-2"></div>
-        <h2 id="header-title" class="text-sm font-semibold text-[var(--ink-2)] hidden lg:block"><i data-lucide="briefcase" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Board Operacional</h2>
+          <h2 id="header-title" class="text-sm font-semibold text-[var(--ink-2)] hidden lg:block"><i data-lucide="briefcase" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Makro Hub</h2>
         <div class="header-search-wrap relative flex-1 max-w-md ml-2">
           <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-3)]"></i>
           <input type="text" id="header-search" class="w-full py-2 pl-9 pr-3 rounded-full text-xs font-medium" placeholder="Pesquisar atividade..." oninput="handleHeaderSearch(this.value)">
@@ -820,9 +820,19 @@
             <div id="desktop-atividades" class="space-y-1 mt-2 pl-2">
               <div onclick="changeView('dashboard')" class="nav-item-dashboard px-3 py-2 text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--surface)] rounded-full flex items-center gap-3 cursor-pointer font-semibold text-xs transition-all"><i data-lucide="layout-dashboard" class="w-3.5 h-3.5 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Dashboard</span></div>
               <div onclick="changeView('kanban')" class="nav-item-kanban px-3 py-2 bg-red-600/10 text-red-400 rounded-full flex items-center gap-3 cursor-pointer font-semibold text-xs transition-all"><i data-lucide="columns" class="w-3.5 h-3.5 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Kanban</span></div>
-              <div onclick="changeView('calendar')" class="nav-item-calendar px-3 py-2 text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--surface)] rounded-full flex items-center gap-3 cursor-pointer font-semibold text-xs transition-all"><i data-lucide="calendar-days" class="w-3.5 h-3.5 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Calendário</span></div>
               <div onclick="changeView('gantt')" class="nav-item-gantt px-3 py-2 text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--surface)] rounded-full flex items-center gap-3 cursor-pointer font-semibold text-xs transition-all"><i data-lucide="gantt-chart" class="w-3.5 h-3.5 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Cronograma</span></div>
               <div onclick="changeView('categories')" class="nav-item-categories px-3 py-2 text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--surface)] rounded-full flex items-center gap-3 cursor-pointer font-semibold text-xs transition-all"><i data-lucide="tags" class="w-3.5 h-3.5 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Categorias</span></div>
+            </div>
+          </div>
+          <!-- ROTEIRO -->
+          <div id="menu-group-roteiro" class="border-t border-[var(--border)] pt-4 mt-2">
+            <button onclick="toggleSubMenu('desktop-roteiro')" class="w-full px-3 py-2.5 text-[var(--ink-2)] hover:text-[var(--ink)] bg-[var(--surface)] hover:bg-[var(--surface-2)] rounded-full flex items-center justify-between cursor-pointer transition-all">
+              <div class="flex items-center gap-3"><i data-lucide="calendar-days" class="w-4 h-4 flex-shrink-0"></i><span class="sidebar-text hidden-view font-semibold text-xs">Roteiro</span></div>
+              <i data-lucide="chevron-down" id="icon-desktop-roteiro" class="w-4 h-4 sidebar-text hidden-view transition-transform duration-300"></i>
+            </button>
+            <div id="desktop-roteiro" class="space-y-1 mt-2 pl-2">
+              <div onclick="changeView('calendar')" class="nav-item-calendar px-3 py-2 text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--surface)] rounded-full flex items-center gap-3 cursor-pointer font-semibold text-xs transition-all"><i data-lucide="calendar-days" class="w-3.5 h-3.5 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Calendário</span></div>
+              <div onclick="changeView('roteiro-kanban')" class="nav-item-roteiro-kanban px-3 py-2 text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--surface)] rounded-full flex items-center gap-3 cursor-pointer font-semibold text-xs transition-all"><i data-lucide="columns" class="w-3.5 h-3.5 flex-shrink-0"></i><span class="sidebar-text hidden-view whitespace-nowrap"> Kanban</span></div>
             </div>
           </div>
           <!-- NPS -->
@@ -895,6 +905,21 @@
           </div>
           <div id="kanban-filters" class="flex flex-wrap gap-2 mb-5 flex-shrink-0"></div>
           <div id="kanban-board" class="flex gap-4 md:gap-5 overflow-x-auto custom-scrollbar pb-6 items-start" style="height:calc(100vh - 280px); -webkit-overflow-scrolling:touch;"></div>
+        </div>
+
+        <!-- VIEW: ROTEIRO KANBAN -->
+        <div id="roteiro-kanban-view" class="hidden-view h-full">
+          <div class="flex items-center justify-between mb-4 flex-shrink-0">
+            <div>
+              <h2 class="text-2xl font-extrabold tracking-tight text-[var(--ink)]">Produção Editorial</h2>
+              <p class="text-sm text-[var(--ink-3)] mt-1">Arraste cards entre as colunas</p>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="openKanbanColModal()" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-3)] border border-[var(--border-strong)] text-[var(--ink-2)] hover:text-[var(--ink)] text-xs font-semibold transition-all"><i data-lucide="settings-2" class="w-4 h-4"></i> Colunas</button>
+            </div>
+          </div>
+          <div id="roteiro-kanban-filters" class="flex flex-wrap gap-2 mb-5 flex-shrink-0"></div>
+          <div id="roteiro-kanban-board" class="flex gap-4 md:gap-5 overflow-x-auto custom-scrollbar pb-6 items-start" style="height:calc(100vh - 280px); -webkit-overflow-scrolling:touch;"></div>
         </div>
 
         <!-- VIEW: CALENDAR -->
@@ -1162,7 +1187,11 @@
       </button>
       <button class="mob-tab nav-item-calendar" onclick="changeView('calendar')">
         <div class="mob-tab-bubble"><i data-lucide="calendar-days" class="w-5 h-5"></i></div>
-        <span class="mob-tab-label">Calendario</span>
+        <span class="mob-tab-label">Roteiro</span>
+      </button>
+      <button class="mob-tab nav-item-roteiro-kanban" onclick="changeView('roteiro-kanban')">
+        <div class="mob-tab-bubble"><i data-lucide="columns" class="w-5 h-5"></i></div>
+        <span class="mob-tab-label">Edição</span>
       </button>
       <button class="mob-tab nav-item-nps" onclick="changeView('nps')">
         <div class="mob-tab-bubble"><i data-lucide="bar-chart-2" class="w-5 h-5"></i></div>
@@ -1286,7 +1315,7 @@
       return STAGE_MIGRATION[stage] || stage;
     }
 
-    let state = { activities: [], categories: [], calDate: new Date(), activityIdCounter: 1, categoryIdCounter: 1, kanbanFilter: 'all', searchFilter: 'all', ganttFilter: 'all', ganttStart: new Date() };
+    let state = { activities: [], categories: [], calDate: new Date(), activityIdCounter: 1, categoryIdCounter: 1, kanbanFilter: ['all'], searchFilter: 'all', ganttFilter: 'all', ganttStart: new Date() };
 
     window.initActivities = async () => {
       try {
@@ -1399,14 +1428,15 @@
     }
 
     function renderDashboard() {
-      const done = state.activities.filter(a => a.stage === 'concluido').length;
-      const total = state.activities.length;
+      const nonEditorial = state.activities.filter(a => !isEditorialActivity(a));
+      const done = nonEditorial.filter(a => a.stage === 'concluido').length;
+      const total = nonEditorial.length;
       document.getElementById('dash-total').textContent = total;
       document.getElementById('dash-concluidas').textContent = done;
       document.getElementById('dash-pendentes').textContent = total - done;
       document.getElementById('dash-rate').textContent = total ? Math.round((done / total) * 100) + '%' : '0%';
 
-      const upcoming = [...state.activities].filter(a => a.stage !== 'concluido').sort((a, b) => new Date(a.dataVencimento) - new Date(b.dataVencimento)).slice(0, 5);
+      const upcoming = [...nonEditorial].filter(a => a.stage !== 'concluido').sort((a, b) => new Date(a.dataVencimento) - new Date(b.dataVencimento)).slice(0, 5);
       document.getElementById('dashboardUpcoming').innerHTML = upcoming.length ? upcoming.map(a => {
         const cat = state.categories.find(c => c.id == a.categoria) || { nome: 'Geral', cor: '#cbd5e1' };
         return `<div class="p-5 hover:bg-[var(--surface-2)] transition-all cursor-pointer flex items-center justify-between gap-4" onclick="openEditActivity(${a.id})">
@@ -1420,7 +1450,7 @@
       }).join('') : '<div class="p-10 text-center text-sm text-[var(--ink-3)]">Nenhuma pendência. Tudo em dia.</div>';
 
       document.getElementById('dashboardChannels').innerHTML = CHANNELS.map(ch => {
-        const count = state.activities.filter(a => a.canais && a.canais.includes(ch.id)).length;
+        const count = nonEditorial.filter(a => a.canais && a.canais.includes(ch.id)).length;
         const pct = total ? Math.round((count / total) * 100) : 0;
         return `<div><div class="flex justify-between text-xs font-medium text-[var(--ink-2)] mb-1.5"><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:${ch.color}"></span>${ch.label}</span><span class="text-[var(--ink-3)]">${count}</span></div>
         <div class="w-full bg-[var(--surface-2)] h-1.5 rounded-full overflow-hidden"><div class="h-full rounded-full transition-all duration-700" style="width:${pct}%; background-color:${ch.color}"></div></div></div>`;
@@ -1434,6 +1464,11 @@
       if (n.includes('editorial') || n.includes('conteúdo') || n.includes('conteudo') || n.includes('social') || n.includes('post')) return 'editorial';
       if (n.includes('design') || n.includes('arte') || n.includes('cria')) return 'design';
       return 'default';
+    }
+
+    function isEditorialActivity(a) {
+      const cat = state.categories.find(c => c.id == a.categoria);
+      return cat && getCategoryType(cat.nome) === 'editorial';
     }
 
     function getExtraInfo(activity, cat) {
@@ -1469,10 +1504,11 @@
     function renderKanbanFilters() {
       const container = document.getElementById('kanban-filters');
       if (!container) return;
-      const cats = [{ id: 'all', nome: 'Todos', cor: '#fff' }, ...state.categories];
+      const nonEditorialCats = state.categories.filter(c => getCategoryType(c.nome) !== 'editorial');
+      const cats = [{ id: 'all', nome: 'Todos', cor: '#fff' }, ...nonEditorialCats];
       container.innerHTML = cats.map(c => {
-        const isActive = String(state.kanbanFilter) === String(c.id);
-        const base = 'px-3.5 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 border';
+        const isActive = state.kanbanFilter.includes(String(c.id));
+        const base = 'px-3.5 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 border cursor-pointer select-none';
         const active = 'bg-[var(--surface-3)] border-[var(--border-strong)] text-[var(--ink)]';
         const inactive = 'bg-[var(--surface)] border-transparent text-[var(--ink-3)] hover:text-[var(--ink-2)] hover:bg-[var(--surface-2)]';
         return `<button onclick="setKanbanFilter('${c.id}')" class="${base} ${isActive ? active : inactive}">
@@ -1483,7 +1519,18 @@
     }
 
     function setKanbanFilter(catId) {
-      state.kanbanFilter = catId;
+      if (catId === 'all') {
+        state.kanbanFilter = ['all'];
+      } else {
+        state.kanbanFilter = state.kanbanFilter.filter(id => id !== 'all');
+        const idx = state.kanbanFilter.indexOf(String(catId));
+        if (idx >= 0) {
+          state.kanbanFilter.splice(idx, 1);
+        } else {
+          state.kanbanFilter.push(String(catId));
+        }
+        if (state.kanbanFilter.length === 0) state.kanbanFilter = ['all'];
+      }
       renderKanbanFilters();
       renderKanban();
     }
@@ -1495,9 +1542,10 @@
       const board = document.getElementById('kanban-board');
       if (!board) return;
 
-      const filteredActivities = state.kanbanFilter === 'all'
+      const filteredByCategory = state.kanbanFilter.includes('all')
         ? state.activities
-        : state.activities.filter(a => String(a.categoria) === String(state.kanbanFilter));
+        : state.activities.filter(a => state.kanbanFilter.includes(String(a.categoria)));
+      const filteredActivities = filteredByCategory.filter(a => !isEditorialActivity(a));
 
       const colColors = {
         gray: { border: 'border-[var(--border)]', bg: 'bg-[var(--surface)]', text: 'text-[var(--ink-2)]', badge: 'bg-[var(--surface-3)] text-[var(--ink-2)]', dot: 'bg-[var(--ink-3)]' },
@@ -1562,7 +1610,77 @@
       lucide.createIcons();
     }
 
+    function renderRoteiroKanban() {
+      const editorialActs = state.activities.filter(a => isEditorialActivity(a));
+      const cols = getUserKanbanCols();
+      const board = document.getElementById('roteiro-kanban-board');
+      if (!board) return;
+
+      const colColors = {
+        gray: { border: 'border-[var(--border)]', bg: 'bg-[var(--surface)]', text: 'text-[var(--ink-2)]', badge: 'bg-[var(--surface-3)] text-[var(--ink-2)]', dot: 'bg-[var(--ink-3)]' },
+        blue: { border: 'border-blue-500/20', bg: 'bg-blue-500/5', text: 'text-blue-400', badge: 'bg-blue-500/20 text-blue-400', dot: 'bg-blue-400' },
+        emerald: { border: 'border-emerald-500/20', bg: 'bg-emerald-500/5', text: 'text-emerald-400', badge: 'bg-emerald-500/20 text-emerald-400', dot: 'bg-emerald-400' },
+        yellow: { border: 'border-yellow-500/20', bg: 'bg-yellow-500/5', text: 'text-yellow-400', badge: 'bg-yellow-500/20 text-yellow-400', dot: 'bg-yellow-400' },
+        red: { border: 'border-red-500/20', bg: 'bg-red-500/5', text: 'text-red-400', badge: 'bg-red-500/20 text-red-400', dot: 'bg-red-400' },
+        purple: { border: 'border-purple-500/20', bg: 'bg-purple-500/5', text: 'text-purple-400', badge: 'bg-purple-500/20 text-purple-400', dot: 'bg-purple-400' },
+      };
+
+      board.innerHTML = cols.map(col => {
+        const c = colColors[col.color] || colColors.gray;
+        const acts = editorialActs.filter(a => {
+          const s = a.stage || 'afazer';
+          const mapped = STAGE_LABELS[s] || s;
+          return mapped === col.name || s === col.name;
+        });
+        const cards = acts.map(a => {
+          const cat = state.categories.find(c => c.id == a.categoria) || { nome: 'Geral', cor: '#cbd5e1' };
+          const isLast = col.name === cols[cols.length - 1].name;
+          const extraInfo = getExtraInfo(a, cat);
+          const checkDone = (a.checklist || []).filter(i => i.done).length;
+          const checkTotal = (a.checklist || []).length;
+          const prog = a.progress || 0;
+          return `<div id="rk-card-${a.id}" draggable="true" ondragstart="handleDragStart(event,'${a.id}')" ondragend="handleDragEnd('${a.id}')" onclick="openEditActivity(${a.id})" class="bg-[var(--bg-elev)] p-4 rounded-[14px] border border-[var(--border-strong)] hover:border-white/[0.16] group cursor-pointer animate-fadeup transition-all select-none">
+            <div class="pointer-events-none flex items-center justify-between mb-2.5">
+              <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold" style="background:${cat.cor}1a; color:${cat.cor}; border:1px solid ${cat.cor}33">
+                <span class="w-1.5 h-1.5 rounded-full" style="background:${cat.cor}"></span>${cat.nome}
+              </span>
+              ${checkTotal > 0 ? `<span class="text-[10px] font-bold ${checkDone === checkTotal && checkTotal > 0 ? 'text-emerald-400' : 'text-[var(--ink-3)]'} flex items-center gap-1">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                ${checkDone}/${checkTotal}
+              </span>` : ''}
+            </div>
+            <h4 class="text-[13px] font-semibold ${isLast ? 'line-through opacity-50 text-gray-100' : 'text-gray-100'} mb-3 pointer-events-none leading-snug">${esc(a.titulo)}</h4>
+            ${extraInfo ? `<div class="pointer-events-none mb-3">${extraInfo}</div>` : ''}
+            <div class="pointer-events-none mb-3">
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[10px] font-semibold text-[var(--ink-3)]">${prog}%</span>
+              </div>
+              <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${prog}%; background:${getProgressColor(prog)}"></div></div>
+            </div>
+            <div class="flex items-center justify-between pointer-events-none">
+              <div class="flex flex-col gap-0.5">
+                <span class="text-[10px] text-[var(--ink-3)] font-medium flex items-center gap-1"><i data-lucide="calendar" class="w-3 h-3"></i> ${fmtDate(a.dataVencimento)}</span>
+                ${a.dataPostagem ? `<span class="text-[10px] text-blue-400/70 font-medium flex items-center gap-1"><i data-lucide="send" class="w-3 h-3"></i> ${fmtDate(a.dataPostagem)}</span>` : ''}
+              </div>
+              <div class="flex -space-x-1.5">${(a.canais || []).map(chId => { const ch = CHANNELS.find(c => c.id === chId);                     return ch ? `<div class="w-5 h-5 rounded-full border-2 border-[var(--bg)] text-[8px] text-[var(--ink)] font-bold flex items-center justify-center" style="background-color:${ch.color}">${ch.label.charAt(0)}</div>` : ''; }).join('')}</div>
+            </div>
+          </div>`;
+        }).join('');
+
+        const domId = 'rkc_' + col.name.replace(/\s+/g, '_');
+        return `<div class="flex-1 min-w-[200px] max-w-[280px] flex flex-col max-h-full bg-[var(--surface)] rounded-[16px] border border-[var(--border)]">
+          <div class="p-4 border-b ${c.border} flex justify-between items-center ${c.bg} rounded-t-[16px]">
+            <div class="flex items-center gap-2.5"><span class="w-2 h-2 rounded-full ${c.dot}"></span><h3 class="font-bold text-[13px] ${c.text}">${col.name}</h3></div>
+            <span class="text-[11px] font-bold ${c.badge} px-2 py-0.5 rounded-md min-w-[24px] text-center">${acts.length}</span>
+          </div>
+          <div id="${domId}" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event,'${col.name}')" class="p-3 space-y-3 overflow-y-auto flex-1 custom-scrollbar min-h-[150px]">${cards}</div>
+        </div>`;
+      }).join('');
+      lucide.createIcons();
+    }
+
     function renderCalendar() {
+      const editorialActs = state.activities.filter(a => isEditorialActivity(a));
       const grid = document.getElementById('calendarGrid'); grid.innerHTML = '';
       const y = state.calDate.getFullYear(), m = state.calDate.getMonth();
       const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
@@ -1589,7 +1707,7 @@
       const today = new Date().toISOString().split('T')[0];
       for (let d = 1; d <= last; d++) {
         const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        const dayActs = state.activities.filter(a => a.dataPostagem === dateStr);
+        const dayActs = editorialActs.filter(a => a.dataPostagem === dateStr);
         const cell = document.createElement('div');
         const dayNames = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
         const dateObj = new Date(y, m, d);
@@ -1607,7 +1725,8 @@
 
     function showDailyPosts(dateStr) {
       document.getElementById('dailyTitle').textContent = `Posts: ${dateStr.split('-').reverse().join('/')}`;
-      const posts = state.activities.filter(a => a.dataPostagem === dateStr);
+      const editorialActs = state.activities.filter(a => isEditorialActivity(a));
+      const posts = editorialActs.filter(a => a.dataPostagem === dateStr);
       const list = document.getElementById('dailyPostsList');
 
       // Best time insight for this day
@@ -2013,9 +2132,9 @@
     window.allowDrop = allowDrop;
     function dragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
     window.dragLeave = dragLeave;
-    function handleDragStart(e, id) { e.dataTransfer.setData('actId', id); document.getElementById(`card-${id}`)?.classList.add('dragging'); }
+    function handleDragStart(e, id) { e.dataTransfer.setData('actId', id); document.getElementById(`card-${id}`)?.classList.add('dragging'); document.getElementById(`rk-card-${id}`)?.classList.add('dragging'); }
     window.handleDragStart = handleDragStart;
-    function handleDragEnd(id) { document.getElementById(`card-${id}`)?.classList.remove('dragging'); }
+    function handleDragEnd(id) { document.getElementById(`card-${id}`)?.classList.remove('dragging'); document.getElementById(`rk-card-${id}`)?.classList.remove('dragging'); }
     window.handleDragEnd = handleDragEnd;
     async function handleDrop(e, colName) {
       e.preventDefault(); e.currentTarget.classList.remove('drag-over');
@@ -2440,9 +2559,10 @@
       const container = document.getElementById('gantt-container');
       if (!container) return;
 
-      const filtered = state.ganttFilter === 'all'
+      const filteredByCategory = state.ganttFilter === 'all'
         ? state.activities
         : state.activities.filter(a => String(a.categoria) === String(state.ganttFilter));
+      const filtered = filteredByCategory.filter(a => !isEditorialActivity(a));
 
       const days = 21;
       const start = new Date(state.ganttStart);
@@ -2731,7 +2851,7 @@
 
   <!-- NAVIGATION + SIDEBAR LOGIC -->
   <script>
-    const ALL_VIEWS = ['dashboard', 'kanban', 'calendar', 'categories', 'search', 'gantt', 'configuracoes', 'nps', 'banco-horas'];
+    const ALL_VIEWS = ['dashboard', 'kanban', 'calendar', 'categories', 'search', 'gantt', 'configuracoes', 'nps', 'banco-horas', 'roteiro-kanban'];
 
     function changeView(view) {
       ALL_VIEWS.forEach(v => {
@@ -2764,23 +2884,25 @@
       const titles = {
         dashboard: '<i data-lucide="layout-dashboard" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Dashboard',
         kanban: '<i data-lucide="columns" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Fluxo de Trabalho',
-        calendar: '<i data-lucide="calendar-days" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Calendário Editorial',
+        calendar: '<i data-lucide="calendar-days" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Roteiro Editorial',
         categories: '<i data-lucide="tags" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Categorias',
         search: '<i data-lucide="search" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Pesquisar',
         gantt: '<i data-lucide="gantt-chart" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Cronograma',
         configuracoes: '<i data-lucide="settings" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Configurações',
         nps: '<i data-lucide="bar-chart-2" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Quality & NPS',
-        'banco-horas': '<i data-lucide="clock" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Banco de Horas'
+        'banco-horas': '<i data-lucide="clock" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Banco de Horas',
+        'roteiro-kanban': '<i data-lucide="columns" class="inline w-4 h-4 mr-2 text-red-400 align-[-2px]"></i> Produção Editorial'
       };
       title.innerHTML = titles[view] || titles.dashboard;
 
-      if (view === 'nps' || view === 'configuracoes' || view === 'search' || view === 'gantt' || view === 'banco-horas') btn.classList.add('hidden-view');
+      if (view === 'nps' || view === 'configuracoes' || view === 'search' || view === 'gantt' || view === 'banco-horas' || view === 'roteiro-kanban') btn.classList.add('hidden-view');
       else btn.classList.remove('hidden-view');
 
-      if (view !== 'nps' && view !== 'configuracoes' && view !== 'search' && view !== 'gantt') renderAllActivities();
+      if (view !== 'nps' && view !== 'configuracoes' && view !== 'search' && view !== 'gantt' && view !== 'roteiro-kanban') renderAllActivities();
       if (view === 'configuracoes') renderConfiguracoes();
       if (view === 'search') { renderSearch(); setTimeout(() => document.getElementById('searchInput')?.focus(), 100); }
       if (view === 'gantt') { renderGantt(); }
+      if (view === 'roteiro-kanban') { renderRoteiroKanban(); }
       // Instagram connection dot
       const dot = document.getElementById('igConnectedDot');
       if (dot) { dot.style.display = getIgProfile() ? 'block' : 'none'; dot.style.background = '#10B981'; dot.style.boxShadow = '0 0 6px rgba(16,185,129,0.5)'; }
@@ -3649,7 +3771,7 @@
         s.classList.replace('w-64', 'w-[84px]');
         s.classList.replace('px-6', 'px-3');
         texts.forEach(t => t.classList.add('hidden-view'));
-        ['desktop-atividades'].forEach(menuId => {
+        ['desktop-atividades', 'desktop-roteiro'].forEach(menuId => {
           const menu = document.getElementById(menuId);
           const menuIcon = document.getElementById(`icon-${menuId}`);
           if (menu && !menu.classList.contains('hidden')) { menu.classList.add('hidden'); if (menuIcon) menuIcon.style.transform = 'rotate(-90deg)'; }
