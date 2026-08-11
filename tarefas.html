@@ -1002,6 +1002,26 @@ h1, h2, h3, h4, p { margin: 0; }
   </main>
 </div>
 
+<script>
+/* Fallback: se JS principal travar, mostra tela de login após 3s */
+(function(){
+  var protocol = window.location.protocol;
+  if (protocol === 'file:') {
+    document.getElementById('auth-gate').style.display = 'none';
+    document.getElementById('app-view').classList.remove('hidden');
+  } else {
+    setTimeout(function(){
+      var al = document.getElementById('auth-loading');
+      if (al && al.style.display !== 'none') {
+        al.style.display = 'none';
+        var am = document.getElementById('auth-main');
+        if (am) am.style.display = '';
+      }
+    }, 3000);
+  }
+})();
+</script>
+
 <div id="app-view" class="hidden">
 
 <!-- ===================== LOADER ===================== -->
@@ -3223,8 +3243,7 @@ function init() {
   var btnLogin = document.getElementById('btn-google-login');
   var authError = document.getElementById('auth-error');
 
-  if (IS_LOCAL || !_auth) {
-    /* Local: pula auth direto */
+  if (!_auth) {
     authGate.style.display = 'none';
     appView.classList.remove('hidden');
     window._tarefasInit = true;
@@ -3244,7 +3263,6 @@ function init() {
   });
 
   _auth.onAuthStateChanged(function (user) {
-    clearTimeout(window._authTimeout);
     authLoading.style.display = 'none';
     if (user) {
       authGate.style.display = 'none';
@@ -3260,14 +3278,6 @@ function init() {
       appView.classList.add('hidden');
     }
   });
-
-  /* safety: se Firebase Auth travar no HTTPS, mostra login após 4s */
-  if (!IS_LOCAL && _auth) {
-    window._authTimeout = setTimeout(function () {
-      authLoading.style.display = 'none';
-      authMain.style.display = '';
-    }, 4000);
-  }
 }
 
 document.addEventListener('DOMContentLoaded', init);
