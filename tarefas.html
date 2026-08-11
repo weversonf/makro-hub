@@ -3046,6 +3046,47 @@ function initConfig() {
 /* ============================================================ */
 /* EVENTOS + INIT                                               */
 /* ============================================================ */
+function loadLocalFallback() {
+  var LS_KEY = 'makro_tasks_local';
+  try {
+    var raw = localStorage.getItem(LS_KEY);
+    if (raw) {
+      var d = JSON.parse(raw);
+      if (d && Array.isArray(d.activities)) {
+        S.activities = d.activities;
+        S.categories = d.categories || [];
+        S.nextId = d.nextId || 1;
+        S.nextCatId = d.nextCatId || 1;
+      }
+    }
+  } catch(e) {}
+  if (S.activities.length === 0) {
+    /* seed local */
+    var cats = [
+      { id:1, nome:'Editorial',cor:'#3B82F6' }, { id:2, nome:'Administrativo',cor:'#F59E0B' },
+      { id:3, nome:'Design',cor:'#8B5CF6' }, { id:4, nome:'Cliente XYZ',cor:'#0EA5C4' }
+    ];
+    var t = todayISO();
+    S.categories = cats;
+    S.activities = [
+      { id:1, titulo:'Revisar posts do LinkedIn', descricao:'Ajustar legendas e hashtags.', categoria:1, stage:'execucao', prioridade:'alta', dataVencimento:addDaysISO(t,1), dataPostagem:addDaysISO(t,2), progress:45, canais:['li'], criadoEm:addDaysISO(t,-3), idCheck:[{text:'Listar temas',done:true},{text:'Escrever legendas',done:true},{text:'Aprovar',done:false}] },
+      { id:2, titulo:'Fechar nota fiscal', descricao:'Conferir valores do mês.', categoria:2, stage:'espera', prioridade:'media', dataVencimento:addDaysISO(t,4), progress:20, canais:[], criadoEm:addDaysISO(t,-7), idCheck:[] },
+      { id:3, titulo:'Layout para stories', descricao:'3 opções de moldura.', categoria:3, stage:'validando', prioridade:'media', dataVencimento:addDaysISO(t,-1), progress:80, canais:['ig','fb'], criadoEm:addDaysISO(t,-6), idCheck:[{text:'Rascunho A',done:true},{text:'Rascunho B',done:true}] }
+    ];
+    S.nextId = 20; S.nextCatId = 10;
+  }
+  /* save on unload */
+  window.addEventListener('beforeunload', function() {
+    localStorage.setItem(LS_KEY, JSON.stringify({ activities:S.activities, categories:S.categories, nextId:S.nextId, nextCatId:S.nextCatId }));
+  });
+  /* replace LS save behavior */
+  var origToast = toast;
+  S._localFallback = true;
+  /* Monkey-patch writes to save to localStorage */
+  var _originalFiltered = filteredTasks;
+  loadComplete();
+}
+
 function init() {
   /* theme inicial */
   var st = null;
@@ -3155,6 +3196,14 @@ function init() {
       if (!window._tarefasInit) {
         window._tarefasInit = true;
         firebaseSync();
+      }
+    } else if (window.location.protocol === 'file:') {
+      /* Local: pula auth e carrega dados salvos */
+      authGate.style.display = 'none';
+      appView.classList.remove('hidden');
+      if (!window._tarefasInit) {
+        window._tarefasInit = true;
+        loadLocalFallback();
       }
     } else {
       authGate.style.display = '';
