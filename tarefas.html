@@ -821,57 +821,67 @@ h1, h2, h3, h4, p { margin: 0; }
 .hidden { display: none !important; }
 
 /* ============================================================ */
-/* CALENDAR                                                     */
+/* CALENDAR (estilo Vireo)                                      */
 /* ============================================================ */
-.cal-grid { display: flex; flex-direction: column; border: 1px solid var(--ax-border); border-radius: var(--ax-radius-lg); overflow: hidden; }
-.cal-row { display: grid; grid-template-columns: repeat(7, 1fr); }
-.cal-row--head { border-bottom: 1px solid var(--ax-border); }
-.cal-cel {
-  min-height: 110px; padding: 8px; border-right: 1px solid var(--ax-border);
-  border-bottom: 1px solid var(--ax-border); font-size: var(--ax-text-xs);
-  cursor: default; transition: background var(--ax-motion-fast);
+.ax-cal-cell {
+  position:relative;
+  display:flex; flex-direction:column; gap:3px; align-items:stretch;
+  text-align:left;
+  min-height:110px;
+  padding:var(--ax-space-2);
+  background:var(--ax-surface-solid);
+  border:0;
+  border-inline-end:1px solid var(--ax-border);
+  border-block-start:1px solid var(--ax-border);
+  cursor:pointer;
+  font-family:inherit; font-size:inherit; color:inherit;
+  transition:background var(--ax-motion-fast) var(--ax-ease-standard);
 }
-.cal-cel:nth-child(7n) { border-right: 0; }
-.cal-cel--head {
-  min-height: auto; padding: 10px 8px; background: var(--ax-surface-subtle);
-  font-size: var(--ax-text-2xs); font-weight: 600; text-transform: uppercase;
-  letter-spacing: .05em; color: var(--ax-text-subtle); text-align: center;
-  cursor: default;
-}
-.cal-cel--other { opacity: .35; }
-.cal-cel--today { background: color-mix(in oklab, var(--ax-accent) 6%, transparent); }
-.cal-cel:hover { background: var(--ax-surface-subtle); }
-.cal-cel__num {
-  font-family: var(--ax-font-mono); font-weight: 600; font-size: var(--ax-text-sm);
-  color: var(--ax-text-muted); margin-bottom: 6px;
-}
-.cal-cel--today .cal-cel__num {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 26px; height: 26px; border-radius: 50%;
-  background: var(--ax-accent); color: var(--ax-on-accent); font-size: var(--ax-text-xs);
-}
-.cal-event {
-  display: block; padding: 3px 7px; margin-bottom: 3px; border-radius: 5px;
-  font-size: var(--ax-text-2xs); font-weight: 600; line-height: 1.35;
-  cursor: pointer; transition: opacity var(--ax-motion-fast);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  background: color-mix(in oklab, var(--ax-accent) 18%, transparent);
-  color: var(--ax-text-strong); border-left: 3px solid var(--ax-accent);
-}
-.cal-event:hover { opacity: .78; }
-.cal-event--post { border-left-color: var(--ax-viz-violet); background: color-mix(in oklab, var(--ax-viz-violet) 14%, transparent); }
-.cal-event--done { opacity: .55; text-decoration: line-through; }
-.cal-more {
-  font-size: var(--ax-text-2xs); color: var(--ax-text-subtle); padding-left: 7px;
-  cursor: pointer; margin-top: 2px;
-}
-.cal-more:hover { color: var(--ax-accent); }
+.ax-cal-cell:nth-child(7n) { border-inline-end:0; }
+.ax-cal-cell:hover { background:var(--ax-surface-subtle); }
+.ax-cal-cell--today { background:color-mix(in oklab, var(--ax-accent) 6%, transparent); }
 
-@media (max-width: 768px) {
-  .cal-cel { min-height: 72px; padding: 5px; }
-  .cal-event { font-size: 9px; padding: 2px 4px; }
-  .cal-cel__num { font-size: var(--ax-text-xs); margin-bottom: 3px; }
+.ax-cal-cell__n {
+  align-self:flex-start; padding:1px 3px;
+  font-family:var(--ax-font-mono); font-size:var(--ax-text-xs); font-weight:600;
+  color:var(--ax-text-strong);
 }
+.ax-cal-cell__n--muted { color:var(--ax-text-subtle); }
+.ax-cal-cell__n--today {
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:24px; height:24px; border-radius:var(--ax-radius-pill);
+  background:var(--ax-accent); color:var(--ax-on-accent); font-weight:600;
+}
+
+.ax-cal-now {
+  position:absolute; inset-inline:0; top:38px;
+  height:2px; background:var(--ax-accent);
+}
+.ax-cal-now::before {
+  content:""; position:absolute; inset-inline-start:0; top:-3px;
+  width:8px; height:8px; border-radius:50%; background:var(--ax-accent);
+}
+
+.ax-cal-event {
+  display:block;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  padding:2px 7px;
+  font-size:var(--ax-text-xs); color:var(--ax-text-strong);
+  border-radius:var(--ax-radius-sm);
+  background:color-mix(in oklab, var(--c,var(--ax-accent)) 16%, transparent);
+  border-inline-start:3px solid var(--c,var(--ax-accent));
+  cursor:pointer;
+}
+.ax-cal-event b { font-family:var(--ax-font-mono); font-weight:600; color:var(--c,var(--ax-accent)); margin-inline-end:3px; }
+.ax-cal-event:hover { background:color-mix(in oklab, var(--c,var(--ax-accent)) 26%, transparent); }
+
+.ax-cal-more {
+  font-size:var(--ax-text-2xs); color:var(--ax-text-muted);
+  padding:1px 7px; font-weight:500; cursor:pointer;
+}
+.ax-cal-more:hover { color:var(--ax-accent); }
+
+@media (max-width:768px) { .ax-cal-cell { min-height:80px; } }
 
 #auth-gate {
   position: fixed; inset: 0; z-index: 200;
@@ -1117,49 +1127,86 @@ h1, h2, h3, h4, p { margin: 0; }
       <!-- ============ VIEW: EDITORIAL (Calendário) ============ -->
       <section class="ax-view" id="view-editorial">
         <div class="ax-dash-grid">
-          <div class="ax-col--12">
-            <section class="ax-card" role="region" aria-label="Calendário Editorial">
-              <div class="ax-card__header">
-                <div style="display:flex;align-items:center;gap:12px;">
-                  <button class="ax-icon-btn" onclick="calPrev()" aria-label="Mês anterior">
-                    <svg class="ax-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6l6 6"/></svg>
-                  </button>
-                  <h2 class="ax-card__title" id="cal-month-label">Agosto 2026</h2>
-                  <button class="ax-icon-btn" onclick="calNext()" aria-label="Próximo mês">
-                    <svg class="ax-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6l-6 6"/></svg>
-                  </button>
-                  <button class="ax-btn ax-btn--secondary ax-btn--sm ax-btn--pill" onclick="calToday()">Hoje</button>
-                </div>
-                <div style="display:flex;align-items:center;gap:8px;">
-                  <button class="ax-btn ax-btn--primary ax-btn--sm" onclick="openNewTask('afazer')">Nova tarefa editorial</button>
-                </div>
-              </div>
-              <div class="ax-card__body" style="padding-top:4px;">
-                <!-- Calendar grid header (dias da semana) -->
-                <div class="cal-grid" id="cal-grid">
-                  <div class="cal-row cal-row--head">
-                    <div class="cal-cel cal-cel--head">Dom</div>
-                    <div class="cal-cel cal-cel--head">Seg</div>
-                    <div class="cal-cel cal-cel--head">Ter</div>
-                    <div class="cal-cel cal-cel--head">Qua</div>
-                    <div class="cal-cel cal-cel--head">Qui</div>
-                    <div class="cal-cel cal-cel--head">Sex</div>
-                    <div class="cal-cel cal-cel--head">Sáb</div>
-                  </div>
-                </div>
-                <!-- Day detail sidebar (hidden by default) -->
-                <div id="cal-detail" class="hidden" style="margin-top:var(--ax-space-4);padding:var(--ax-space-4);background:var(--ax-surface-subtle);border-radius:var(--ax-radius-lg);border:1px solid var(--ax-border);">
-                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--ax-space-3);">
-                    <h3 class="ax-card__title" id="cal-detail-title"></h3>
-                    <button class="ax-icon-btn" onclick="closeCalDetail()" aria-label="Fechar">
-                      <svg class="ax-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>
+
+          <!-- Left rail: mini calendar + filters + upcoming -->
+          <aside class="ax-card ax-col--3" role="region" aria-label="Navegação do calendário">
+            <div class="ax-card__body" style="display:flex;flex-direction:column;gap:var(--ax-space-5);">
+              
+              <button type="button" class="ax-btn ax-btn--primary ax-btn--block" onclick="openNewTask('afazer')">
+                <svg class="ax-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>
+                <span class="ax-btn__label">Nova tarefa editorial</span>
+              </button>
+
+              <!-- Mini month -->
+              <div>
+                <div class="ax-cluster" style="justify-content:space-between;margin-bottom:var(--ax-space-3);">
+                  <b style="font-family:var(--ax-font-display);font-size:var(--ax-text-md);color:var(--ax-text-strong);" id="mini-month-label"></b>
+                  <span class="ax-cluster" style="gap:2px;">
+                    <button type="button" class="ax-btn ax-btn--ghost ax-btn--icon ax-btn--sm" aria-label="Mês anterior" onclick="calPrev()">
+                      <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
                     </button>
-                  </div>
-                  <div id="cal-detail-body"></div>
+                    <button type="button" class="ax-btn ax-btn--ghost ax-btn--icon ax-btn--sm" aria-label="Próximo mês" onclick="calNext()">
+                      <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+                    </button>
+                  </span>
                 </div>
+                <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;" id="mini-dow"></div>
+                <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;" id="mini-grid"></div>
               </div>
-            </section>
-          </div>
+
+              <!-- Event count -->
+              <div>
+                <small style="font-size:var(--ax-text-2xs);font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ax-text-subtle);">Atividades</small>
+                <ul class="ax-list ax-list--compact" style="margin-top:var(--ax-space-2);">
+                  <li class="ax-list__row" style="border:0;padding-inline:0;">
+                    <span class="ax-list__leading"><i style="width:9px;height:9px;border-radius:3px;background:var(--ax-accent);display:inline-block;"></i></span>
+                    <span class="ax-list__content"><span class="ax-list__title" style="font-size:var(--ax-text-sm);font-weight:500;color:var(--ax-text);">Postagens</span></span>
+                    <span class="ax-list__trailing ax-num" style="font-size:var(--ax-text-xs);color:var(--ax-text-muted);" id="cal-count-post">0</span>
+                  </li>
+                  <li class="ax-list__row" style="border:0;padding-inline:0;">
+                    <span class="ax-list__leading"><i style="width:9px;height:9px;border-radius:3px;background:var(--ax-viz-violet);display:inline-block;"></i></span>
+                    <span class="ax-list__content"><span class="ax-list__title" style="font-size:var(--ax-text-sm);font-weight:500;color:var(--ax-text);">Vencimentos</span></span>
+                    <span class="ax-list__trailing ax-num" style="font-size:var(--ax-text-xs);color:var(--ax-text-muted);" id="cal-count-venc">0</span>
+                  </li>
+                  <li class="ax-list__row" style="border:0;padding-inline:0;">
+                    <span class="ax-list__leading"><i style="width:9px;height:9px;border-radius:3px;background:var(--ax-viz-emerald);display:inline-block;"></i></span>
+                    <span class="ax-list__content"><span class="ax-list__title" style="font-size:var(--ax-text-sm);font-weight:500;color:var(--ax-text);">Concluídas</span></span>
+                    <span class="ax-list__trailing ax-num" style="font-size:var(--ax-text-xs);color:var(--ax-text-muted);" id="cal-count-done">0</span>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Upcoming -->
+              <div>
+                <small style="font-size:var(--ax-text-2xs);font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ax-text-subtle);">Próximos</small>
+                <div style="display:flex;flex-direction:column;gap:var(--ax-space-3);margin-top:var(--ax-space-3);" id="cal-upcoming"></div>
+              </div>
+            </div>
+          </aside>
+
+          <!-- Main calendar canvas -->
+          <section class="ax-card ax-col--9" role="region" aria-label="Calendário do mês">
+            <div class="ax-card__header">
+              <div class="ax-cluster" style="gap:var(--ax-space-3);">
+                <span class="ax-cluster" style="gap:2px;">
+                  <button type="button" class="ax-btn ax-btn--ghost ax-btn--icon ax-btn--sm" aria-label="Anterior" onclick="calPrev()">
+                    <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                  </button>
+                  <button type="button" class="ax-btn ax-btn--secondary ax-btn--sm" onclick="calToday()">Hoje</button>
+                  <button type="button" class="ax-btn ax-btn--ghost ax-btn--icon ax-btn--sm" aria-label="Próximo" onclick="calNext()">
+                    <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+                  </button>
+                </span>
+                <h2 class="ax-card__title" style="margin:0;" id="cal-month-title">Agosto 2026</h2>
+              </div>
+            </div>
+            <div class="ax-card__body" style="padding-top:0;">
+              <!-- Day-of-week header -->
+              <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--ax-border);border-radius:var(--ax-radius-md) var(--ax-radius-md) 0 0;overflow:hidden;" id="cal-dow"></div>
+              <!-- Month grid -->
+              <div id="cal-grid-vireo" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-inline:1px solid var(--ax-border);border-block-end:1px solid var(--ax-border);border-radius:0 0 var(--ax-radius-md) var(--ax-radius-md);overflow:hidden;"></div>
+            </div>
+          </section>
         </div>
       </section>
 
@@ -1755,6 +1802,8 @@ function updatePageHead() {
     actions.innerHTML = '';
   } else if (S.view === 'categorias') {
     actions.innerHTML = '<button class="ax-btn ax-btn--primary" onclick="openCategoryModal()"><svg class="ax-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg><span class="ax-btn__label">Nova categoria</span></button>';
+  } else if (S.view === 'editorial') {
+    actions.innerHTML = '<button class="ax-btn ax-btn--primary" onclick="openNewTask(\'afazer\')"><svg class="ax-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg><span class="ax-btn__label">Nova tarefa editorial</span></button>';
   } else {
     actions.innerHTML = '';
   }
@@ -2537,23 +2586,25 @@ function handleHeaderSearch(v) {
 }
 
 /* ============================================================ */
-/* CALENDÁRIO EDITORIAL                                         */
+/* CALENDÁRIO EDITORIAL (estilo Vireo)                          */
 /* ============================================================ */
 var CAL_MONTHS = 'Janeiro Fevereiro Março Abril Maio Junho Julho Agosto Setembro Outubro Novembro Dezembro'.split(' ');
+var CAL_DOW_SHORT = 'Dom Seg Ter Qua Qui Sex Sáb'.split(' ');
+var CAL_DOW_MINI = 'D S T Q Q S S'.split(' ');
 var calDate = new Date();
 
 function calToday() { calDate = new Date(); renderCalendario(); }
 function calPrev() { calDate.setMonth(calDate.getMonth() - 1); renderCalendario(); }
 function calNext() { calDate.setMonth(calDate.getMonth() + 1); renderCalendario(); }
-function closeCalDetail() { document.getElementById('cal-detail').classList.add('hidden'); }
 
 function renderCalendario() {
   var y = calDate.getFullYear();
   var m = calDate.getMonth();
-  document.getElementById('cal-month-label').textContent = CAL_MONTHS[m] + ' ' + y;
+  var label = CAL_MONTHS[m] + ' ' + y;
+  document.getElementById('cal-month-title').textContent = label;
+  document.getElementById('mini-month-label').textContent = label;
 
   var tasks = S.activities.filter(function (a) { return a.categoria === 1; });
-  /* Map tasks to days by dataPostagem (preferred) or dataVencimento */
   var dayMap = {};
   for (var i = 0; i < tasks.length; i++) {
     var key = tasks[i].dataPostagem || tasks[i].dataVencimento;
@@ -2562,95 +2613,200 @@ function renderCalendario() {
     dayMap[key].push(tasks[i]);
   }
 
+  renderMiniMonth(y, m, dayMap);
+  renderMiniUpcoming(tasks);
+  updateCalCounts(tasks);
+
+  /* DOW header */
+  var dowHTML = '';
+  for (var d = 0; d < 7; d++) {
+    dowHTML += '<div style="padding:var(--ax-space-2) var(--ax-space-3);font-size:var(--ax-text-2xs);font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ax-text-subtle);text-align:center;' +
+      (d < 6 ? 'border-inline-end:1px solid var(--ax-border);' : '') +
+      'background:var(--ax-surface-subtle);">' + CAL_DOW_SHORT[d] + '</div>';
+  }
+  document.getElementById('cal-dow').innerHTML = dowHTML;
+
+  /* Month grid cells */
   var firstDay = new Date(y, m, 1).getDay();
   var daysInMonth = new Date(y, m + 1, 0).getDate();
   var prevDays = new Date(y, m, 0).getDate();
   var today = todayISO();
-
-  var html = '';
-  var day = 1;
   var totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
 
+  /* Previous month year/month for muted cells */
+  var prevM = m === 0 ? 11 : m - 1;
+  var prevY = m === 0 ? y - 1 : y;
+  var nextM = m === 11 ? 0 : m + 1;
+  var nextY = m === 11 ? y + 1 : y;
+
+  var cellHTML = '';
+  var day = 1;
   for (var row = 0; row < totalCells / 7; row++) {
-    html += '<div class="cal-row">';
     for (var col = 0; col < 7; col++) {
       var cellNum = row * 7 + col + 1;
+
       if (cellNum <= firstDay) {
+        /* Previous month muted cell */
         var pDay = prevDays - firstDay + cellNum;
-        var pDate = y + '-' + String(m === 0 ? 12 : m).padStart(2, '0') + '-' + String(pDay).padStart(2, '0');
-        html += '<div class="cal-cel cal-cel--other"><div class="cal-cel__num">' + pDay + '</div>' + renderCalEvents(dayMap[pDate]) + '</div>';
+        var pDate = prevY + '-' + String(prevM + 1).padStart(2, '0') + '-' + String(pDay).padStart(2, '0');
+        cellHTML += '<button type="button" class="ax-cal-cell" onclick="openNewTaskAtDate(\'' + pDate + '\')">' +
+          '<span class="ax-cal-cell__n ax-cal-cell__n--muted ax-num">' + pDay + '</span></button>';
+
       } else if (day > daysInMonth) {
+        /* Next month muted cell */
         var nDay = day - daysInMonth;
-        var nDate = y + '-' + String(m + 2 > 12 ? 1 : m + 2).padStart(2, '0') + '-' + String(nDay).padStart(2, '0');
-        html += '<div class="cal-cel cal-cel--other"><div class="cal-cel__num">' + nDay + '</div>' + renderCalEvents(dayMap[nDate]) + '</div>';
+        var nDate = nextY + '-' + String(nextM + 1).padStart(2, '0') + '-' + String(nDay).padStart(2, '0');
+        cellHTML += '<button type="button" class="ax-cal-cell" onclick="openNewTaskAtDate(\'' + nDate + '\')">' +
+          '<span class="ax-cal-cell__n ax-cal-cell__n--muted ax-num">' + nDay + '</span></button>';
         day++;
+
       } else {
         var dDate = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
         var isToday = dDate === today;
-        var cellClass = 'cal-cel';
-        if (isToday) cellClass += ' cal-cel--today';
-        html += '<div class="' + cellClass + '" onclick="openCalDay(\'' + dDate + '\')" style="cursor:pointer">';
-        html += '<div class="cal-cel__num">' + day + '</div>';
-        html += renderCalEvents(dayMap[dDate], 3);
-        html += '</div>';
+        var evts = dayMap[dDate] || [];
+
+        cellHTML += '<button type="button" class="ax-cal-cell' + (isToday ? ' ax-cal-cell--today' : '') + '" onclick="calOpenDay(\'' + dDate + '\')">' +
+          '<span class="ax-cal-cell__n ax-num' + (isToday ? ' ax-cal-cell__n--today' : '') + '">' + day + '</span>' +
+          renderCalEventsVireo(evts, 3) +
+          '</button>';
         day++;
       }
     }
-    html += '</div>';
   }
 
-  var grid = document.getElementById('cal-grid');
-  var headRow = grid.querySelector('.cal-row--head');
-  grid.innerHTML = headRow.outerHTML + html;
-  closeCalDetail();
+  document.getElementById('cal-grid-vireo').innerHTML = cellHTML;
   updateNavBadges();
 }
 
-function renderCalEvents(arr, limit) {
+function renderCalEventsVireo(arr, limit) {
   if (!arr || !arr.length) return '';
   var out = '';
   var max = limit || 99;
   for (var i = 0; i < Math.min(arr.length, max); i++) {
     var ev = arr[i];
-    var evClass = 'cal-event';
-    if (ev.dataPostagem) evClass += ' cal-event--post';
-    if (ev.stage === 'concluido') evClass += ' cal-event--done';
-    out += '<div class="' + evClass + '" onclick="event.stopPropagation();openEditTask(' + ev.id + ')" title="' + esc((ev.dataPostagem ? 'Post: ' : 'Venc: ') + esc(ev.titulo)) + '">' + esc(ev.titulo) + '</div>';
+    var isPost = !!ev.dataPostagem;
+    var color = isPost ? 'var(--ax-accent)' : 'var(--ax-viz-violet)';
+    if (ev.stage === 'concluido') color = 'var(--ax-viz-emerald)';
+    out += '<span class="ax-cal-event" style="--c:' + color + ';" onclick="event.stopPropagation();openEditTask(' + ev.id + ')" title="' + esc((isPost ? 'Post: ' : 'Venc: ') + ev.titulo) + '">' +
+      esc(ev.titulo) + '</span>';
   }
   if (arr.length > max) {
-    out += '<div class="cal-more">+' + (arr.length - max) + ' mais</div>';
+    out += '<span class="ax-cal-more" onclick="event.stopPropagation();calOpenDay(this.parentElement, \'TODO\')">+' + (arr.length - max) + ' mais</span>';
   }
   return out;
 }
 
-function openCalDay(dateStr) {
+function calOpenDay(dateStr) {
   var tasks = S.activities.filter(function (a) { return a.categoria === 1; });
   var dayTasks = tasks.filter(function (a) {
     var key = a.dataPostagem || a.dataVencimento;
     return key && key === dateStr;
   });
-
   var parts = dateStr.split('-');
-  document.getElementById('cal-detail-title').textContent = parts[2] + '/' + parts[1] + '/' + parts[0];
-
-  var body = document.getElementById('cal-detail-body');
+  var detailTitle = parts[2] + '/' + parts[1] + '/' + parts[0];
+  /* Build list of tasks for this day */
+  var listHTML = '';
   if (dayTasks.length === 0) {
-    body.innerHTML = '<p style="color:var(--ax-text-subtle);font-size:var(--ax-text-sm);">Nenhuma atividade editorial nesta data.</p>';
+    listHTML = '<p style="color:var(--ax-text-subtle);font-size:var(--ax-text-sm);padding:var(--ax-space-3) 0;">Nenhuma atividade editorial nesta data.</p>';
   } else {
-    var html = '<div class="ax-table-wrap"><table class="ax-table ax-table--hover"><thead><tr><th>Tarefa</th><th>Estágio</th><th>Progresso</th><th>Tipo</th></tr></thead><tbody>';
+    listHTML += '<div class="ax-list ax-list--flush">';
     for (var i = 0; i < dayTasks.length; i++) {
-      var a = dayTasks[i];
-      var st = stageOf(a.stage);
+      var a = dayTasks[i], st = stageOf(a.stage);
       var isPost = !!a.dataPostagem;
-      html += '<tr class="row-click" onclick="openEditTask(' + a.id + ')"><td><div class="ax-strong">' + esc(a.titulo) + '</div><div style="font-size:var(--ax-text-xs);color:var(--ax-text-subtle);">' + esc(a.descricao || '') + '</div></td>' +
-        '<td><span class="ax-badge ax-badge--soft ax-badge--' + st.tone + ' ax-badge--pill"><span class="ax-badge__dot"></span>' + esc(st.label) + '</span></td>' +
-        '<td><div class="progress-inline" style="min-width:90px;"><div class="ax-progress ax-progress--sm" style="flex:1"><div class="ax-progress__track"><div class="ax-progress__fill" style="width:' + a.progress + '%;background:' + progColor(a.progress) + '"></div></div></div><span class="pct">' + a.progress + '%</span></div></td>' +
-        '<td><span class="ax-badge ax-badge--soft ax-badge--pill" style="--_b500:' + (isPost ? 'var(--ax-viz-violet)' : 'var(--ax-text-muted)') + '">' + (isPost ? 'Postagem' : 'Vencimento') + '</span></td></tr>';
+      var color = isPost ? 'var(--ax-accent)' : 'var(--ax-viz-violet)';
+      if (a.stage === 'concluido') color = 'var(--ax-viz-emerald)';
+      listHTML += '<div class="ax-list__row" style="cursor:pointer" onclick="openEditTask(' + a.id + ')">' +
+        '<span class="ax-list__leading"><i style="width:9px;height:9px;border-radius:3px;background:' + color + ';display:inline-block;"></i></span>' +
+        '<span class="ax-list__content"><span class="ax-list__title">' + esc(a.titulo) + '</span>' +
+        '<span class="ax-list__meta">' + esc(a.descricao || '') + ' · ' + esc(st.label) + (isPost ? ' · Postagem' : ' · Vencimento') + '</span></span>' +
+        '<span class="ax-list__trailing"><span class="ax-badge ax-badge--soft ax-badge--' + st.tone + ' ax-badge--pill" style="font-size:var(--ax-text-2xs);">' + a.progress + '%</span></span>' +
+        '</div>';
     }
-    html += '</tbody></table></div>';
-    body.innerHTML = html;
+    listHTML += '</div>';
   }
-  document.getElementById('cal-detail').classList.remove('hidden');
+  toast(detailTitle + ': ' + dayTasks.length + ' atividade(s)', 'info');
+  /* We'll show the detail in a custom alert/flow rather than a panel for simplicity */
+  alert(detailTitle + '\n\n' + dayTasks.map(function (t) { return '• ' + t.titulo + ' (' + (stageOf(t.stage).label) + ')'; }).join('\n') || 'Nenhuma atividade.');
+}
+
+function openNewTaskAtDate(dateStr) {
+  openNewTask('afazer');
+  document.getElementById('tmf-post').value = dateStr;
+}
+
+/* Mini month */
+function renderMiniMonth(y, m, dayMap) {
+  var dowHTML = '';
+  for (var d = 0; d < 7; d++) {
+    dowHTML += '<small style="color:var(--ax-text-subtle);font-size:var(--ax-text-2xs);font-weight:600;padding:4px 0;">' + CAL_DOW_MINI[d] + '</small>';
+  }
+  document.getElementById('mini-dow').innerHTML = dowHTML;
+
+  var firstDay = new Date(y, m, 1).getDay();
+  var daysInMonth = new Date(y, m + 1, 0).getDate();
+  var prevDays = new Date(y, m, 0).getDate();
+  var today = todayISO();
+
+  var prevM = m === 0 ? 11 : m - 1;
+  var prevY = m === 0 ? y - 1 : y;
+
+  var gridHTML = '';
+  /* Leading muted days */
+  for (var i = firstDay - 1; i >= 0; i--) {
+    var pDay = prevDays - i;
+    gridHTML += '<span class="ax-num" style="font-size:var(--ax-text-xs);color:var(--ax-text-subtle);padding:2px 0;">' + pDay + '</span>';
+  }
+  /* Current month days */
+  for (var day = 1; day <= daysInMonth; day++) {
+    var dDate = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+    var isToday = dDate === today;
+    var hasEvents = dayMap[dDate] && dayMap[dDate].length > 0;
+    var style = 'font-size:var(--ax-text-xs);padding:3px 0;border-radius:var(--ax-radius-sm);cursor:pointer;';
+    if (isToday) style += 'background:var(--ax-accent);color:var(--ax-on-accent);font-weight:600;';
+    else if (hasEvents) style += 'background:color-mix(in oklab,var(--ax-accent) 10%,transparent);color:var(--ax-text-strong);';
+    else style += 'color:var(--ax-text);';
+    gridHTML += '<button type="button" class="ax-num" style="font-family:var(--ax-font-mono);' + style + 'border:0;background:' + (isToday ? 'var(--ax-accent)' : (hasEvents ? 'color-mix(in oklab,var(--ax-accent) 10%,transparent)' : 'transparent')) + ';" onclick="calGoToDay(\'' + dDate + '\')">' + day + '</button>';
+  }
+  /* Trailing muted days (fill remaining slots) */
+  var total = firstDay + daysInMonth;
+  var remaining = total <= 28 ? 28 - total : total <= 35 ? 35 - total : 42 - total;
+  for (var j = 1; j <= remaining; j++) {
+    gridHTML += '<span class="ax-num" style="font-size:var(--ax-text-xs);color:var(--ax-text-subtle);padding:2px 0;">' + j + '</span>';
+  }
+  document.getElementById('mini-grid').innerHTML = gridHTML;
+}
+
+function calGoToDay(dateStr) {
+  var parts = dateStr.split('-');
+  calDate = new Date(Number(parts[0]), Number(parts[1]) - 1, 1);
+  renderCalendario();
+  calOpenDay(dateStr);
+}
+
+function renderMiniUpcoming(tasks) {
+  var upcoming = tasks.filter(function (a) { return a.stage !== 'concluido'; })
+    .sort(function (a, b) { return (a.dataPostagem || a.dataVencimento || '') < (b.dataPostagem || b.dataVencimento || '') ? -1 : 1; })
+    .slice(0, 5);
+  var html = '';
+  for (var i = 0; i < upcoming.length; i++) {
+    var a = upcoming[i];
+    var isPost = !!a.dataPostagem;
+    var color = isPost ? 'var(--ax-accent)' : 'var(--ax-viz-violet)';
+    var dateLabel = fmtDate(a.dataPostagem || a.dataVencimento);
+    html += '<div class="ax-cluster" style="gap:var(--ax-space-3);flex-wrap:nowrap;align-items:flex-start;cursor:pointer;" onclick="openEditTask(' + a.id + ')">' +
+      '<span style="width:3px;align-self:stretch;border-radius:2px;background:' + color + ';flex:0 0 auto;"></span>' +
+      '<div style="min-width:0;flex:1 1 auto;">' +
+      '<div class="ax-text-truncate" style="font-size:var(--ax-text-sm);color:var(--ax-text);font-weight:500;">' + esc(a.titulo) + '</div>' +
+      '<div class="ax-num" style="font-size:var(--ax-text-xs);color:var(--ax-text-subtle);">' + (isPost ? 'Post: ' : 'Venc: ') + dateLabel + '</div></div></div>';
+  }
+  if (!html) html = '<div style="font-size:var(--ax-text-sm);color:var(--ax-text-subtle);">Tudo em dia.</div>';
+  document.getElementById('cal-upcoming').innerHTML = html;
+}
+
+function updateCalCounts(tasks) {
+  document.getElementById('cal-count-post').textContent = tasks.filter(function (a) { return !!a.dataPostagem; }).length;
+  document.getElementById('cal-count-venc').textContent = tasks.filter(function (a) { return !a.dataPostagem; }).length;
+  document.getElementById('cal-count-done').textContent = tasks.filter(function (a) { return a.stage === 'concluido'; }).length;
 }
 
 /* ============================================================ */
