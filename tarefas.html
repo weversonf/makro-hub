@@ -1532,7 +1532,7 @@ h1, h2, h3, h4, p { margin: 0; }
           <div class="ax-hero__title-row">
             <h2 class="ax-hero__title" id="tm-hero-title"></h2>
             <span class="ax-badge ax-badge--soft ax-badge--pill" id="tm-hero-stage"></span>
-            <span class="ax-badge ax-badge--soft ax-badge--pill" id="tm-hero-prio" style="display:none"></span>
+            <span class="ax-badge ax-badge--soft ax-badge--pill" id="tm-hero-prio" style="cursor:pointer;display:none;" onclick="togglePrioDropdown(event)" title="Clique para alterar prioridade">Baixa</span>
           </div>
           <p class="ax-hero__desc" id="tm-hero-desc"></p>
           <div class="ax-hero__meta" id="tm-hero-meta"></div>
@@ -1570,7 +1570,7 @@ h1, h2, h3, h4, p { margin: 0; }
           <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(75)" style="font-size:var(--ax-text-2xs);">75</button>
           <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(100)" style="font-size:var(--ax-text-2xs);">100</button>
         </div>
-        <div class="ax-row" style="grid-template-columns:repeat(4,1fr);">
+        <div class="ax-row" style="grid-template-columns:repeat(3,1fr);">
           <div class="ax-field">
             <label class="ax-label">Categoria</label>
             <div class="ax-select-wrap">
@@ -1581,17 +1581,6 @@ h1, h2, h3, h4, p { margin: 0; }
             <label class="ax-label">Estágio</label>
             <div class="ax-select-wrap">
               <select class="ax-select" id="tmf-stage"></select>
-            </div>
-          </div>
-          <div class="ax-field">
-            <label class="ax-label">Prioridade</label>
-            <div class="ax-select-wrap">
-              <select class="ax-select" id="tmf-prio">
-                <option value="baixa">Baixa</option>
-                <option value="media" selected>Média</option>
-                <option value="alta">Alta</option>
-                <option value="urgente">Urgente</option>
-              </select>
             </div>
           </div>
           <div class="ax-field">
@@ -2654,7 +2643,9 @@ function openNewTask(stageId) {
   document.getElementById('tmf-desc').value = '';
   document.getElementById('tmf-due').value = '';
   document.getElementById('tmf-post').value = '';
-  document.getElementById('tmf-prio').value = 'media';
+  /* prioridade padrão: baixa */
+  S._heroPrio = 'baixa';
+  updatePrioBadge();
 
   var catSel = document.getElementById('tmf-cat');
   catSel.innerHTML = '<option value="">Sem categoria</option>';
@@ -2691,12 +2682,12 @@ function openEditTask(id) {
   var st = stageOf(a.stage);
   document.getElementById('tm-hero-stage').className = 'ax-badge ax-badge--soft ax-badge--' + st.tone + ' ax-badge--pill';
   document.getElementById('tm-hero-stage').innerHTML = '<span class="ax-badge__dot"></span>' + esc(st.label);
-  var pr = PRIOS[a.prioridade] || PRIOS.media;
+  var pr = PRIOS[a.prioridade] || PRIOS.baixa;
   var prEl = document.getElementById('tm-hero-prio');
   prEl.style.display = '';
-  prEl.className = 'ax-badge ax-badge--soft ax-badge--pill';
-  prEl.style.setProperty('--_b500', pr.color);
-  prEl.textContent = pr.label;
+  prEl.setAttribute('data-prio', a.prioridade || 'baixa');
+  S._heroPrio = a.prioridade || 'baixa';
+  updatePrioBadge();
   document.getElementById('tm-hero-meta').innerHTML =
     '<span class="item">' + ico('tag', 14) + '<span>' + esc(cat ? cat.nome : 'Sem categoria') + '</span></span>' +
     '<span class="item">' + ico('calendar', 14) + '<span>Venc. ' + fmtDate(a.dataVencimento) + '</span></span>' +
@@ -2755,6 +2746,38 @@ function openEditTask(id) {
 
 function updateCanaisTab() {
   updateModalForEditorial();
+}
+
+function updatePrioBadge() {
+  var pr = PRIOS[S._heroPrio] || PRIOS.baixa;
+  var el = document.getElementById('tm-hero-prio');
+  el.className = 'ax-badge ax-badge--soft ax-badge--pill';
+  el.style.setProperty('--_b500', pr.color);
+  el.style.cursor = 'pointer';
+  el.textContent = pr.label;
+}
+
+function togglePrioDropdown(e) {
+  e.stopPropagation();
+  var el = document.getElementById('tm-hero-prio');
+  /* Remove existing dropdown */
+  var existing = document.getElementById('prio-drop');
+  if (existing) { existing.remove(); return; }
+
+  var keys = Object.keys(PRIOS);
+  var html = '<div id="prio-drop" style="position:absolute;top:100%;left:0;z-index:10;background:var(--ax-surface-solid);border:1px solid var(--ax-border);border-radius:var(--ax-radius-md);box-shadow:var(--ax-shadow-lg);padding:4px;min-width:100px;margin-top:4px;">';
+  for (var i = 0; i < keys.length; i++) {
+    var p = PRIOS[keys[i]];
+    html += '<button onclick="event.stopPropagation();setHeroPrio(\'' + keys[i] + '\');document.getElementById(\'prio-drop\').remove();" style="display:block;width:100%;text-align:left;padding:6px 10px;border:0;background:' + (keys[i] === S._heroPrio ? 'var(--ax-surface-subtle)' : 'transparent') + ';color:var(--ax-text);font-size:var(--ax-text-xs);font-family:inherit;cursor:pointer;border-radius:var(--ax-radius-sm);">' + p.label + '</button>';
+  }
+  html += '</div>';
+  el.style.position = 'relative';
+  el.insertAdjacentHTML('afterend', html);
+}
+
+function setHeroPrio(p) {
+  S._heroPrio = p;
+  updatePrioBadge();
 }
 
 function updateModalForEditorial() {
@@ -2955,7 +2978,7 @@ function saveTask() {
     descricao: document.getElementById('tmf-desc').value.trim(),
     categoria: Number(document.getElementById('tmf-cat').value) || null,
     stage: document.getElementById('tmf-stage').value,
-    prioridade: document.getElementById('tmf-prio').value,
+    prioridade: S._heroPrio || 'baixa',
     dataVencimento: document.getElementById('tmf-due').value || null,
     dataPostagem: document.getElementById('tmf-post').value || null,
     progress: parseInt(document.getElementById('tmf-progress-label').textContent, 10) || 0,
@@ -3594,6 +3617,14 @@ function init() {
   document.querySelectorAll('.ax-overlay').forEach(function (ov) {
     ov.addEventListener('click', function (e) { if (e.target === ov) ov.classList.remove('open'); });
   });
+  /* Event delegation para fechar dropdown de prioridade */
+  document.addEventListener('click', function(e) {
+    var drop = document.getElementById('prio-drop');
+    if (drop && !e.target.closest('#tm-hero-prio') && !e.target.closest('#prio-drop')) {
+      drop.remove();
+    }
+  });
+
   document.getElementById('cfg-theme-light').addEventListener('click', function () { applyTheme('light', true); });
   document.getElementById('cfg-theme-dark').addEventListener('click', function () { applyTheme('dark', true); });
 
