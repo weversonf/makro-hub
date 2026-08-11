@@ -1542,7 +1542,6 @@ h1, h2, h3, h4, p { margin: 0; }
 
       <div class="ax-tabs" id="tm-tabs" style="display:none;border-radius:var(--ax-radius-md);border:1px solid var(--ax-border);">
         <button class="ax-tabs__tab is-active" data-tm-tab="detalhes">Detalhes</button>
-        <button class="ax-tabs__tab" data-tm-tab="progresso">Progresso</button>
         <button class="ax-tabs__tab" data-tm-tab="checklist">Checklist <span class="ax-tabs__badge" id="tm-checklist-count">0</span></button>
         <button class="ax-tabs__tab" data-tm-tab="canais" id="tm-tab-canais">Canais <span class="ax-tabs__badge" id="tm-canais-count">0</span></button>
         <button class="ax-tabs__tab" data-tm-tab="imagens" id="tm-tab-imagens">Imagens <span class="ax-tabs__badge" id="tm-imagens-count">0</span></button>
@@ -1558,7 +1557,20 @@ h1, h2, h3, h4, p { margin: 0; }
           <label class="ax-label" for="tmf-desc">Descrição</label>
           <textarea class="ax-textarea" id="tmf-desc" placeholder="Detalhe o que precisa ser feito…"></textarea>
         </div>
-        <div class="ax-row ax-row--2">
+        <!-- Progresso inline -->
+        <div style="display:flex;align-items:center;gap:var(--ax-space-3);">
+          <span class="ax-label" style="white-space:nowrap;">Progresso</span>
+          <div class="ax-progress ax-progress--sm" style="flex:1">
+            <div class="ax-progress__track"><div class="ax-progress__fill" id="tmf-progress-fill" style="width:0%"></div></div>
+          </div>
+          <span class="ax-num" id="tmf-progress-label" style="font-size:var(--ax-text-xs);min-width:32px;text-align:right;">0%</span>
+          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(0)" style="font-size:var(--ax-text-2xs);">0</button>
+          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(25)" style="font-size:var(--ax-text-2xs);">25</button>
+          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(50)" style="font-size:var(--ax-text-2xs);">50</button>
+          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(75)" style="font-size:var(--ax-text-2xs);">75</button>
+          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(100)" style="font-size:var(--ax-text-2xs);">100</button>
+        </div>
+        <div class="ax-row" style="grid-template-columns:repeat(4,1fr);">
           <div class="ax-field">
             <label class="ax-label">Categoria</label>
             <div class="ax-select-wrap">
@@ -1571,8 +1583,6 @@ h1, h2, h3, h4, p { margin: 0; }
               <select class="ax-select" id="tmf-stage"></select>
             </div>
           </div>
-        </div>
-        <div class="ax-row ax-row--3">
           <div class="ax-field">
             <label class="ax-label">Prioridade</label>
             <div class="ax-select-wrap">
@@ -1588,23 +1598,11 @@ h1, h2, h3, h4, p { margin: 0; }
             <label class="ax-label" for="tmf-due">Deadline</label>
             <input type="date" class="ax-input" id="tmf-due">
           </div>
-          <div class="ax-field" id="tmf-post-wrap" style="display:none;">
-            <label class="ax-label" for="tmf-post">Data de postagem</label>
-            <input type="date" class="ax-input" id="tmf-post">
-          </div>
         </div>
-      </div>
-
-      <!-- tab: progresso -->
-      <div class="ax-tab-panel" data-tm-panel="progresso" style="display:none;">
-        <div class="progress-inline" style="width:100%;">
-          <div class="ax-progress ax-progress--lg" style="flex:1">
-            <div class="ax-progress__track"><div class="ax-progress__fill" id="tmf-progress-fill" style="width:0%"></div></div>
-          </div>
-          <div class="pct ax-num" id="tmf-progress-label">0%</div>
+        <div class="ax-field" id="tmf-post-wrap" style="display:none;">
+          <label class="ax-label" for="tmf-post">Data de postagem</label>
+          <input type="date" class="ax-input" id="tmf-post">
         </div>
-        <div style="height:12px"></div>
-        <div class="ax-steps" id="tm-prof-steps"></div>
       </div>
 
       <!-- tab: checklist -->
@@ -1843,7 +1841,7 @@ function firebaseSync() {
     if (S.activities.length) S.nextId = Math.max.apply(null, S.activities.map(function (a) { return a.id || 0; })) + 1;
     actsLoaded = true;
     checkBoth();
-    if (S._initDone) renderAll();
+    if (S._initDone) { updateNavBadges(); if (S.view === 'dash') renderDashboard(); if (S.view === 'lista') renderLista(); if (S.view === 'editorial') renderCalendario(); if (S.view === 'categorias') renderCategorias(); }
   });
 
   fb.onSnapshot(userPath('categories'), function (catSnap) {
@@ -2053,6 +2051,9 @@ function changeView(v) {
   for (var mi = 0; mi < mobItems.length; mi++) {
     mobItems[mi].classList.toggle('mob-nav__item--active', mobItems[mi].getAttribute('data-mob') === v);
   }
+  /* FAB visível só em views relevantes */
+  var fab = document.getElementById('btn-fab');
+  if (fab) fab.style.display = (v === 'dash' || v === 'lista' || v === 'editorial') ? '' : 'none';
   /* Esconde containers React quando não em uso */
   var bh = document.getElementById('banco-horas-root');
   var np = document.getElementById('nps-root');
@@ -2081,7 +2082,7 @@ function updatePageHead() {
   var rate = total ? Math.round(done / total * 100) : 0;
   var sub = document.getElementById('ph-subtitle');
   if (S.view === 'dash') {
-    sub.innerHTML = '<span class="ax-num">' + total + '</span> tarefas · <span class="ax-num">' + pend + '</span> pendentes · <span class="ax-num">' + rate + '%</span> concluídas.';
+    sub.innerHTML = '<span class="ax-num">' + total + '</span> tarefas · <span class="ax-num">' + (total - done) + '</span> pendentes · <span class="ax-num">' + rate + '%</span> concluídas.';
   } else if (S.view === 'lista') {
     var nonEd = S.activities.filter(function (a) { return a.categoria !== 1; });
     var f = filteredTasks().length;
@@ -2137,10 +2138,10 @@ function renderDashboard() {
   var el = document.getElementById('dash-content');
   /* Exclui Editorial de todas as métricas do dashboard */
   var dashActs = S.activities.filter(function (a) { return a.categoria !== 1; });
-  var total = S.activities.length;
+  var total = dashActs.length;
   var done = dashActs.filter(function (a) { return a.stage === 'concluido'; }).length;
   var exec = dashActs.filter(function (a) { return a.stage === 'execucao'; }).length;
-  var rate = total ? Math.round(done / dashActs.length * 100) : 0;
+  var rate = total ? Math.round(done / total * 100) : 0;
   var atrasadas = 0;
   for (var i = 0; i < dashActs.length; i++) if (isOverdue(dashActs[i])) atrasadas++;
 
@@ -2175,13 +2176,13 @@ function renderDashboard() {
     var catDone = catTasks.filter(function (a) { return a.stage === 'concluido'; }).length;
     var catProgress = catTasks.length - catDone;
     var barW = maxCat > 0 ? Math.round(catTasks.length / maxCat * 100) : 0;
-    var doneW = catTasks.length > 0 ? Math.round(catDone / catTasks.length * 100) : 0;
+    var progressPct = catTasks.length > 0 ? Math.round(catProgress / catTasks.length * 100) : 0;
 
     sparkHTML += '<div style="display:flex;align-items:center;gap:10px;">' +
       '<span style="width:100px;font-size:var(--ax-text-xs);color:var(--ax-text-strong);font-weight:600;text-align:right;flex:none;" class="ax-text-truncate">' + esc(nonEdCats[ct2].nome) + '</span>' +
       '<div style="flex:1;height:22px;background:var(--ax-surface-subtle);border-radius:var(--ax-radius-sm);overflow:hidden;display:flex;">' +
-        (catProgress > 0 ? '<div style="width:' + doneW + '%;background:var(--ax-viz-amber);display:flex;align-items:center;justify-content:center;transition:width .4s var(--ax-ease-standard);"><span style="font-family:var(--ax-font-mono);font-size:var(--ax-text-2xs);color:var(--ax-text-strong);font-weight:600;">' + (doneW >= 15 ? catProgress : '') + '</span></div>' : '') +
-        (catDone > 0 ? '<div style="flex:1;background:var(--ax-viz-emerald);display:flex;align-items:center;justify-content:center;transition:width .4s var(--ax-ease-standard);"><span style="font-family:var(--ax-font-mono);font-size:var(--ax-text-2xs);color:var(--ax-text-strong);font-weight:600;">' + (doneW <= 85 ? catDone : '') + '</span></div>' : '') +
+        (catProgress > 0 ? '<div style="width:' + progressPct + '%;background:var(--ax-viz-amber);display:flex;align-items:center;justify-content:center;transition:width .4s var(--ax-ease-standard);min-width:' + (catProgress > 1 ? '0' : '8px') + ';">' + (progressPct >= 20 ? '<span style="font-family:var(--ax-font-mono);font-size:var(--ax-text-2xs);color:var(--ax-text-strong);font-weight:600;">' + catProgress + '</span>' : '') + '</div>' : '') +
+        (catDone > 0 ? '<div style="flex:1;background:var(--ax-viz-emerald);display:flex;align-items:center;justify-content:center;transition:width .4s var(--ax-ease-standard);">' + (progressPct < 80 ? '<span style="font-family:var(--ax-font-mono);font-size:var(--ax-text-2xs);color:var(--ax-text-strong);font-weight:600;">' + catDone + '</span>' : '') + '</div>' : '') +
       '</div>' +
       '<span class="ax-num" style="width:40px;text-align:right;font-family:var(--ax-font-mono);font-size:var(--ax-text-xs);font-weight:700;color:var(--ax-text-muted);">' + catTasks.length + '</span>' +
       '</div>';
@@ -2496,6 +2497,27 @@ function handleDragEnd() {
   var cols = document.querySelectorAll('.ax-pl-col--over');
   for (var j = 0; j < cols.length; j++) cols[j].classList.remove('ax-pl-col--over');
 }
+
+/* Custom confirm dialog */
+var _confirmCallback = null;
+function showConfirm(title, msg, cb) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-msg').textContent = msg;
+  document.getElementById('confirm-cancel').style.display = '';
+  document.getElementById('confirm-ok').style.display = '';
+  _confirmCallback = cb;
+  document.getElementById('confirm-ok').onclick = function() {
+    closeConfirm();
+    if (_confirmCallback) _confirmCallback();
+    _confirmCallback = null;
+  };
+  openOverlay('confirm-modal');
+}
+function closeConfirm() {
+  closeOverlay('confirm-modal');
+  _confirmCallback = null;
+}
+
 function handleDrop(e, colId) {
   e.preventDefault();
   handleDragEnd();
@@ -2597,12 +2619,13 @@ function saveCategory() {
 function deleteCategory(id) {
   var c = S.categories.filter(function (x) { return x.id === id; })[0];
   if (!c) return;
-  if (!confirm('Excluir a categoria "' + c.nome + '"?')) return;
-  if (c._fbId) fb.deleteDoc(userDoc('categories', c._fbId)).catch(function () {});
-  S.categories = S.categories.filter(function (x) { return x.id !== id; });
-  S.activities.forEach(function (a) { if (a.categoria === id) a.categoria = null; });
-  renderCategorias(); renderAllFilters();
-  toast('Categoria excluída');
+  showConfirm('Excluir categoria?', 'A categoria "' + c.nome + '" será removida. As tarefas associadas ficarão sem categoria.', function() {
+    if (c._fbId) fb.deleteDoc(userDoc('categories', c._fbId)).catch(function () {});
+    S.categories = S.categories.filter(function (x) { return x.id !== id; });
+    S.activities.forEach(function (a) { if (a.categoria === id) a.categoria = null; });
+    renderCategorias(); renderAllFilters();
+    toast('Categoria excluída');
+  });
 }
 function closeCategoryModal() { closeOverlay('cat-modal'); }
 
@@ -2738,31 +2761,22 @@ function updateModalForEditorial() {
   var catId = Number(document.getElementById('tmf-cat').value);
   var isEditorial = catId === 1;
   var tabBtn = document.getElementById('tm-tab-canais');
-  var tabProgresso = document.querySelector('[data-tm-tab="progresso"]');
   var tabChecklist = document.querySelector('[data-tm-tab="checklist"]');
-  var panel = document.querySelector('[data-tm-panel="canais"]');
   var descField = document.getElementById('tmf-desc');
   var descLabel = document.querySelector('label[for="tmf-desc"]');
   var vencField = document.getElementById('tmf-due').closest('.ax-field');
   var charCount = document.getElementById('tm-char-count');
 
   if (isEditorial) {
-    /* Mostra Canais, esconde Progresso e Checklist */
+    /* Mostra Canais, esconde Checklist */
     tabBtn.classList.remove('hidden');
-    if (tabProgresso) tabProgresso.style.display = 'none';
     if (tabChecklist) tabChecklist.style.display = 'none';
-    if (S.tab === 'progresso' || S.tab === 'checklist') setTab('detalhes');
-
-    /* Campo de texto maior para conteúdo editorial */
+    if (S.tab === 'checklist') setTab('detalhes');
+    /* Campo de texto maior */
     descField.style.minHeight = '200px';
     descField.placeholder = 'Escreva o conteúdo, legenda ou texto da publicação…';
     if (descLabel) descLabel.textContent = 'Conteúdo / Legenda';
-
-    /* Mostra data de postagem com destaque */
     if (vencField) vencField.style.display = '';
-    var postField = document.getElementById('tmf-post').closest('.ax-field');
-    if (postField) postField.style.display = '';
-
     /* Contador de caracteres */
     if (!charCount) {
       charCount = document.createElement('div');
@@ -2774,7 +2788,6 @@ function updateModalForEditorial() {
   } else {
     /* Restaura layout de projeto */
     tabBtn.classList.add('hidden');
-    if (tabProgresso) tabProgresso.style.display = '';
     if (tabChecklist) tabChecklist.style.display = '';
     descField.style.minHeight = '84px';
     descField.placeholder = 'Detalhe o que precisa ser feito…';
@@ -2801,13 +2814,6 @@ function setProgressStep(val) {
   document.getElementById('tmf-progress-label').textContent = val + '%';
   if (val >= 100) { document.getElementById('tmf-stage').value = 'concluido'; }
   else if (document.getElementById('tmf-stage').value === 'concluido') { document.getElementById('tmf-stage').value = 'execucao'; }
-  var steps = document.getElementById('tm-prof-steps');
-  var html = '';
-  for (var i = 0; i <= 10; i++) {
-    var v = i * 10;
-    html += '<button class="ax-step' + (v === val ? ' is-active' : '') + '" onclick="setProgressStep(' + v + ')">' + v + '</button>';
-  }
-  steps.innerHTML = html;
 }
 
 function renderCanaisTMP(selected) {
@@ -2988,12 +2994,13 @@ function saveTask() {
 }
 function closeTaskModal() { closeOverlay('task-modal'); }
 function confirmDeleteTask(id) {
-  if (!confirm('Excluir essa tarefa?')) return;
-  var a = getTask(id);
-  if (a && a._fbId) fb.deleteDoc(userDoc('activities', a._fbId)).catch(function () {});
-  S.activities = S.activities.filter(function (a) { return a.id !== id; });
-  renderAll();
-  toast('Tarefa excluída', 'error');
+  showConfirm('Excluir tarefa?', 'Tem certeza que deseja excluir esta tarefa?', function() {
+    var a = getTask(id);
+    if (a && a._fbId) fb.deleteDoc(userDoc('activities', a._fbId)).catch(function () {});
+    S.activities = S.activities.filter(function (a) { return a.id !== id; });
+    renderAll();
+    toast('Tarefa excluída', 'error');
+  });
 }
 
 /* ============================================================ */
@@ -3161,7 +3168,7 @@ function renderCalEventsVireo(arr, limit) {
       esc(ev.titulo) + '</span>';
   }
   if (arr.length > max) {
-    out += '<span class="ax-cal-more" onclick="event.stopPropagation();calOpenDay(this.parentElement, \'TODO\')">+' + (arr.length - max) + ' mais</span>';
+    out += '<span class="ax-cal-more" onclick="event.stopPropagation();calOpenDay(\'' + dDate + '\')">+' + (arr.length - max) + ' mais</span>';
   }
   return out;
 }
@@ -3173,30 +3180,37 @@ function calOpenDay(dateStr) {
     return key && key === dateStr;
   });
   var parts = dateStr.split('-');
-  var detailTitle = parts[2] + '/' + parts[1] + '/' + parts[0];
-  /* Build list of tasks for this day */
-  var listHTML = '';
+  var title = parts[2] + '/' + parts[1] + '/' + parts[0];
+
+  /* Mostra modal de detalhes em vez de alert bloqueante */
+  var modal = document.getElementById('confirm-modal');
+  var mTitle = document.getElementById('confirm-title');
+  var mMsg = document.getElementById('confirm-msg');
+  var mCancel = document.getElementById('confirm-cancel');
+  var mOk = document.getElementById('confirm-ok');
+
+  mTitle.textContent = title;
+  var listHTML = '<div class="ax-list ax-list--flush">';
   if (dayTasks.length === 0) {
-    listHTML = '<p style="color:var(--ax-text-subtle);font-size:var(--ax-text-sm);padding:var(--ax-space-3) 0;">Nenhuma atividade editorial nesta data.</p>';
+    listHTML += '<p style="color:var(--ax-text-subtle);font-size:var(--ax-text-sm);padding:8px 0;">Nenhuma atividade editorial nesta data.</p>';
   } else {
-    listHTML += '<div class="ax-list ax-list--flush">';
     for (var i = 0; i < dayTasks.length; i++) {
       var a = dayTasks[i], st = stageOf(a.stage);
       var isPost = !!a.dataPostagem;
-      var color = isPost ? 'var(--ax-accent)' : 'var(--ax-viz-violet)';
-      if (a.stage === 'concluido') color = 'var(--ax-viz-emerald)';
-      listHTML += '<div class="ax-list__row" style="cursor:pointer" onclick="openEditTask(' + a.id + ')">' +
-        '<span class="ax-list__leading"><i style="width:9px;height:9px;border-radius:3px;background:' + color + ';display:inline-block;"></i></span>' +
+      listHTML += '<div class="ax-list__row" style="cursor:pointer" onclick="openEditTask(' + a.id + ');closeConfirm();">' +
+        '<span class="ax-list__leading"><span class="ax-badge ax-badge--soft ax-badge--' + st.tone + ' ax-badge--pill" style="font-size:var(--ax-text-2xs);">' + esc(st.label) + '</span></span>' +
         '<span class="ax-list__content"><span class="ax-list__title">' + esc(a.titulo) + '</span>' +
-        '<span class="ax-list__meta">' + esc(a.descricao || '') + ' · ' + esc(st.label) + (isPost ? ' · Postagem' : ' · Vencimento') + '</span></span>' +
-        '<span class="ax-list__trailing"><span class="ax-badge ax-badge--soft ax-badge--' + st.tone + ' ax-badge--pill" style="font-size:var(--ax-text-2xs);">' + a.progress + '%</span></span>' +
+        '<span class="ax-list__meta">' + (isPost ? 'Postagem' : 'Vencimento') + ' · ' + a.progress + '%</span></span>' +
         '</div>';
     }
-    listHTML += '</div>';
   }
-  toast(detailTitle + ': ' + dayTasks.length + ' atividade(s)', 'info');
-  /* We'll show the detail in a custom alert/flow rather than a panel for simplicity */
-  alert(detailTitle + '\n\n' + dayTasks.map(function (t) { return '• ' + t.titulo + ' (' + (stageOf(t.stage).label) + ')'; }).join('\n') || 'Nenhuma atividade.');
+  listHTML += '</div>';
+  mMsg.innerHTML = listHTML;
+  mCancel.style.display = '';
+  mOk.style.display = 'none';
+  mOk.onclick = closeConfirm;
+  mCancel.onclick = closeConfirm;
+  openOverlay('confirm-modal');
 }
 
 function openNewTaskAtDate(dateStr) {
@@ -3286,9 +3300,10 @@ function renderAllFilters() {
   if (S.view === 'lista') renderLista();
 }
 function renderAll() {
-  renderDashboard();
-  renderLista();
-  renderCategorias();
+  if (S.view === 'dash') renderDashboard();
+  if (S.view === 'lista') renderLista();
+  if (S.view === 'editorial') renderCalendario();
+  if (S.view === 'categorias') renderCategorias();
   updatePageHead();
   updateNavBadges();
 }
@@ -3334,7 +3349,9 @@ function applyAccent(accentId) {
   root.style.setProperty('--ax-accent', a.color);
   root.style.setProperty('--ax-accent-strong', a.color);
   root.style.setProperty('--ax-focus-ring', a.color + '80');
-  saveCfg(loadCfg());
+  var s = loadCfg();
+  s.accent = accentId;
+  saveCfg(s);
 }
 
 window.setConfig = function(key, val) {
@@ -3582,8 +3599,27 @@ function init() {
 
   /* atalhos */
   document.addEventListener('keydown', function (e) {
+    /* Esc fecha modals */
+    if (e.key === 'Escape') {
+      var taskModal = document.getElementById('task-modal');
+      var catModal = document.getElementById('cat-modal');
+      var confirmModal = document.getElementById('confirm-modal');
+      var customizer = document.getElementById('ax-customizer');
+      if (customizer && customizer.classList.contains('is-open')) { closeCustomizer(); return; }
+      if (confirmModal && confirmModal.classList.contains('open')) { closeConfirm(); return; }
+      if (taskModal && taskModal.classList.contains('open')) { closeTaskModal(); return; }
+      if (catModal && catModal.classList.contains('open')) { closeCategoryModal(); return; }
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
+        e.target.blur(); return;
+      }
+      return;
+    }
+    /* Ctrl+Enter salva tarefa */
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      var tm = document.getElementById('task-modal');
+      if (tm && tm.classList.contains('open')) { e.preventDefault(); saveTask(); return; }
+    }
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
-      if (e.key === 'Escape') { e.target.blur(); }
       return;
     }
     if (e.key === '/') { e.preventDefault(); document.getElementById('header-search').focus(); }
@@ -4139,7 +4175,7 @@ function NPSApp() {
   const totalPages = Math.max(1, Math.ceil(tableData.length / PAGE_SIZE)); const pagedData = tableData.slice((currentPage-1)*PAGE_SIZE, currentPage*PAGE_SIZE);
 
   const handleBarClick = (d) => { if (d?.activePayload?.[0]?.payload?.mes) { const m = d.activePayload[0].payload.mes; setSelectedMonthInChart(prev => prev === m ? null : m); } };
-  const handleExport = (type) => { setExportMenuOpen(false); const dataToExport = type === 'all' ? data : stats.filtered; const csvRows = [['Mês','Contrato','Cliente','Unidade','Nota','Feedback','Data Resposta'], ...dataToExport.map(d => [d.mes, d.contratoExibicao, d.cliente, d.unidade, d.nota, d.feedback, d.data])]; const uri = "data:text/csv;charset=utf-8," + csvRows.map(e => e.join(",")).join("\n"); const link = document.createElement("a"); link.setAttribute("href", encodeURI(uri)); link.setAttribute("download", "Export_NPS_Makro.csv"); link.click(); };
+  const handleExport = (type) => { setExportMenuOpen(false); const dataToExport = type === 'all' ? data : stats.filtered; var escCSV = function(v) { var s = String(v||''); if (s.indexOf(',')!==-1 || s.indexOf('"')!==-1 || s.indexOf('\n')!==-1) s = '"' + s.replace(/"/g,'""') + '"'; return s; }; const csvRows = [['Mês','Contrato','Cliente','Unidade','Nota','Feedback','Data Resposta'], ...dataToExport.map(d => [d.mes, d.contratoExibicao, d.cliente, d.unidade, d.nota, d.feedback, d.data])]; const uri = "data:text/csv;charset=utf-8," + encodeURIComponent(csvRows.map(e => e.map(escCSV).join(",")).join("\n")); const link = document.createElement("a"); link.setAttribute("href", uri); link.setAttribute("download", "Export_NPS_Makro.csv"); link.click(); };
 
   if (view === 'loading') return <div className="flex h-full items-center justify-center pt-20"><div className="w-8 h-8 border-4 border-t-transparent rounded-full animate-spin" style={{borderColor:'var(--ax-accent)',borderTopColor:'transparent'}}></div></div>;
 
@@ -4315,6 +4351,26 @@ function NPSApp() {
     <div class="ax-customizer__foot">
       <button type="button" class="ax-btn" onclick="resetConfig()">Restaurar</button>
       <button type="button" class="ax-btn ax-btn--primary" onclick="closeCustomizer()">Concluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================== CONFIRM MODAL ================== -->
+<div class="ax-overlay" id="confirm-modal">
+  <div class="ax-modal ax-modal--sm" role="dialog" aria-modal="true" aria-label="Confirmação">
+    <div class="ax-modal__head">
+      <div class="ax-modal__head-main">
+        <div class="ax-modal__title" id="confirm-title"></div>
+      </div>
+      <button class="ax-icon-btn" onclick="closeConfirm()" aria-label="Fechar">
+        <svg class="ax-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="ax-modal__body" id="confirm-msg" style="gap:var(--ax-space-3);font-size:var(--ax-text-sm);color:var(--ax-text);"></div>
+    <div class="ax-modal__foot">
+      <span class="ax-header__spacer"></span>
+      <button class="ax-btn ax-btn--ghost" id="confirm-cancel" onclick="closeConfirm()">Cancelar</button>
+      <button class="ax-btn ax-btn--danger" id="confirm-ok">Confirmar</button>
     </div>
   </div>
 </div>
