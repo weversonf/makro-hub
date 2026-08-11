@@ -1449,10 +1449,10 @@ h1, h2, h3, h4, p { margin: 0; }
             </div>
           </div>
           <div class="ax-field">
-            <label class="ax-label" for="tmf-due">Vencimento</label>
+            <label class="ax-label" for="tmf-due">Deadline</label>
             <input type="date" class="ax-input" id="tmf-due">
           </div>
-          <div class="ax-field">
+          <div class="ax-field" id="tmf-post-wrap" style="display:none;">
             <label class="ax-label" for="tmf-post">Data de postagem</label>
             <input type="date" class="ax-input" id="tmf-post">
           </div>
@@ -2609,6 +2609,8 @@ function setProgressStep(val) {
 
 function renderCanaisTMP(selected) {
   document.getElementById('tm-canais-count').textContent = selected.length;
+  var postWrap = document.getElementById('tmf-post-wrap');
+  if (postWrap) postWrap.style.display = selected.length > 0 ? '' : 'none';
   var grid = document.getElementById('tm-canais-grid');
   var html = '';
   for (var i = 0; i < CANAIS.length; i++) {
@@ -2633,6 +2635,9 @@ function toggleCanalTMP(btn) {
   } else {
     btn.style.background = ''; btn.style.borderColor = ''; btn.style.color = c.color;
   }
+  /* Mostra data de postagem só se tiver canal selecionado */
+  var postWrap = document.getElementById('tmf-post-wrap');
+  if (postWrap) postWrap.style.display = getSelectedCanais().length > 0 ? '' : 'none';
 }
 function getSelectedCanais() {
   var chips = document.querySelectorAll('#tm-canais-grid .ax-chip');
