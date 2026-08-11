@@ -1003,50 +1003,19 @@ h1, h2, h3, h4, p { margin: 0; }
 </div>
 
 <script>
-/* Fallback: garante que a tela nunca trava e login sempre funciona */
+/* Fallback inline */
 (function(){
-  var protocol = window.location.protocol;
-  if (protocol === 'file:') {
+  if (window.location.protocol === 'file:') {
     document.getElementById('auth-gate').style.display = 'none';
     document.getElementById('app-view').classList.remove('hidden');
   } else {
-    /* Mostra tela de login em até 1s se JS principal demorar */
-    var shown = false;
-    function showLogin() {
-      if (shown) return;
-      shown = true;
+    setTimeout(function(){
       var al = document.getElementById('auth-loading');
-      if (al) al.style.display = 'none';
-      var am = document.getElementById('auth-main');
-      if (am) am.style.display = '';
-    }
-    /* Tenta rápido (JS principal deve esconder o loading antes) */
-    setTimeout(showLogin, 1000);
-    /* Garantia extra */
-    setTimeout(showLogin, 4000);
-
-    /* Botão de login inline - funciona mesmo se JS principal falhar */
-    document.addEventListener('DOMContentLoaded', function(){
-      var btn = document.getElementById('btn-google-login');
-      var err = document.getElementById('auth-error');
-      if (btn) {
-        btn.addEventListener('click', function(){
-          if (typeof firebase !== 'undefined' && firebase.auth) {
-            btn.classList.add('is-loading');
-            btn.disabled = true;
-            var auth = firebase.auth();
-            var provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithRedirect(provider).catch(function(e){
-              btn.classList.remove('is-loading');
-              btn.disabled = false;
-              if (err) { err.textContent = 'Erro: ' + e.message; err.classList.remove('hidden'); }
-            });
-          } else {
-            if (err) { err.textContent = 'Firebase não carregou. Recarregue a página.'; err.classList.remove('hidden'); }
-          }
-        });
+      if (al && al.style.display !== 'none') {
+        al.style.display = 'none';
+        document.getElementById('auth-main').style.display = '';
       }
-    });
+    }, 2500);
   }
 })();
 </script>
@@ -1587,7 +1556,6 @@ h1, h2, h3, h4, p { margin: 0; }
 /* ============================================================ */
 /* FIREBASE INIT                                                */
 /* ============================================================ */
-var IS_LOCAL = window.location.protocol === 'file:';
 var firebaseConfig = {
   apiKey: "AIzaSyCGemp_OA8savCmLZfX7Us0nmDpdbpv4N0",
   authDomain: "mytasks-saturday.firebaseapp.com",
@@ -3267,7 +3235,10 @@ function init() {
   /* auth gate */
   var authGate = document.getElementById('auth-gate');
   var authLoading = document.getElementById('auth-loading');
+  var authMain = document.getElementById('auth-main');
   var appView = document.getElementById('app-view');
+  var btnLogin = document.getElementById('btn-google-login');
+  var authError = document.getElementById('auth-error');
 
   if (!_auth) {
     authGate.style.display = 'none';
@@ -3276,6 +3247,13 @@ function init() {
     loadLocalFallback();
     return;
   }
+
+  btnLogin.addEventListener('click', function () {
+    _auth.signInWithPopup(_googleProvider).catch(function (e) {
+      authError.textContent = 'Erro: ' + e.message;
+      authError.classList.remove('hidden');
+    });
+  });
 
   _auth.onAuthStateChanged(function (user) {
     authLoading.style.display = 'none';
@@ -3289,20 +3267,10 @@ function init() {
       }
     } else {
       authGate.style.display = '';
-      var authMain = document.getElementById('auth-main');
-      if (authMain) authMain.style.display = '';
+      authMain.style.display = '';
       appView.classList.add('hidden');
     }
   });
-
-  try {
-    _auth.getRedirectResult().catch(function (e) {
-      if (e.code !== 'auth/redirect-cancelled-by-user') {
-        var authError = document.getElementById('auth-error');
-        if (authError) { authError.textContent = 'Erro no login: ' + e.message; authError.classList.remove('hidden'); }
-      }
-    });
-  } catch(ex) {}
 }
 
 document.addEventListener('DOMContentLoaded', init);
