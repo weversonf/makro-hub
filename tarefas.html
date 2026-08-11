@@ -2778,47 +2778,47 @@ function updateModalForEditorial() {
   var tabImagens = document.getElementById('tm-tab-imagens');
   var descField = document.getElementById('tmf-desc');
   var descLabel = document.querySelector('label[for="tmf-desc"]');
-  var vencField = document.getElementById('tmf-due').closest('.ax-field');
   var charCount = document.getElementById('tm-char-count');
   var modal = document.querySelector('.ax-modal');
 
   if (isEditorial) {
-    tabBtn.classList.remove('hidden');
+    if (tabBtn) tabBtn.classList.remove('hidden');
     if (tabImagens) tabImagens.classList.remove('hidden');
     if (tabChecklist) tabChecklist.style.display = 'none';
     if (S.tab === 'checklist') setTab('detalhes');
-
-    /* Modal mais largo e campo de texto amplo */
     if (modal) modal.style.maxWidth = '820px';
-    descField.style.minHeight = '260px';
-    descField.style.fontSize = 'var(--ax-text-md)';
-    descField.style.lineHeight = '1.7';
-    descField.placeholder = 'Escreva o conteúdo, legenda ou texto da publicação…';
-    if (descLabel) descLabel.textContent = 'Conteúdo / Legenda';
-    if (vencField) vencField.style.display = '';
 
-    if (!charCount) {
+    if (descField) {
+      descField.style.minHeight = '260px';
+      descField.style.fontSize = 'var(--ax-text-md)';
+      descField.style.lineHeight = '1.7';
+      descField.placeholder = 'Escreva o conteúdo, legenda ou texto da publicação…';
+      descField.oninput = function() {
+        var cc = document.getElementById('tm-char-count');
+        if (cc) cc.textContent = descField.value.length + ' caracteres';
+      };
+    }
+    if (descLabel) descLabel.textContent = 'Conteúdo / Legenda';
+
+    if (!charCount && descField) {
       charCount = document.createElement('div');
       charCount.id = 'tm-char-count';
       charCount.style.cssText = 'font-size:var(--ax-text-2xs);color:var(--ax-text-subtle);text-align:right;margin-top:4px;font-family:var(--ax-font-mono);';
       descField.parentNode.appendChild(charCount);
     }
-    charCount.textContent = descField.value.length + ' caracteres';
-
-    /* Atualiza contador ao digitar */
-    descField.oninput = function() {
-      document.getElementById('tm-char-count').textContent = descField.value.length + ' caracteres';
-    };
+    if (charCount && descField) charCount.textContent = descField.value.length + ' caracteres';
   } else {
-    tabBtn.classList.add('hidden');
+    if (tabBtn) tabBtn.classList.add('hidden');
     if (tabImagens) tabImagens.classList.remove('hidden');
     if (tabChecklist) tabChecklist.style.display = '';
     if (modal) modal.style.maxWidth = '720px';
-    descField.style.minHeight = '84px';
-    descField.style.fontSize = 'var(--ax-text-sm)';
-    descField.style.lineHeight = '1.55';
-    descField.placeholder = 'Detalhe o que precisa ser feito…';
-    descField.oninput = null;
+    if (descField) {
+      descField.style.minHeight = '84px';
+      descField.style.fontSize = 'var(--ax-text-sm)';
+      descField.style.lineHeight = '1.55';
+      descField.placeholder = 'Detalhe o que precisa ser feito…';
+      descField.oninput = null;
+    }
     if (descLabel) descLabel.textContent = 'Descrição';
     if (charCount) charCount.textContent = '';
   }
