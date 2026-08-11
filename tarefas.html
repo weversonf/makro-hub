@@ -1563,36 +1563,25 @@ var firebaseConfig = {
   messagingSenderId: "647554172397",
   appId: "1:647554172397:web:aac3ef00938ee7cd8f13e4"
 };
-var fb = null;
-var _auth = null;
-var _googleProvider = null;
+firebase.initializeApp(firebaseConfig);
+var _db = firebase.firestore();
+var _auth = firebase.auth();
+var _googleProvider = new firebase.auth.GoogleAuthProvider();
+_auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function (e) { console.warn('Auth persistence:', e); });
 
-try {
-  firebase.initializeApp(firebaseConfig);
-  var _db = firebase.firestore();
-  _auth = firebase.auth();
-  _googleProvider = new firebase.auth.GoogleAuthProvider();
-  _auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function (e) { console.warn('Auth persistence:', e); });
-
-  fb = {
-    db: _db,
-    collection: function (_, path) { return _db.collection(path); },
-    addDoc: function (collRef, data) { return collRef.add(data); },
-    getDocs: function (collRef) { return collRef.get(); },
-    updateDoc: function (docRef, data) { return docRef.update(data); },
-    deleteDoc: function (docRef) { return docRef.delete(); },
-    doc: function (_, path) { return _db.doc(path); },
-    onSnapshot: function (ref, cb) { return ref.onSnapshot(cb); },
-    query: function (ref) { return ref; },
-    auth: _auth,
-    googleProvider: _googleProvider
-  };
-} catch (e) {
-  console.warn('Firebase indisponível (local):', e.message);
-  fb = null;
-  _auth = null;
-  _googleProvider = null;
-}
+var fb = {
+  db: _db,
+  collection: function (_, path) { return _db.collection(path); },
+  addDoc: function (collRef, data) { return collRef.add(data); },
+  getDocs: function (collRef) { return collRef.get(); },
+  updateDoc: function (docRef, data) { return docRef.update(data); },
+  deleteDoc: function (docRef) { return docRef.delete(); },
+  doc: function (_, path) { return _db.doc(path); },
+  onSnapshot: function (ref, cb) { return ref.onSnapshot(cb); },
+  query: function (ref) { return ref; },
+  auth: _auth,
+  googleProvider: _googleProvider
+};
 
 function userPath(path) {
   var uid = _auth.currentUser ? _auth.currentUser.uid : null;
@@ -3238,14 +3227,6 @@ function init() {
   var appView = document.getElementById('app-view');
   var btnLogin = document.getElementById('btn-google-login');
   var authError = document.getElementById('auth-error');
-
-  if (!_auth) {
-    authGate.style.display = 'none';
-    appView.classList.remove('hidden');
-    window._tarefasInit = true;
-    loadLocalFallback();
-    return;
-  }
 
   btnLogin.addEventListener('click', function () {
     _auth.signInWithPopup(_googleProvider).catch(function (e) {
