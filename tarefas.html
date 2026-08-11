@@ -1410,6 +1410,7 @@ h1, h2, h3, h4, p { margin: 0; }
         <button class="ax-tabs__tab" data-tm-tab="progresso">Progresso</button>
         <button class="ax-tabs__tab" data-tm-tab="checklist">Checklist <span class="ax-tabs__badge" id="tm-checklist-count">0</span></button>
         <button class="ax-tabs__tab" data-tm-tab="canais" id="tm-tab-canais">Canais <span class="ax-tabs__badge" id="tm-canais-count">0</span></button>
+        <button class="ax-tabs__tab" data-tm-tab="imagens" id="tm-tab-imagens">Imagens <span class="ax-tabs__badge" id="tm-imagens-count">0</span></button>
       </div>
 
       <!-- tab: detalhes -->
@@ -1485,6 +1486,21 @@ h1, h2, h3, h4, p { margin: 0; }
       <div class="ax-tab-panel" data-tm-panel="canais" style="display:none;">
         <div class="ax-row ax-row--2" id="tm-canais-grid"></div>
       </div>
+
+      <!-- tab: imagens -->
+      <div class="ax-tab-panel" data-tm-panel="imagens" style="display:none;">
+        <div id="tm-imagens-drop" style="border:2px dashed var(--ax-border-strong);border-radius:var(--ax-radius-lg);padding:var(--ax-space-6);text-align:center;cursor:pointer;transition:border-color var(--ax-motion-fast);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:36px;height:36px;color:var(--ax-text-subtle);margin-bottom:8px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <p style="font-size:var(--ax-text-sm);color:var(--ax-text-muted);">Arraste imagens ou clique para upload</p>
+          <p style="font-size:var(--ax-text-xs);color:var(--ax-text-subtle);">PNG, JPG, GIF · Máx 5MB</p>
+          <input type="file" id="tm-imagens-input" accept="image/*" multiple style="display:none;">
+          <div id="tm-upload-progress" style="display:none;margin-top:var(--ax-space-3);">
+            <div class="ax-progress ax-progress--sm"><div class="ax-progress__track"><div class="ax-progress__fill" id="tm-upload-bar" style="width:0%"></div></div></div>
+            <span id="tm-upload-label" style="font-size:var(--ax-text-2xs);color:var(--ax-text-subtle);"></span>
+          </div>
+        </div>
+        <div id="tm-imagens-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:var(--ax-space-2);margin-top:var(--ax-space-3);"></div>
+      </div>
     </div>
 
     <div class="ax-modal__foot">
@@ -1551,6 +1567,7 @@ h1, h2, h3, h4, p { margin: 0; }
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 
 <script>
 /* ============================================================ */
@@ -1567,6 +1584,7 @@ var firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 var _db = firebase.firestore();
 var _auth = firebase.auth();
+var _storage = firebase.storage();
 var _googleProvider = new firebase.auth.GoogleAuthProvider();
 _auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function (e) { console.warn('Auth persistence:', e); });
 
@@ -1649,6 +1667,7 @@ var S = {
   showConcluidoKanban: false,
   editId: null,
   draftChecklist: [],
+  draftImages: [],
   tab: 'detalhes',
   _initDone: false
 };
@@ -2420,6 +2439,7 @@ function closeOverlay(id) {
 function openNewTask(stageId) {
   S.editId = null;
   S.draftChecklist = [];
+  S.draftImages = [];
   document.getElementById('tm-eyebrow').textContent = 'Nova tarefa';
   document.getElementById('tm-title').textContent = 'Criar tarefa';
   document.getElementById('tm-hero').style.display = 'none';
@@ -2445,6 +2465,7 @@ function openNewTask(stageId) {
   setProgressStep(0);
   renderChecklistTMP();
   renderCanaisTMP([]);
+  renderImagensTMP();
   updateCanaisTab();
   document.getElementById('tm-avatar').style.background = 'color-mix(in oklab,var(--ax-accent) 20%,transparent)';
   document.getElementById('tm-avatar').style.color = 'var(--ax-accent)';
@@ -2457,6 +2478,7 @@ function openEditTask(id) {
   if (!a) return;
   S.editId = id;
   S.draftChecklist = clone(a.idCheck || []);
+  S.draftImages = clone(a.imagens || []);
   var cat = catOf(a.categoria);
 
   /* hero overview */
@@ -2523,6 +2545,7 @@ function openEditTask(id) {
   setProgressStep(a.progress);
   renderChecklistTMP();
   renderCanaisTMP(a.canais || []);
+  renderImagensTMP();
   updateCanaisTab();
   openOverlay('task-modal');
 }
@@ -2682,6 +2705,62 @@ function removeCheckTMP(i) {
   renderChecklistTMP();
 }
 
+/* ============ IMAGENS ============ */
+function renderImagensTMP() {
+  var grid = document.getElementById('tm-imagens-grid');
+  var count = document.getElementById('tm-imagens-count');
+  count.textContent = S.draftImages.length;
+  var html = '';
+  for (var i = 0; i < S.draftImages.length; i++) {
+    var img = S.draftImages[i];
+    html += '<div style="position:relative;aspect-ratio:1;border-radius:var(--ax-radius-md);overflow:hidden;border:1px solid var(--ax-border);">' +
+      '<img src="' + (img.url || '') + '" style="width:100%;height:100%;object-fit:cover;" alt="">' +
+      '<button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="removeImage(' + i + ')" style="position:absolute;top:4px;right:4px;width:24px;height:24px;padding:0;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;font-size:14px;line-height:1;">×</button>' +
+      '</div>';
+  }
+  grid.innerHTML = html;
+}
+
+function removeImage(i) {
+  S.draftImages.splice(i, 1);
+  renderImagensTMP();
+}
+
+function uploadImages(files) {
+  if (!files || !files.length) return;
+  var uid = _auth.currentUser ? _auth.currentUser.uid : 'local';
+  var progress = document.getElementById('tm-upload-progress');
+  var bar = document.getElementById('tm-upload-bar');
+  var label = document.getElementById('tm-upload-label');
+
+  for (var i = 0; i < files.length; i++) {
+    (function(file) {
+      if (file.size > 5 * 1024 * 1024) { toast('Imagem ' + file.name + ' muito grande (máx 5MB)', 'error'); return; }
+      progress.style.display = '';
+      bar.style.width = '0%';
+      label.textContent = 'Enviando ' + file.name + '...';
+
+      var ref = _storage.ref('task-images/' + uid + '/' + Date.now() + '_' + file.name);
+      var task = ref.put(file);
+      task.on('state_changed',
+        function(snap) {
+          var pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+          bar.style.width = pct + '%';
+        },
+        function(err) { toast('Erro no upload: ' + err.message, 'error'); progress.style.display = 'none'; },
+        function() {
+          task.snapshot.ref.getDownloadURL().then(function(url) {
+            S.draftImages.push({ name: file.name, url: url, path: ref.fullPath });
+            renderImagensTMP();
+            progress.style.display = 'none';
+            toast('Imagem enviada: ' + file.name);
+          });
+        }
+      );
+    })(files[i]);
+  }
+}
+
 function saveTask() {
   var titulo = document.getElementById('tmf-titulo').value.trim();
   if (!titulo) { toast('Informe um título.', 'error'); return; }
@@ -2695,6 +2774,7 @@ function saveTask() {
     dataPostagem: document.getElementById('tmf-post').value || null,
     progress: parseInt(document.getElementById('tmf-progress-label').textContent, 10) || 0,
     idCheck: S.draftChecklist,
+    imagens: S.draftImages,
     canais: getSelectedCanais()
   };
   if (data.stage === 'concluido') data.progress = 100;
@@ -3260,6 +3340,19 @@ function init() {
   document.getElementById('tmf-cat').addEventListener('change', function () {
     updateCanaisTab();
   });
+
+  /* Imagens upload */
+  var imgDrop = document.getElementById('tm-imagens-drop');
+  var imgInput = document.getElementById('tm-imagens-input');
+  if (imgDrop) {
+    imgDrop.addEventListener('click', function () { imgInput.click(); });
+    imgDrop.addEventListener('dragover', function (e) { e.preventDefault(); imgDrop.style.borderColor = 'var(--ax-accent)'; });
+    imgDrop.addEventListener('dragleave', function () { imgDrop.style.borderColor = ''; });
+    imgDrop.addEventListener('drop', function (e) { e.preventDefault(); imgDrop.style.borderColor = ''; uploadImages(e.dataTransfer.files); });
+  }
+  if (imgInput) {
+    imgInput.addEventListener('change', function () { uploadImages(this.files); this.value = ''; });
+  }
   document.querySelectorAll('.ax-overlay').forEach(function (ov) {
     ov.addEventListener('click', function (e) { if (e.target === ov) ov.classList.remove('open'); });
   });
