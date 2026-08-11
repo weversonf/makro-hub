@@ -1538,6 +1538,7 @@ h1, h2, h3, h4, p { margin: 0; }
 /* ============================================================ */
 /* FIREBASE INIT                                                */
 /* ============================================================ */
+var IS_LOCAL = window.location.protocol === 'file:';
 var firebaseConfig = {
   apiKey: "AIzaSyCGemp_OA8savCmLZfX7Us0nmDpdbpv4N0",
   authDomain: "mytasks-saturday.firebaseapp.com",
@@ -1546,25 +1547,36 @@ var firebaseConfig = {
   messagingSenderId: "647554172397",
   appId: "1:647554172397:web:aac3ef00938ee7cd8f13e4"
 };
-firebase.initializeApp(firebaseConfig);
-var _db = firebase.firestore();
-var _auth = firebase.auth();
-var _googleProvider = new firebase.auth.GoogleAuthProvider();
-_auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function (e) { console.warn('Auth persistence:', e); });
+var fb = null;
+var _auth = null;
+var _googleProvider = null;
 
-var fb = {
-  db: _db,
-  collection: function (_, path) { return _db.collection(path); },
-  addDoc: function (collRef, data) { return collRef.add(data); },
-  getDocs: function (collRef) { return collRef.get(); },
-  updateDoc: function (docRef, data) { return docRef.update(data); },
-  deleteDoc: function (docRef) { return docRef.delete(); },
-  doc: function (_, path) { return _db.doc(path); },
-  onSnapshot: function (ref, cb) { return ref.onSnapshot(cb); },
-  query: function (ref) { return ref; },
-  auth: _auth,
-  googleProvider: _googleProvider
-};
+try {
+  firebase.initializeApp(firebaseConfig);
+  var _db = firebase.firestore();
+  _auth = firebase.auth();
+  _googleProvider = new firebase.auth.GoogleAuthProvider();
+  _auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function (e) { console.warn('Auth persistence:', e); });
+
+  fb = {
+    db: _db,
+    collection: function (_, path) { return _db.collection(path); },
+    addDoc: function (collRef, data) { return collRef.add(data); },
+    getDocs: function (collRef) { return collRef.get(); },
+    updateDoc: function (docRef, data) { return docRef.update(data); },
+    deleteDoc: function (docRef) { return docRef.delete(); },
+    doc: function (_, path) { return _db.doc(path); },
+    onSnapshot: function (ref, cb) { return ref.onSnapshot(cb); },
+    query: function (ref) { return ref; },
+    auth: _auth,
+    googleProvider: _googleProvider
+  };
+} catch (e) {
+  console.warn('Firebase indisponível (local):', e.message);
+  fb = null;
+  _auth = null;
+  _googleProvider = null;
+}
 
 function userPath(path) {
   var uid = _auth.currentUser ? _auth.currentUser.uid : null;
@@ -3176,6 +3188,15 @@ function init() {
   var btnLogin = document.getElementById('btn-google-login');
   var authError = document.getElementById('auth-error');
 
+  if (IS_LOCAL || !_auth) {
+    /* Local: pula auth direto */
+    authGate.style.display = 'none';
+    appView.classList.remove('hidden');
+    window._tarefasInit = true;
+    loadLocalFallback();
+    return;
+  }
+
   btnLogin.addEventListener('click', function () {
     btnLogin.classList.add('is-loading');
     _auth.signInWithPopup(_googleProvider).then(function () {
@@ -3196,14 +3217,6 @@ function init() {
       if (!window._tarefasInit) {
         window._tarefasInit = true;
         firebaseSync();
-      }
-    } else if (window.location.protocol === 'file:') {
-      /* Local: pula auth e carrega dados salvos */
-      authGate.style.display = 'none';
-      appView.classList.remove('hidden');
-      if (!window._tarefasInit) {
-        window._tarefasInit = true;
-        loadLocalFallback();
       }
     } else {
       authGate.style.display = '';
