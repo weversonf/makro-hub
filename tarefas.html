@@ -1946,23 +1946,41 @@ function loginWithGoogle() {
   window._googleLoginInProgress = true;
   if (btn) {
     btn.disabled = true;
+    btn.setAttribute('aria-busy', 'true');
     btn.style.opacity = '.65';
   }
-  showAuthError('');
-  _authPersistenceReady
-    .then(function () { return _auth.signInWithPopup(_googleProvider); })
+  showAuthError('Abrindo o login do Google...');
+
+  /* Importante: o popup precisa ser chamado diretamente dentro do clique.
+     Se ficar depois de um .then(), o navegador pode bloqueá-lo por perder
+     a ativação do usuário. */
+  var signInPromise;
+  try {
+    signInPromise = _auth.signInWithPopup(_googleProvider);
+  } catch (e) {
+    signInPromise = Promise.reject(e);
+  }
+  Promise.resolve(signInPromise)
     .then(function (result) {
       if (result && result.user) showAppForUser(result.user);
     })
     .catch(function (e) {
-      if (e && e.code === 'auth/popup-closed-by-user') return;
+      if (e && e.code === 'auth/popup-closed-by-user') {
+        showAuthError('A janela de login foi fechada. Clique novamente para tentar.');
+        return;
+      }
       console.error('Google login error:', e);
-      showLogin('Erro ao entrar com Google: ' + (e && e.message ? e.message : 'tente novamente.'));
+      var message = e && e.message ? e.message : 'tente novamente.';
+      if (e && e.code === 'auth/popup-blocked') {
+        message = 'O navegador bloqueou a janela do Google. Permita pop-ups para este site e tente novamente.';
+      }
+      showLogin('Erro ao entrar com Google: ' + message);
     })
     .then(function () {
       window._googleLoginInProgress = false;
       if (btn) {
         btn.disabled = false;
+        btn.removeAttribute('aria-busy');
         btn.style.opacity = '';
       }
     });
