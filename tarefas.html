@@ -1533,26 +1533,24 @@ h1, h2, h3, h4, p { margin: 0; }
           <label class="ax-label" for="tmf-desc">Descrição</label>
           <textarea class="ax-textarea" id="tmf-desc" placeholder="Detalhe o que precisa ser feito…"></textarea>
         </div>
-        <!-- Progresso inline com barra clicável -->
-        <div style="display:flex;align-items:center;gap:var(--ax-space-2);margin-bottom:var(--ax-space-2);">
+        <!-- Progresso inline -->
+        <div style="display:flex;align-items:center;gap:var(--ax-space-2);margin-bottom:var(--ax-space-3);">
           <span class="ax-label" style="white-space:nowrap;">Progresso</span>
-          <div class="ax-progress ax-progress--lg" style="flex:1;cursor:pointer;" id="tmf-progress-bar" onclick="progressClick(event)" title="Clique para ajustar o progresso">
+          <div class="ax-progress ax-progress--lg" style="flex:1;cursor:pointer;" id="tmf-progress-bar" onclick="progressClick(event)" title="Clique para ajustar">
             <div class="ax-progress__track"><div class="ax-progress__fill" id="tmf-progress-fill" style="width:0%;background:var(--ax-danger-500);"></div></div>
           </div>
           <span class="ax-num" id="tmf-progress-label" style="font-size:var(--ax-text-xs);min-width:32px;text-align:right;">0%</span>
-        </div>
-        <div style="display:flex;gap:4px;margin-bottom:var(--ax-space-3);flex-wrap:wrap;">
-          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(0)" style="font-size:var(--ax-text-2xs);padding:2px 6px;">0</button>
-          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(10)" style="font-size:var(--ax-text-2xs);padding:2px 6px;">10</button>
-          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(20)" style="font-size:var(--ax-text-2xs);padding:2px 6px;">20</button>
-          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(30)" style="font-size:var(--ax-text-2xs);padding:2px 6px;">30</button>
-          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(40)" style="font-size:var(--ax-text-2xs);padding:2px 6px;">40</button>
-          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(50)" style="font-size:var(--ax-text-2xs);padding:2px 6px;">50</button>
-          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(60)" style="font-size:var(--ax-text-2xs);padding:2px 6px;">60</button>
-          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(70)" style="font-size:var(--ax-text-2xs);padding:2px 6px;">70</button>
-          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(80)" style="font-size:var(--ax-text-2xs);padding:2px 6px;">80</button>
-          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(90)" style="font-size:var(--ax-text-2xs);padding:2px 6px;">90</button>
-          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(100)" style="font-size:var(--ax-text-2xs);padding:2px 6px;">100</button>
+          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(0)" style="font-size:var(--ax-text-2xs);padding:2px 5px;">0</button>
+          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(10)" style="font-size:var(--ax-text-2xs);padding:2px 5px;">10</button>
+          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(20)" style="font-size:var(--ax-text-2xs);padding:2px 5px;">20</button>
+          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(30)" style="font-size:var(--ax-text-2xs);padding:2px 5px;">30</button>
+          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(40)" style="font-size:var(--ax-text-2xs);padding:2px 5px;">40</button>
+          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(50)" style="font-size:var(--ax-text-2xs);padding:2px 5px;">50</button>
+          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(60)" style="font-size:var(--ax-text-2xs);padding:2px 5px;">60</button>
+          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(70)" style="font-size:var(--ax-text-2xs);padding:2px 5px;">70</button>
+          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(80)" style="font-size:var(--ax-text-2xs);padding:2px 5px;">80</button>
+          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(90)" style="font-size:var(--ax-text-2xs);padding:2px 5px;">90</button>
+          <button class="ax-btn ax-btn--ghost ax-btn--sm" onclick="setProgressStep(100)" style="font-size:var(--ax-text-2xs);padding:2px 5px;">100</button>
         </div>
         <div class="ax-row" style="grid-template-columns:repeat(3,1fr);">
           <div class="ax-field">
