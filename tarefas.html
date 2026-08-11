@@ -440,31 +440,15 @@ h1, h2, h3, h4, p { margin: 0; }
   .ax-col--4, .ax-col--6, .ax-col--8, .ax-col--9 { grid-column: span 12; }
 }
 @media (max-width: 768px) {
-  /* Mobile shell */
+  /* Mobile: só navbar inferior, sidebar oculta totalmente */
   .ax-shell { margin-left: 0 !important; }
   [data-ax-collapsed] .ax-shell { margin-left: 0 !important; }
-  .ax-sidebar {
-    transform: translateX(-100%);
-    transition: transform var(--ax-motion-med) var(--ax-ease-standard);
-    z-index: 70;
-  }
-  .ax-sidebar.ax-sidebar--open {
-    transform: translateX(0);
-    box-shadow: var(--ax-shadow-lg);
-  }
-  .ax-sidebar--open + .ax-sidebar__overlay {
-    display: block;
-  }
-  .ax-sidebar__overlay {
-    display: none;
-    position: fixed; inset: 0; z-index: 69;
-    background: var(--ax-backdrop);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-  }
+  .ax-sidebar { display: none !important; }
+  .ax-sidebar__overlay { display: none !important; }
+  .ax-nav-toggle { display: none; }
 
-  /* Header mobile */
-  .ax-header { padding: 0 10px; height: 52px; }
+  /* Header mobile compacto */
+  .ax-header { padding: 0 10px; height: 48px; }
   .ax-header__search { max-width: 160px; }
   .ax-header__search input { height: 36px; font-size: var(--ax-text-xs); }
 
@@ -1236,9 +1220,6 @@ h1, h2, h3, h4, p { margin: 0; }
         <button class="ax-icon-btn" id="btn-theme" aria-label="Alternar tema">
           <svg class="ax-icon" id="icon-theme" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"></svg>
         </button>
-        <button type="button" class="ax-icon-btn" id="ax-cog-btn" onclick="toggleCustomizer()" aria-label="Preferências" aria-expanded="false">
-          <svg class="ax-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        </button>
         <span class="ax-avatar ax-avatar--sm ax-avatar--squircle" style="background:color-mix(in oklab,var(--ax-viz-violet) 20%,transparent);color:var(--ax-viz-violet);font-weight:700;font-size:var(--ax-text-xs);">WS</span>
       </div>
     </header>
@@ -1451,17 +1432,25 @@ h1, h2, h3, h4, p { margin: 0; }
               <div class="ax-card__header">
                 <div>
                   <h2 class="ax-card__title">Aparência</h2>
-                  <p class="ax-card__subtitle">Tema claro ou escuro com persistência.</p>
+                  <p class="ax-card__subtitle">Tema e cor de destaque do aplicativo.</p>
                 </div>
               </div>
               <div class="ax-card__body">
-                <div class="ax-pills">
-                  <button class="ax-pill" id="cfg-theme-light">
-                    <span class="dot" style="background:var(--ax-text-strong)"></span> Claro
-                  </button>
-                  <button class="ax-pill" id="cfg-theme-dark">
-                    <span class="dot" style="background:var(--ax-text-strong)"></span> Escuro
-                  </button>
+                <div class="ax-field">
+                  <label class="ax-label">Tema</label>
+                  <div class="ax-pills">
+                    <button class="ax-pill" id="cfg-theme-light">
+                      <span class="dot" style="background:var(--ax-text-strong)"></span> Claro
+                    </button>
+                    <button class="ax-pill" id="cfg-theme-dark">
+                      <span class="dot" style="background:var(--ax-text-strong)"></span> Escuro
+                    </button>
+                  </div>
+                </div>
+                <div style="height:var(--ax-space-3);"></div>
+                <div class="ax-field">
+                  <label class="ax-label">Cor de destaque</label>
+                  <div class="ax-swatch-grid" id="cfg-accent"></div>
                 </div>
               </div>
             </section>
@@ -3035,6 +3024,8 @@ function renderConfig() {
   var D = document.getElementById('cfg-theme-dark');
   L.classList.toggle('is-active', th !== 'dark');
   D.classList.toggle('is-active', th === 'dark');
+  buildAccentSwatches();
+  syncCfgUI();
 }
 function exportBackup() {
   var payload = { activities: S.activities, categories: S.categories, exportedAt: new Date().toISOString() };
@@ -3534,28 +3525,12 @@ function init() {
     b.addEventListener('click', function () { changeView(b.getAttribute('data-view')); });
   });
   document.getElementById('btn-sidebar').addEventListener('click', function () {
-    var isMobile = window.innerWidth <= 768;
-    if (isMobile) {
-      toggleMobileSidebar();
-      return;
-    }
     var D = document.documentElement;
     if (D.hasAttribute('data-ax-collapsed')) D.removeAttribute('data-ax-collapsed');
     else D.setAttribute('data-ax-collapsed', '');
     try { localStorage.setItem('ax:collapsed', D.hasAttribute('data-ax-collapsed') ? '1' : '0'); } catch (e) {}
   });
 
-  /* Fecha sidebar ao clicar em nav no mobile */
-  document.querySelectorAll('.is-nav').forEach(function(b) {
-    b.addEventListener('click', function() {
-      if (window.innerWidth <= 768) closeMobileSidebar();
-    });
-  });
-
-  document.getElementById('brand-home').addEventListener('click', function () {
-    changeView('dash');
-    if (window.innerWidth <= 768) closeMobileSidebar();
-  });
   document.getElementById('btn-theme').addEventListener('click', toggleTheme);
   document.getElementById('btn-fab').addEventListener('click', function () { openNewTask(); });
   document.getElementById('header-search').addEventListener('input', function (e) {
@@ -4352,39 +4327,6 @@ function NPSApp() {
 <button class="ax-fab" id="btn-fab" aria-label="Nova tarefa" title="Nova tarefa">
   <svg class="ax-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>
 </button>
-
-<!-- ================== CUSTOMIZER ================== -->
-<div class="ax-customizer" id="ax-customizer" aria-hidden="true">
-  <button class="ax-customizer__backdrop" onclick="closeCustomizer()" tabindex="-1" aria-label="Fechar"></button>
-  <div class="ax-customizer__panel" role="dialog" aria-modal="true" aria-label="Preferências">
-    <div class="ax-customizer__head">
-      <div class="ax-customizer__head-text">
-        <div class="ax-customizer__title">Preferências</div>
-        <p class="ax-customizer__sub">Personalize a aparência do aplicativo</p>
-      </div>
-      <button type="button" class="ax-icon-btn" onclick="closeCustomizer()" aria-label="Fechar">
-        <svg class="ax-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" width="20" height="20"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>
-      </button>
-    </div>
-    <div class="ax-customizer__body">
-      <div class="ax-customizer__section">
-        <div class="ax-customizer__label">Tema</div>
-        <div class="ax-segmented" id="cfg-theme">
-          <button class="ax-segmented__btn is-active" data-val="dark" onclick="setConfig('theme','dark')">Escuro</button>
-          <button class="ax-segmented__btn" data-val="light" onclick="setConfig('theme','light')">Claro</button>
-        </div>
-      </div>
-      <div class="ax-customizer__section">
-        <div class="ax-customizer__label">Cor de destaque</div>
-        <div class="ax-swatch-grid" id="cfg-accent"></div>
-      </div>
-    </div>
-    <div class="ax-customizer__foot">
-      <button type="button" class="ax-btn" onclick="resetConfig()">Restaurar</button>
-      <button type="button" class="ax-btn ax-btn--primary" onclick="closeCustomizer()">Concluir</button>
-    </div>
-  </div>
-</div>
 
 <!-- ================== CONFIRM MODAL ================== -->
 <div class="ax-overlay" id="confirm-modal">
