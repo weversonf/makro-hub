@@ -3869,7 +3869,7 @@ function BancoHorasLocal() {
 
 <script type="text/babel">
 /* ============ NPS DASHBOARD (completo - igual Makro Hub) ============ */
-const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine, LabelList } = window.Recharts || {};
+const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine, LabelList, ComposedChart, Line, Legend } = window.Recharts || {};
 
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw68DmuS_sDfZ2ozpG5bX3JQITYO2_nFdXwe9lPFD7rPE0wfxpSjV6uvxmsp0fOyHH1/exec';
 const COLORS = { critica: '#EF4136', aperfeicoamento: '#FDB913', qualidade: '#56C174', excelencia: '#00A650' };
@@ -4083,19 +4083,27 @@ function NPSApp() {
         <PromoterBar p={stats.p} neutros={stats.neutros} det={stats.det} total={stats.total}/>
 
         {/* CHART */}
-        <div className="p-8 rounded-[40px] h-[480px]" style={{background:'var(--ax-surface-subtle)',border:'1px solid var(--ax-border)'}}>
+        <div className="p-8 rounded-[40px]" style={{minHeight:520,background:'var(--ax-surface-subtle)',border:'1px solid var(--ax-border)'}}>
           <div className="mb-4 flex justify-between items-center flex-wrap gap-2">
             <div><h4 className="text-xs font-bold uppercase opacity-40">Série Histórica NPS</h4>{!selectedMonthInChart && <p className="text-[10px] opacity-30 mt-1">Clique na barra para filtrar</p>}{selectedMonthInChart && <p className="text-[10px] font-bold mt-1" style={{color:'var(--ax-danger-500)'}}>Filtrando: <strong>{selectedMonthInChart}</strong></p>}</div>
             <div className="flex gap-4 flex-wrap">{[{c:COLORS.excelencia,l:'EXCELÊNCIA ≥75'},{c:COLORS.qualidade,l:'QUALIDADE ≥50'},{c:COLORS.aperfeicoamento,l:'APERFEIÇOAMENTO ≥0'},{c:COLORS.critica,l:'CRÍTICO <0'}].map(({c,l})=><div key={l} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{background:c}}/><span className="text-[8px] font-bold opacity-40">{l}</span></div>)}</div>
           </div>
           {monthlyNpsData.length > 0 && window.Recharts && (
             <ResponsiveContainer width="100%" height="85%">
-              <BarChart key={JSON.stringify(filters)} data={monthlyNpsData} onClick={handleBarClick} style={{cursor:'pointer'}}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--ax-border)"/><XAxis dataKey="mes" stroke="var(--ax-text-subtle)" fontSize={10}/><YAxis stroke="var(--ax-text-subtle)" fontSize={10} domain={[-100,100]} ticks={[-100,-50,0,50,75,100]}/>
+              <ComposedChart key={JSON.stringify(filters)} data={monthlyNpsData} onClick={handleBarClick} style={{cursor:'pointer'}}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--ax-border)"/>
+                <XAxis dataKey="mes" stroke="var(--ax-text-subtle)" fontSize={10}/>
+                <YAxis yAxisId="left" stroke="var(--ax-text-subtle)" fontSize={10} label={{value:'Respostas',angle:-90,position:'insideLeft',style:{fontSize:10,fill:'var(--ax-text-subtle)'}}}/>
+                <YAxis yAxisId="right" orientation="right" stroke="var(--ax-accent)" fontSize={10} domain={[-100,100]} label={{value:'NPS Score',angle:90,position:'insideRight',style:{fontSize:10,fill:'var(--ax-accent)'}}}/>
                 <Tooltip content={<CustomBarTooltip/>} cursor={{fill:'var(--ax-surface-subtle)'}}/>
-                <ReferenceLine y={0} stroke="var(--ax-border)"/><ReferenceLine y={50} stroke={COLORS.qualidade+'50'}/><ReferenceLine y={75} stroke={COLORS.excelencia+'50'}/>
-                <Bar dataKey="score" radius={[8,8,0,0]}>{monthlyNpsData.map((e,i)=><Cell key={i} fill={getNPSColor(e.score)} fillOpacity={selectedMonthInChart&&selectedMonthInChart!==e.mes?0.3:1} stroke={selectedMonthInChart===e.mes?'var(--ax-text-strong)':'none'} strokeWidth={2}/>)}<LabelList dataKey="score" position="top" fill="var(--ax-text-muted)" fontSize={10} fontWeight="bold"/></Bar>
-              </BarChart>
+                <Legend wrapperStyle={{fontSize:11,color:'var(--ax-text-muted)'}}/>
+                <Bar yAxisId="left" dataKey="p" name="Promotores" stackId="a" fill={COLORS.excelencia} radius={[0,0,0,0]}/>
+                <Bar yAxisId="left" dataKey="neutros" name="Neutros" stackId="a" fill={COLORS.aperfeicoamento}/>
+                <Bar yAxisId="left" dataKey="det" name="Detratores" stackId="a" fill={COLORS.critica} radius={[8,8,0,0]}/>
+                <Line yAxisId="right" type="monotone" dataKey="score" name="NPS" stroke="var(--ax-accent)" strokeWidth={3} dot={{fill:'var(--ax-accent)',r:4}} activeDot={{r:6}}>
+                  <LabelList dataKey="score" position="top" fill="var(--ax-accent)" fontSize={10} fontWeight="bold"/>
+                </Line>
+              </ComposedChart>
             </ResponsiveContainer>
           )}
           {(!monthlyNpsData.length || !window.Recharts) && <div className="flex items-center justify-center h-full opacity-30 text-sm">Sem dados de gráfico</div>}
