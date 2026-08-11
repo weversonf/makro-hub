@@ -1960,7 +1960,7 @@ function renderDashboard() {
   var exec = dashActs.filter(function (a) { return a.stage === 'execucao'; }).length;
   var rate = total ? Math.round(done / dashActs.length * 100) : 0;
   var atrasadas = 0;
-  for (var i = 0; i < dashActs.length; i++) if (isOverdue(dashActs[i])) atrasadas++;}
+  for (var i = 0; i < dashActs.length; i++) if (isOverdue(dashActs[i])) atrasadas++;
 
   function stat(icon, iconColor, num, label, delta) {
     return '<div class="ax-card ax-col--3" role="region">' +
