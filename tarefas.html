@@ -707,7 +707,7 @@ h1, h2, h3, h4, p { margin: 0; }
 }
 .ax-overlay.open { opacity: 1; pointer-events: auto; }
 .ax-modal {
-  width: 100%; max-width: 680px; max-height: calc(100vh - 40px);
+  width: 100%; max-width: 720px; max-height: calc(100vh - 40px);
   background: var(--ax-surface); border: 1px solid var(--ax-border); border-radius: var(--ax-radius-xl);
   box-shadow: var(--ax-shadow-lg); display: flex; flex-direction: column; overflow: hidden;
   transform: translateY(10px) scale(.985); transition: transform var(--ax-motion-med) var(--ax-ease-standard);
@@ -721,8 +721,9 @@ h1, h2, h3, h4, p { margin: 0; }
 .ax-modal__body { padding: var(--ax-space-5); overflow-y: auto; display: flex; flex-direction: column; gap: var(--ax-space-5); }
 .ax-modal__foot { padding: var(--ax-space-4) var(--ax-space-5); border-top: 1px solid var(--ax-border); display: flex; gap: 9px; align-items: center; }
 
-.ax-hero { display: flex; gap: var(--ax-space-5); align-items: center; flex-wrap: wrap; }
+.ax-hero { display: flex; gap: var(--ax-space-5); align-items: flex-start; flex-wrap: wrap; }
 .ax-hero__main { flex: 1 1 280px; min-width: 0; }
+.ax-hero__side { flex: none; min-width: 100px; }
 .ax-hero__title-row { display: flex; align-items: center; gap: var(--ax-space-2); flex-wrap: wrap; }
 .ax-hero__title { font-family: var(--ax-font-display); font-size: var(--ax-text-xl); font-weight: 700; color: var(--ax-text-strong); }
 .ax-hero__desc { margin-top: 6px; color: var(--ax-text-muted); font-size: var(--ax-text-sm); line-height: 1.6; max-width: 60ch; }
@@ -1401,7 +1402,7 @@ h1, h2, h3, h4, p { margin: 0; }
           <p class="ax-hero__desc" id="tm-hero-desc"></p>
           <div class="ax-hero__meta" id="tm-hero-meta"></div>
         </div>
-        <div class="ax-ring" id="tm-hero-ring"></div>
+        <div class="ax-hero__side" id="tm-hero-side"></div>
       </div>
 
       <div class="ax-tabs" id="tm-tabs" style="display:none;border-radius:var(--ax-radius-md);border:1px solid var(--ax-border);">
@@ -2477,11 +2478,23 @@ function openEditTask(id) {
     '<span class="item">' + ico('clock', 14) + '<span>Criada ' + fmtDate(a.criadoEm) + '</span></span>' +
     (a.dataPostagem ? '<span class="item">' + ico('send', 14) + '<span>Post ' + fmtDate(a.dataPostagem) + '</span></span>' : '');
 
-  var R = 15.5, C = 2 * Math.PI * R;
-  var off = C * (1 - a.progress / 100);
-  document.getElementById('tm-hero-ring').innerHTML =
-    '<svg viewBox="0 0 36 36" width="92" height="92"><circle cx="18" cy="18" r="' + R + '" fill="none" stroke="var(--ax-surface-2)" stroke-width="3"/><circle cx="18" cy="18" r="' + R + '" fill="none" stroke="' + progColor(a.progress) + '" stroke-width="3" stroke-linecap="round" stroke-dasharray="' + C + '" stroke-dashoffset="' + off + '"/></svg>' +
-    '<div class="ax-ring__val"><span class="ax-ring__num">' + a.progress + '%</span><span class="ax-ring__lbl">Progresso</span></div>';
+  /* painel lateral no hero */
+  var side = document.getElementById('tm-hero-side');
+  var isEd = a.categoria === 1;
+  if (isEd) {
+    side.innerHTML = '<div style="text-align:right;display:flex;flex-direction:column;gap:var(--ax-space-2);">' +
+      '<span class="ax-badge ax-badge--soft ax-badge--accent ax-badge--pill" style="font-size:var(--ax-text-xs);">' + (a.dataPostagem ? '📅 Postagem' : '📋 Editorial') + '</span>' +
+      '<span class="ax-num" style="font-size:var(--ax-text-xs);color:var(--ax-text-subtle);">' + (a.canais || []).length + ' canais</span>' +
+      '<span class="ax-num" style="font-size:var(--ax-text-xs);color:var(--ax-text-subtle);">' + fmtDate(a.dataPostagem || a.dataVencimento) + '</span>' +
+      '</div>';
+  } else {
+    var sc = stageOf(a.stage);
+    side.innerHTML = '<div style="text-align:right;display:flex;flex-direction:column;gap:var(--ax-space-2);">' +
+      '<span class="ax-badge ax-badge--soft ax-badge--' + sc.tone + ' ax-badge--pill">' + esc(sc.label) + '</span>' +
+      '<span class="ax-num" style="font-size:var(--ax-text-lg);font-weight:700;color:var(--ax-text-strong);">' + a.progress + '%</span>' +
+      '<span style="font-size:var(--ax-text-xs);color:var(--ax-text-subtle);">' + fmtDate(a.dataVencimento) + '</span>' +
+      '</div>';
+  }
 
   document.getElementById('tmf-titulo').value = a.titulo;
   document.getElementById('tmf-desc').value = a.descricao || '';
@@ -2515,15 +2528,55 @@ function openEditTask(id) {
 }
 
 function updateCanaisTab() {
+  updateModalForEditorial();
+}
+
+function updateModalForEditorial() {
   var catId = Number(document.getElementById('tmf-cat').value);
-  var tabBtn = document.getElementById('tm-tab-canais');
-  var panel = document.querySelector('[data-tm-panel="canais"]');
   var isEditorial = catId === 1;
+  var tabBtn = document.getElementById('tm-tab-canais');
+  var tabProgresso = document.querySelector('[data-tm-tab="progresso"]');
+  var tabChecklist = document.querySelector('[data-tm-tab="checklist"]');
+  var panel = document.querySelector('[data-tm-panel="canais"]');
+  var descField = document.getElementById('tmf-desc');
+  var descLabel = document.querySelector('label[for="tmf-desc"]');
+  var vencField = document.getElementById('tmf-due').closest('.ax-field');
+  var charCount = document.getElementById('tm-char-count');
+
   if (isEditorial) {
+    /* Mostra Canais, esconde Progresso e Checklist */
     tabBtn.classList.remove('hidden');
+    if (tabProgresso) tabProgresso.style.display = 'none';
+    if (tabChecklist) tabChecklist.style.display = 'none';
+    if (S.tab === 'progresso' || S.tab === 'checklist') setTab('detalhes');
+
+    /* Campo de texto maior para conteúdo editorial */
+    descField.style.minHeight = '200px';
+    descField.placeholder = 'Escreva o conteúdo, legenda ou texto da publicação…';
+    if (descLabel) descLabel.textContent = 'Conteúdo / Legenda';
+
+    /* Mostra data de postagem com destaque */
+    if (vencField) vencField.style.display = '';
+    var postField = document.getElementById('tmf-post').closest('.ax-field');
+    if (postField) postField.style.display = '';
+
+    /* Contador de caracteres */
+    if (!charCount) {
+      charCount = document.createElement('div');
+      charCount.id = 'tm-char-count';
+      charCount.style.cssText = 'font-size:var(--ax-text-2xs);color:var(--ax-text-subtle);text-align:right;margin-top:4px;';
+      descField.parentNode.appendChild(charCount);
+    }
+    charCount.textContent = descField.value.length + ' caracteres';
   } else {
+    /* Restaura layout de projeto */
     tabBtn.classList.add('hidden');
-    if (S.tab === 'canais') setTab('detalhes');
+    if (tabProgresso) tabProgresso.style.display = '';
+    if (tabChecklist) tabChecklist.style.display = '';
+    descField.style.minHeight = '84px';
+    descField.placeholder = 'Detalhe o que precisa ser feito…';
+    if (descLabel) descLabel.textContent = 'Descrição';
+    if (charCount) charCount.textContent = '';
   }
 }
 
