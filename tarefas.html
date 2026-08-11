@@ -1997,44 +1997,90 @@ function renderDashboard() {
              stat('<path d="M9 11l3 3l8 -8"/>', 'var(--ax-viz-emerald)', done, 'Concluídas', 'tarefas fechadas') +
              stat(ICONS.chart, 'var(--ax-viz-violet)', rate + '%', 'Taxa de conclusão', atrasadas ? '<span style="color:var(--ax-danger-500)">' + atrasadas + ' atrasadas</span>' : 'tudo em dia ✓');
 
-  /* throughput - 6 últimas semanas */
-  var weeks = [];
+  /* throughput - 6 últimas semanas com nomes reais */
+  var weekNames = [];
   for (var w = 5; w >= 0; w--) {
-    var s = addDaysISO(todayISO(), -w * 7);
-    var e = addDaysISO(todayISO(), -(w - 1) * 7 + 1);
+    var ws = new Date();
+    ws.setDate(ws.getDate() - w * 7);
+    var we = new Date(ws);
+    we.setDate(we.getDate() + 6);
+    var s = ws.getFullYear() + '-' + String(ws.getMonth() + 1).padStart(2, '0') + '-' + String(ws.getDate()).padStart(2, '0');
+    var e = we.getFullYear() + '-' + String(we.getMonth() + 1).padStart(2, '0') + '-' + String(we.getDate()).padStart(2, '0');
     var created = 0, doneW = 0;
     for (var k = 0; k < dashActs.length; k++) {
       var a = dashActs[k];
-      if (a.criadoEm && a.criadoEm >= s && a.criadoEm < e) created++;
-      if (a.concluidoEm && a.concluidoEm >= s && a.concluidoEm < e) doneW++;
-      if (a.stage === 'concluido' && !a.concluidoEm && a.dataVencimento && a.dataVencimento >= s && a.dataVencimento < e) doneW++;
+      if (a.criadoEm && a.criadoEm >= s && a.criadoEm <= e) created++;
+      if (a.concluidoEm && a.concluidoEm >= s && a.concluidoEm <= e) doneW++;
+      if (a.stage === 'concluido' && !a.concluidoEm && a.dataVencimento && a.dataVencimento >= s && a.dataVencimento <= e) doneW++;
     }
-    weeks.push({ label: 'S-' + (6 - w), created: created, done: doneW });
+    var shortLabel = String(ws.getDate()) + '/' + String(ws.getMonth() + 1);
+    weekNames.push({ label: shortLabel, created: created, done: doneW, net: created - doneW });
   }
-  var maxW = 1;
-  for (var m = 0; m < weeks.length; m++) maxW = Math.max(maxW, weeks[m].created, weeks[m].done);
+  var maxV = 1;
+  for (var mn = 0; mn < weekNames.length; mn++) maxV = Math.max(maxV, weekNames[mn].created, weekNames[mn].done);
 
-  var sparkHTML = '<div class="ax-sparkbar">';
-  for (var wk = 0; wk < weeks.length; wk++) {
-    var hc = Math.round(weeks[wk].created / maxW * 100);
-    var hd = Math.round(weeks[wk].done / maxW * 100);
-    sparkHTML += '<div class="group"><div class="spark-row">' +
-      '<div class="spark-bar spark-bar--created" style="height:' + Math.max(3, hc) + '%" title="Criadas: ' + weeks[wk].created + '"></div>' +
-      '<div class="spark-bar spark-bar--done" style="height:' + Math.max(3, hd) + '%" title="Concluídas: ' + weeks[wk].done + '"></div>' +
-      '</div><div class="spark-lbl">' + weeks[wk].label + '</div></div>';
+  var sparkHTML = '<div style="display:flex;flex-direction:column;gap:10px;">';
+  for (var wk = 0; wk < weekNames.length; wk++) {
+    var wd = weekNames[wk];
+    var cw = maxV ? Math.round(wd.created / maxV * 100) : 0;
+    var dw = maxV ? Math.round(wd.done / maxV * 100) : 0;
+    var netColor = wd.net >= 0 ? 'var(--ax-danger-500)' : 'var(--ax-viz-emerald)';
+    var netLabel = wd.net === 0 ? '=' : (wd.net > 0 ? '+' + wd.net : String(wd.net));
+    sparkHTML += '<div style="display:flex;align-items:center;gap:10px;">' +
+      '<span style="width:40px;font-family:var(--ax-font-mono);font-size:var(--ax-text-xs);color:var(--ax-text-muted);font-weight:600;">' + wd.label + '</span>' +
+      '<div style="flex:1;display:flex;flex-direction:column;gap:3px;">' +
+        '<div style="display:flex;align-items:center;gap:6px;">' +
+          '<span style="width:48px;font-size:var(--ax-text-2xs);color:var(--ax-viz-cyan);font-weight:600;">CRIADAS</span>' +
+          '<div style="flex:1;height:18px;background:var(--ax-surface-subtle);border-radius:var(--ax-radius-sm);overflow:hidden;">' +
+            '<div style="height:100%;width:' + Math.max(cw, wd.created ? 4 : 0) + '%;background:var(--ax-viz-cyan);border-radius:var(--ax-radius-sm);transition:width .4s var(--ax-ease-standard);display:flex;align-items:center;justify-content:flex-end;padding-right:6px;">' +
+              (wd.created > 0 ? '<span style="font-family:var(--ax-font-mono);font-size:var(--ax-text-2xs);color:#fff;font-weight:600;">' + wd.created + '</span>' : '') +
+            '</div></div></div>' +
+        '<div style="display:flex;align-items:center;gap:6px;">' +
+          '<span style="width:48px;font-size:var(--ax-text-2xs);color:var(--ax-viz-emerald);font-weight:600;">CONCLUÍDAS</span>' +
+          '<div style="flex:1;height:18px;background:var(--ax-surface-subtle);border-radius:var(--ax-radius-sm);overflow:hidden;">' +
+            '<div style="height:100%;width:' + Math.max(dw, wd.done ? 4 : 0) + '%;background:var(--ax-viz-emerald);border-radius:var(--ax-radius-sm);transition:width .4s var(--ax-ease-standard);display:flex;align-items:center;justify-content:flex-end;padding-right:6px;">' +
+              (wd.done > 0 ? '<span style="font-family:var(--ax-font-mono);font-size:var(--ax-text-2xs);color:#fff;font-weight:600;">' + wd.done + '</span>' : '') +
+            '</div></div></div></div>' +
+      '<span class="ax-num" style="width:30px;text-align:right;font-family:var(--ax-font-mono);font-size:var(--ax-text-xs);font-weight:700;color:' + netColor + ';' + (wd.net === 0 ? 'opacity:.4' : '') + '">' + netLabel + '</span>' +
+      '</div>';
   }
   sparkHTML += '</div>';
 
-  var legend = '<div class="ax-legend"><span class="key"><span class="sw" style="background:var(--ax-viz-cyan)"></span> Criadas</span><span class="key"><span class="sw" style="background:var(--ax-viz-emerald)"></span> Concluídas</span></div>';
+  var legend = '<div class="ax-legend"><span class="key"><span class="sw" style="background:var(--ax-viz-cyan)"></span> Criadas</span><span class="key"><span class="sw" style="background:var(--ax-viz-emerald)"></span> Concluídas</span><span class="key" style="color:var(--ax-text-subtle);font-size:var(--ax-text-2xs);">Saldo positivo = mais entrou do que saiu</span></div>';
 
   /* status distribution */
-  var distHTML = '<div class="ax-dist-share">';
+  var statusData = [];
   for (var d = 0; d < STAGES.length; d++) {
     var c = dashActs.filter(function (a) { return a.stage === STAGES[d].id; }).length;
-    var pct = dashActs.length ? Math.round(c / dashActs.length * 100) : 0;
-    distHTML += '<div class="ax-dist-row"><span class="name">' + esc(STAGES[d].label) + '</span>' +
-      '<span class="bar"><span class="fill" style="width:' + pct + '%;background:' + STAGES[d].color + '"></span></span>' +
-      '<span class="val">' + c + '</span></div>';
+    statusData.push({ label: STAGES[d].label, color: STAGES[d].color, count: c, tone: STAGES[d].tone });
+  }
+  statusData = statusData.filter(function (x) { return x.count > 0; });
+  if (statusData.length === 0) statusData = [{ label: 'Sem dados', color: 'var(--ax-text-subtle)', count: 1, tone: 'neutral' }];
+  var totalStatus = statusData.reduce(function (s, x) { return s + x.count; }, 0);
+
+  /* Doughnut chart SVG */
+  var R = 70, C = 2 * Math.PI * R, gap = 3;
+  var doughnutSvg = '<div style="position:relative;width:180px;height:180px;margin:0 auto 12px;"><svg viewBox="0 0 180 180" width="180" height="180" style="transform:rotate(-90deg)">';
+  var currentAngle = 0;
+  for (var ds = 0; ds < statusData.length; ds++) {
+    var slice = statusData[ds];
+    var portion = slice.count / totalStatus;
+    var dashLen = portion * C - gap;
+    var offset = C - currentAngle * C / (2 * Math.PI);
+    doughnutSvg += '<circle cx="90" cy="90" r="' + R + '" fill="none" stroke="' + slice.color + '" stroke-width="24" stroke-dasharray="' + Math.max(0, dashLen) + ' ' + (C - dashLen) + '" stroke-dashoffset="' + offset + '" stroke-linecap="butt" opacity=".9"/>';
+    currentAngle += portion * 2 * Math.PI;
+  }
+  doughnutSvg += '</svg><div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;">' +
+    '<span style="font-family:var(--ax-font-display);font-size:var(--ax-text-xl);font-weight:700;color:var(--ax-text-strong);">' + totalStatus + '</span>' +
+    '<span style="font-size:var(--ax-text-2xs);color:var(--ax-text-subtle);">tarefas</span></div></div>';
+
+  /* Legend below */
+  var distHTML = '<div style="display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:center;">';
+  for (var d = 0; d < statusData.length; d++) {
+    var sd = statusData[d];
+    distHTML += '<span style="display:inline-flex;align-items:center;gap:5px;font-size:var(--ax-text-xs);color:var(--ax-text-muted);">' +
+      '<span style="width:8px;height:8px;border-radius:2px;background:' + sd.color + ';flex:none;"></span>' +
+      sd.label + ' <b class="ax-num" style="font-size:var(--ax-text-xs);color:var(--ax-text-strong);">' + sd.count + '</b></span>';
   }
   distHTML += '</div>';
 
@@ -2092,7 +2138,7 @@ function renderDashboard() {
       '<div class="ax-card" style="height:100%"><div class="ax-card__header"><div><h2 class="ax-card__title">Task Throughput</h2><p class="ax-card__subtitle">Tarefas criadas vs. concluídas por semana</p></div>' + legend + '</div><div class="ax-card__body">' + sparkHTML + '</div></div>' +
     '</div>' +
     '<div class="ax-col--4">' +
-      '<div class="ax-card" style="height:100%"><div class="ax-card__header"><div><h2 class="ax-card__title">Status do projeto</h2><p class="ax-card__subtitle">Distribuição por estágio</p></div></div><div class="ax-card__body">' + distHTML + '</div></div>' +
+      '<div class="ax-card" style="height:100%"><div class="ax-card__header"><div><h2 class="ax-card__title">Status do projeto</h2><p class="ax-card__subtitle">Distribuição por estágio</p></div></div><div class="ax-card__body">' + doughnutSvg + distHTML + '</div></div>' +
     '</div>' +
 
     /* Row 3: Tarefas recentes + (Próximos vencimentos + Workload) */
