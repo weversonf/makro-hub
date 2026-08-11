@@ -2706,7 +2706,7 @@ function openEditTask(id) {
   document.getElementById('tmf-desc').value = a.descricao || '';
   document.getElementById('tmf-due').value = a.dataVencimento || '';
   document.getElementById('tmf-post').value = a.dataPostagem || '';
-  document.getElementById('tmf-prio').value = a.prioridade || 'media';
+  /* prioridade via hero badge, não mais via select */
 
   var catSel = document.getElementById('tmf-cat');
   catSel.innerHTML = '<option value="">Sem categoria</option>';
