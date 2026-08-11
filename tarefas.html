@@ -26,6 +26,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/recharts@2/umd/Recharts.js"></script>
+
 <style>
 /* ============================================================ */
 /* DESIGN TOKENS                                                */
@@ -218,19 +223,12 @@ h1, h2, h3, h4, p { margin: 0; }
 [data-ax-collapsed] .ax-sidebar { width: 78px; }
 
 .ax-sidebar__brand {
-  height: var(--ax-header-h); padding: 0 18px;
+  height: var(--ax-header-h); padding: 0 16px;
   display: flex; align-items: center; flex: none;
 }
-.ax-sidebar__logo { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.ax-sidebar__mark { display: flex; flex: none; }
-.ax-sidebar__mark img { width: 28px; height: 28px; object-fit: contain; }
-.ax-sidebar__wordmark {
-  font-family: var(--ax-font-display); font-weight: 700; letter-spacing: .02em;
-  color: var(--ax-text-strong); font-size: 17px; white-space: nowrap;
-  transition: opacity var(--ax-motion-fast) var(--ax-ease-standard);
-}
-.ax-sidebar__wordmark img { height: 28px; width: auto; object-fit: contain; }
-[data-ax-collapsed] .ax-sidebar__wordmark { opacity: 0; width: 0; overflow: hidden; }
+.ax-sidebar__logo { display: flex; align-items: center; min-width: 0; text-decoration: none; }
+.ax-sidebar__logo-img { height: 28px; width: auto; transition: opacity var(--ax-motion-fast); }
+[data-ax-collapsed] .ax-sidebar__logo-img { height: 24px; }
 
 .ax-sidebar__nav {
   flex: 1; overflow-y: auto; overflow-x: hidden; padding: 6px 12px 16px;
@@ -1031,12 +1029,7 @@ h1, h2, h3, h4, p { margin: 0; }
   <aside class="ax-sidebar" id="ax-sidebar">
     <div class="ax-sidebar__brand">
       <a class="ax-sidebar__logo" id="brand-home" href="javascript:void(0)">
-        <span class="ax-sidebar__mark">
-          <img src="https://makroengenharia.com.br/wp-content/uploads/2026/08/ICONE-ESTRELA-LOGO-MAKRO-VERMELHA.png" alt="Makro" width="28" height="28">
-        </span>
-        <span class="ax-sidebar__wordmark">
-          <img src="https://makroengenharia.com.br/wp-content/uploads/2023/03/logo-1.png" alt="Makro Engenharia" height="28">
-        </span>
+        <img class="ax-sidebar__logo-img" src="https://makroengenharia.com.br/wp-content/uploads/2023/03/logo-1.png" alt="Makro Engenharia" height="28">
       </a>
     </div>
 
@@ -1068,6 +1061,16 @@ h1, h2, h3, h4, p { margin: 0; }
       <button class="ax-nav__item is-nav" data-view="config">
         <svg class="ax-nav__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c.996 .608 2.296 .07 2.572 -1.065z"/><path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/></svg>
         <span class="ax-nav__label">Configurações</span>
+      </button>
+
+      <p class="ax-sidebar__section">Ferramentas</p>
+      <button class="ax-nav__item is-nav" data-view="banco-horas">
+        <svg class="ax-nav__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span class="ax-nav__label">Banco de Horas</span>
+      </button>
+      <button class="ax-nav__item is-nav" data-view="nps">
+        <svg class="ax-nav__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <span class="ax-nav__label">Pesquisa NPS</span>
       </button>
     </nav>
 
