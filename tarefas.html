@@ -1518,16 +1518,13 @@ h1, h2, h3, h4, p { margin: 0; }
     <div class="ax-modal__body">
       <!-- hero overview -->
       <div class="ax-hero" id="tm-hero" style="display:none;">
-        <div class="ax-hero__main">
-          <div class="ax-hero__title-row">
-            <h2 class="ax-hero__title" id="tm-hero-title"></h2>
-            <span class="ax-badge ax-badge--soft ax-badge--pill" id="tm-hero-stage"></span>
-            <span class="ax-badge ax-badge--soft ax-badge--pill" id="tm-hero-prio" style="cursor:pointer;display:none;" onclick="togglePrioDropdown(event)" title="Clique para alterar prioridade">Baixa</span>
-          </div>
-          <p class="ax-hero__desc" id="tm-hero-desc"></p>
-          <div class="ax-hero__meta" id="tm-hero-meta"></div>
+        <div class="ax-hero__title-row">
+          <h2 class="ax-hero__title" id="tm-hero-title"></h2>
+          <span class="ax-badge ax-badge--soft ax-badge--pill" id="tm-hero-stage"></span>
+          <span class="ax-badge ax-badge--soft ax-badge--pill" id="tm-hero-prio" style="cursor:pointer;" onclick="togglePrioDropdown(event)" title="Clique para alterar prioridade">Baixa</span>
         </div>
-        <div class="ax-hero__side" id="tm-hero-side"></div>
+        <p class="ax-hero__desc" id="tm-hero-desc"></p>
+        <div class="ax-hero__meta" id="tm-hero-meta"></div>
       </div>
 
       <div class="ax-tabs" id="tm-tabs" style="display:none;border-radius:var(--ax-radius-md);border:1px solid var(--ax-border);">
@@ -2691,24 +2688,6 @@ function openEditTask(id) {
     '<span class="item">' + ico('calendar', 14) + '<span>Venc. ' + fmtDate(a.dataVencimento) + '</span></span>' +
     '<span class="item">' + ico('clock', 14) + '<span>Criada ' + fmtDate(a.criadoEm) + '</span></span>' +
     (a.dataPostagem ? '<span class="item">' + ico('send', 14) + '<span>Post ' + fmtDate(a.dataPostagem) + '</span></span>' : '');
-
-  /* painel lateral no hero */
-  var side = document.getElementById('tm-hero-side');
-  var isEd = a.categoria === 1;
-  if (isEd) {
-    side.innerHTML = '<div style="text-align:right;display:flex;flex-direction:column;gap:var(--ax-space-2);">' +
-      '<span class="ax-badge ax-badge--soft ax-badge--accent ax-badge--pill" style="font-size:var(--ax-text-xs);">' + (a.dataPostagem ? '📅 Postagem' : '📋 Editorial') + '</span>' +
-      '<span class="ax-num" style="font-size:var(--ax-text-xs);color:var(--ax-text-subtle);">' + (a.canais || []).length + ' canais</span>' +
-      '<span class="ax-num" style="font-size:var(--ax-text-xs);color:var(--ax-text-subtle);">' + fmtDate(a.dataPostagem || a.dataVencimento) + '</span>' +
-      '</div>';
-  } else {
-    var sc = stageOf(a.stage);
-    side.innerHTML = '<div style="text-align:right;display:flex;flex-direction:column;gap:var(--ax-space-2);">' +
-      '<span class="ax-badge ax-badge--soft ax-badge--' + sc.tone + ' ax-badge--pill">' + esc(sc.label) + '</span>' +
-      '<span class="ax-num" style="font-size:var(--ax-text-lg);font-weight:700;color:var(--ax-text-strong);">' + a.progress + '%</span>' +
-      '<span style="font-size:var(--ax-text-xs);color:var(--ax-text-subtle);">' + fmtDate(a.dataVencimento) + '</span>' +
-      '</div>';
-  }
 
   document.getElementById('tmf-titulo').value = a.titulo;
   document.getElementById('tmf-desc').value = a.descricao || '';
