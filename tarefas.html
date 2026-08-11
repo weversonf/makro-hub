@@ -681,14 +681,11 @@ h1, h2, h3, h4, p { margin: 0; }
 /* ============================================================ */
 /* PAGE HEAD                                                    */
 /* ============================================================ */
-.ax-page-head { margin-bottom: var(--ax-space-6); }
-.ax-page-head__row { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--ax-space-4); flex-wrap: wrap; }
-.ax-breadcrumb { display: flex; align-items: center; gap: 6px; font-size: var(--ax-text-xs); color: var(--ax-text-subtle); margin-bottom: 8px; }
-.ax-breadcrumb .sep { color: var(--ax-border-strong); }
-.ax-breadcrumb .now { color: var(--ax-text-muted); font-weight: 600; }
-.ax-page-head__title { font-family: var(--ax-font-display); font-size: var(--ax-text-2xl); font-weight: 700; color: var(--ax-text-strong); letter-spacing: -.02em; }
-.ax-page-head__subtitle { margin-top: 6px; font-size: var(--ax-text-sm); color: var(--ax-text-muted); }
-.ax-page-head__actions { display: flex; gap: 9px; flex-wrap: wrap; }
+.ax-page-head { margin-bottom: var(--ax-space-2); }
+.ax-page-head__row { display: flex; align-items: center; justify-content: space-between; gap: var(--ax-space-2); flex-wrap: wrap; }
+.ax-page-head__title { font-family: var(--ax-font-display); font-size: var(--ax-text-lg); font-weight: 700; color: var(--ax-text-strong); letter-spacing: -.01em; line-height: 1.2; }
+.ax-page-head__subtitle { font-size: var(--ax-text-xs); color: var(--ax-text-muted); }
+.ax-page-head__actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
 /* ============================================================ */
 /* SEGMENT + TABS                                               */
@@ -1252,7 +1249,6 @@ h1, h2, h3, h4, p { margin: 0; }
       <div class="ax-page-head">
         <div class="ax-page-head__row">
           <div>
-            <nav class="ax-breadcrumb" id="ph-breadcrumb" aria-label="Trilha"></nav>
             <h1 class="ax-page-head__title" id="ph-title">Dashboard</h1>
             <p class="ax-page-head__subtitle" id="ph-subtitle"></p>
           </div>
@@ -2077,13 +2073,6 @@ function changeView(v) {
 
 function updatePageHead() {
   var m = VIEW_META[S.view] || { title: '', crumb: [], subtitle: '' };
-  var crumb = document.getElementById('ph-breadcrumb');
-  var html = '';
-  for (var i = 0; i < (m.crumb || []).length; i++) {
-    html += '<span>' + esc(m.crumb[i]) + '</span>';
-    if (i < m.crumb.length - 1) html += '<svg class="sep" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6l-6 6"/></svg>';
-  }
-  crumb.innerHTML = html;
   document.getElementById('ph-title').textContent = m.title;
 
   var total = S.activities.length;
