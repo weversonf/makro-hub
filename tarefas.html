@@ -540,6 +540,33 @@ h1, h2, h3, h4, p { margin: 0; }
   .ax-fab { width: 44px; height: 44px; bottom: 72px; right: 12px; }
 }
 
+/* ============================================================ */
+/* MOBILE BOTTOM NAV                                             */
+/* ============================================================ */
+.mob-nav {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 80;
+  background: var(--ax-surface-solid);
+  border-top: 1px solid var(--ax-border);
+  padding: 6px 10px max(6px, env(safe-area-inset-bottom));
+  justify-content: space-around;
+  align-items: flex-start;
+}
+.mob-nav__item {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  min-width: 48px; padding: 4px 6px;
+  border: 0; background: transparent;
+  color: var(--ax-text-muted);
+  font-size: var(--ax-text-2xs); font-weight: 600;
+  font-family: inherit; cursor: pointer;
+  transition: color var(--ax-motion-fast);
+}
+.mob-nav__item svg { width: 20px; height: 20px; }
+.mob-nav__item--active { color: var(--ax-accent); }
+@media (max-width: 768px) {
+  .mob-nav { display: flex; }
+}
+
 .ax-divider { height: 1px; background: var(--ax-border); border: 0; margin: var(--ax-space-4) 0; }
 
 /* ============================================================ */
@@ -2021,6 +2048,11 @@ function changeView(v) {
   var views = document.querySelectorAll('.ax-view');
   for (var j = 0; j < views.length; j++) {
     views[j].classList.toggle('is-active', views[j].id === 'view-' + v);
+  }
+  /* Mobile bottom nav */
+  var mobItems = document.querySelectorAll('.mob-nav__item');
+  for (var mi = 0; mi < mobItems.length; mi++) {
+    mobItems[mi].classList.toggle('mob-nav__item--active', mobItems[mi].getAttribute('data-mob') === v);
   }
   /* Esconde containers React quando não em uso */
   var bh = document.getElementById('banco-horas-root');
@@ -4294,6 +4326,30 @@ function NPSApp() {
     </div>
   </div>
 </div>
+
+<!-- ================== MOBILE BOTTOM NAV ================== -->
+<nav class="mob-nav" id="mob-nav">
+  <button class="mob-nav__item mob-nav__item--active" data-mob="dash" onclick="changeView('dash')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1"/><path d="M5 16h4a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1"/><path d="M15 12h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1"/><path d="M15 4h4a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1"/></svg>
+    <span>Início</span>
+  </button>
+  <button class="mob-nav__item" data-mob="lista" onclick="changeView('lista')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l11 0"/><path d="M9 12l11 0"/><path d="M9 18l11 0"/><path d="M5 6l0 .01"/><path d="M5 12l0 .01"/><path d="M5 18l0 .01"/></svg>
+    <span>Tarefas</span>
+  </button>
+  <button class="mob-nav__item" data-mob="editorial" onclick="changeView('editorial')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12"/><path d="M16 3l0 4"/><path d="M8 3l0 4"/><path d="M4 11l16 0"/></svg>
+    <span>Editorial</span>
+  </button>
+  <button class="mob-nav__item" data-mob="banco-horas" onclick="changeView('banco-horas')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <span>Horas</span>
+  </button>
+  <button class="mob-nav__item" data-mob="nps" onclick="changeView('nps')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+    <span>NPS</span>
+  </button>
+</nav>
 
 </div><!-- #app-view -->
 
