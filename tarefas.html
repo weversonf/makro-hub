@@ -894,6 +894,72 @@ h1, h2, h3, h4, p { margin: 0; }
   min-height: 100vh; padding: var(--ax-space-5);
 }
 #btn-google-login:hover { background: var(--ax-surface-2); border-color: var(--ax-border-strong); }
+
+/* ============================================================ */
+/* CUSTOMIZER                                                    */
+/* ============================================================ */
+#ax-customizer {
+  position:fixed; inset:0; z-index:150;
+  display:none; visibility:hidden; opacity:0;
+  transform:translateX(100%);
+  transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .25s,visibility .25s;
+}
+#ax-customizer.is-open { display:flex; visibility:visible; opacity:1; transform:translateX(0); }
+#ax-customizer .ax-customizer__backdrop { position:absolute; inset:0; z-index:2; background:var(--ax-backdrop); }
+.ax-customizer__panel {
+  position:relative; z-index:3;
+  margin-inline-start:auto;
+  width:100%; max-width:340px; height:100%;
+  display:flex; flex-direction:column;
+  background:var(--ax-surface-solid);
+  border-inline-start:1px solid var(--ax-border);
+  box-shadow:var(--ax-shadow-lg);
+  overflow-y:auto;
+}
+.ax-customizer__head {
+  display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+  padding:var(--ax-space-5); border-bottom:1px solid var(--ax-border);
+}
+.ax-customizer__title { font-family:var(--ax-font-display); font-size:var(--ax-text-lg); font-weight:700; color:var(--ax-text-strong); }
+.ax-customizer__sub { font-size:var(--ax-text-xs); color:var(--ax-text-subtle); margin-top:2px; }
+.ax-customizer__body { flex:1; padding:var(--ax-space-5); display:flex; flex-direction:column; gap:var(--ax-space-5); }
+.ax-customizer__section { display:flex; flex-direction:column; gap:var(--ax-space-3); }
+.ax-customizer__label { font-size:var(--ax-text-xs); font-weight:600; color:var(--ax-text-muted); }
+.ax-customizer__foot {
+  padding:var(--ax-space-4) var(--ax-space-5); border-top:1px solid var(--ax-border);
+  display:flex; gap:9px; justify-content:flex-end;
+}
+
+/* segmented toggle */
+.ax-segmented { display:inline-flex; gap:2px; padding:3px; background:var(--ax-surface-subtle); border-radius:var(--ax-radius-md); }
+.ax-segmented__btn {
+  border:0; background:transparent; color:var(--ax-text-muted);
+  padding:6px 12px; border-radius:8px; font-size:var(--ax-text-xs); font-weight:600;
+  font-family:inherit; cursor:pointer;
+  transition:all var(--ax-motion-fast);
+}
+.ax-segmented__btn.is-active { background:var(--ax-surface); color:var(--ax-text-strong); box-shadow:var(--ax-shadow-sm); }
+.ax-segmented__btn:hover:not(.is-active) { color:var(--ax-text-strong); }
+
+/* swatch grid */
+.ax-swatch-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:var(--ax-space-2); }
+.ax-swatch {
+  position:relative;
+  aspect-ratio:1;
+  border:2px solid transparent;
+  border-radius:var(--ax-radius-md);
+  background:var(--sw,#888);
+  cursor:pointer;
+  transition:border-color var(--ax-motion-fast),transform var(--ax-motion-fast);
+  display:inline-flex; align-items:center; justify-content:center;
+}
+.ax-swatch:hover { transform:scale(1.08); }
+.ax-swatch.is-active { border-color:var(--ax-text-strong); }
+.ax-swatch__check {
+  width:16px; height:16px; color:#fff; display:none;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.4));
+}
+.ax-swatch.is-active .ax-swatch__check { display:block; }
 </style>
 </head>
 <body>
@@ -1025,6 +1091,9 @@ h1, h2, h3, h4, p { margin: 0; }
       <div class="ax-header__right">
         <button class="ax-icon-btn" id="btn-theme" aria-label="Alternar tema">
           <svg class="ax-icon" id="icon-theme" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"></svg>
+        </button>
+        <button type="button" class="ax-icon-btn" id="ax-cog-btn" onclick="toggleCustomizer()" aria-label="Preferências" aria-expanded="false">
+          <svg class="ax-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
         <span class="ax-avatar ax-avatar--sm ax-avatar--squircle" style="background:color-mix(in oklab,var(--ax-viz-violet) 20%,transparent);color:var(--ax-viz-violet);font-weight:700;font-size:var(--ax-text-xs);">WS</span>
       </div>
@@ -1559,6 +1628,7 @@ var S = {
   listCat: 'all',
   listQ: '',
   listMode: 'table',
+  showConcluidoKanban: false,
   editId: null,
   draftChecklist: [],
   tab: 'detalhes',
@@ -1831,12 +1901,14 @@ function clone(a) { return JSON.parse(JSON.stringify(a)); }
 /* ============================================================ */
 function renderDashboard() {
   var el = document.getElementById('dash-content');
+  /* Exclui Editorial de todas as métricas do dashboard */
+  var dashActs = S.activities.filter(function (a) { return a.categoria !== 1; });
   var total = S.activities.length;
-  var done = countStage('concluido');
-  var exec = countStage('execucao');
-  var rate = total ? Math.round(done / total * 100) : 0;
+  var done = dashActs.filter(function (a) { return a.stage === 'concluido'; }).length;
+  var exec = dashActs.filter(function (a) { return a.stage === 'execucao'; }).length;
+  var rate = total ? Math.round(done / dashActs.length * 100) : 0;
   var atrasadas = 0;
-  for (var i = 0; i < S.activities.length; i++) if (isOverdue(S.activities[i])) atrasadas++;
+  for (var i = 0; i < dashActs.length; i++) if (isOverdue(dashActs[i])) atrasadas++;}
 
   function stat(icon, iconColor, num, label, delta) {
     return '<div class="ax-card ax-col--3" role="region">' +
@@ -1859,8 +1931,8 @@ function renderDashboard() {
     var s = addDaysISO(todayISO(), -w * 7);
     var e = addDaysISO(todayISO(), -(w - 1) * 7 + 1);
     var created = 0, doneW = 0;
-    for (var k = 0; k < S.activities.length; k++) {
-      var a = S.activities[k];
+    for (var k = 0; k < dashActs.length; k++) {
+      var a = dashActs[k];
       if (a.criadoEm && a.criadoEm >= s && a.criadoEm < e) created++;
       if (a.concluidoEm && a.concluidoEm >= s && a.concluidoEm < e) doneW++;
       if (a.stage === 'concluido' && !a.concluidoEm && a.dataVencimento && a.dataVencimento >= s && a.dataVencimento < e) doneW++;
@@ -1886,8 +1958,8 @@ function renderDashboard() {
   /* status distribution */
   var distHTML = '<div class="ax-dist-share">';
   for (var d = 0; d < STAGES.length; d++) {
-    var c = countStage(STAGES[d].id);
-    var pct = total ? Math.round(c / total * 100) : 0;
+    var c = dashActs.filter(function (a) { return a.stage === STAGES[d].id; }).length;
+    var pct = dashActs.length ? Math.round(c / dashActs.length * 100) : 0;
     distHTML += '<div class="ax-dist-row"><span class="name">' + esc(STAGES[d].label) + '</span>' +
       '<span class="bar"><span class="fill" style="width:' + pct + '%;background:' + STAGES[d].color + '"></span></span>' +
       '<span class="val">' + c + '</span></div>';
@@ -1895,7 +1967,7 @@ function renderDashboard() {
   distHTML += '</div>';
 
   /* próximos vencimentos */
-  var upcoming = S.activities.filter(function (a) { return a.stage !== 'concluido' && a.dataVencimento; })
+  var upcoming = dashActs.filter(function (a) { return a.stage !== 'concluido' && a.dataVencimento; })
     .sort(function (a, b) { return a.dataVencimento < b.dataVencimento ? -1 : 1; })
     .slice(0, 6);
   var upHTML = '<div class="ax-list ax-list--flush">';
@@ -1914,7 +1986,7 @@ function renderDashboard() {
   upHTML += '</div>';
 
   /* tarefas recentes */
-  var recent = S.activities.slice().sort(function (x, y) { return (x.criadoEm || '') > (y.criadoEm || '') ? -1 : 1; }).slice(0, 5);
+  var recent = dashActs.slice().sort(function (x, y) { return (x.criadoEm || '') > (y.criadoEm || '') ? -1 : 1; }).slice(0, 5);
   var recHTML = '<div class="ax-table-wrap"><table class="ax-table ax-table--hover"><thead><tr>' +
     '<th class="ax-table__th">Tarefa</th><th class="ax-table__th">Estágio</th><th class="ax-table__th">Progresso</th><th class="ax-table__th ax-table__th--num">Venc.</th><th class="ax-table__th">Status</th></tr></thead><tbody>';
   for (var r = 0; r < recent.length; r++) {
@@ -1930,11 +2002,12 @@ function renderDashboard() {
 
   /* categoria workload */
   var catWork = '';
-  for (var cw = 0; cw < S.categories.length; cw++) {
-    var ccount = countCat(S.categories[cw].id);
-    var cpct = total ? Math.round(ccount / total * 100) : 0;
-    catWork += '<div class="ax-dist-row"><span class="name">' + esc(S.categories[cw].nome) + '</span>' +
-      '<span class="bar"><span class="fill" style="width:' + cpct + '%;background:' + S.categories[cw].cor + '"></span></span>' +
+  var nonEdCats = S.categories.filter(function (c) { return c.id !== 1; });
+  for (var cw = 0; cw < nonEdCats.length; cw++) {
+    var ccount = dashActs.filter(function (a) { return a.categoria === nonEdCats[cw].id; }).length;
+    var cpct = dashActs.length ? Math.round(ccount / dashActs.length * 100) : 0;
+    catWork += '<div class="ax-dist-row"><span class="name">' + esc(nonEdCats[cw].nome) + '</span>' +
+      '<span class="bar"><span class="fill" style="width:' + cpct + '%;background:' + nonEdCats[cw].cor + '"></span></span>' +
       '<span class="val">' + ccount + '</span></div>';
   }
 
@@ -2059,6 +2132,10 @@ function buildListBody() {
   } else {
     /* modo cards = quadro por estágio */
     var bcols = (S.listStage === 'all') ? STAGES : STAGES.filter(function (s) { return s.id === S.listStage; });
+    /* Oculta Concluído por padrão */
+    if (S.listStage === 'all' && !S.showConcluidoKanban) {
+      bcols = bcols.filter(function (s) { return s.id !== 'concluido'; });
+    }
     var anyCard = false;
     html += '<div class="ax-pl-board" style="width:100%;">';
     for (var bc = 0; bc < bcols.length; bc++) {
@@ -2092,6 +2169,15 @@ function buildListBody() {
         '<svg class="ax-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>Adicionar</button>' +
         '</div></section>';
     }
+
+    /* Botão discreto para mostrar/ocultar Concluído */
+    if (S.listStage === 'all') {
+      var doneCount = S.activities.filter(function (a) { return a.categoria !== 1 && a.stage === 'concluido'; }).length;
+      html += '<button class="ax-btn ax-btn--ghost ax-btn--sm ax-btn--pill" onclick="S.showConcluidoKanban=!S.showConcluidoKanban;buildListBody()" style="align-self:center;margin-top:8px;font-size:var(--ax-text-xs);color:var(--ax-text-subtle);">' +
+        (S.showConcluidoKanban ? 'Ocultar concluídas' : 'Concluídas (' + doneCount + ')') +
+        '</button>';
+    }
+
     if (!anyCard && S.listStage === 'all') {
       html += '<div class="ax-card ax-col--12" style="align-self:flex-start;"><div class="ax-empty"><div class="icwrap">' + ico('checklist', 26) + '</div><h3>Nada por aqui</h3><p>Ajuste os filtros ou crie uma nova tarefa.</p></div></div>';
     }
@@ -2571,12 +2657,7 @@ function importBackup() {
 function applyTheme(th, persist) {
   document.documentElement.setAttribute('data-ax-theme', th);
   if (persist) { try { localStorage.setItem('ax:theme', th); } catch (e) {} }
-  var dark = th === 'dark';
-  if (dark) {
-    document.getElementById('icon-theme').innerHTML = '<path d="M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M3 12h1M12 3v1M20 12h1M12 20v1M5.6 5.6l.7.7M18.4 5.6l-.7.7M17.7 17.7l.7.7M6.3 17.7l-.7.7"/>';
-  } else {
-    document.getElementById('icon-theme').innerHTML = '<path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z"/>';
-  }
+  updateThemeIcon(th);
   renderConfig();
   renderDashboard();
 }
@@ -2584,6 +2665,15 @@ function toggleTheme() {
   var th = document.documentElement.getAttribute('data-ax-theme');
   applyTheme(th === 'dark' ? 'light' : 'dark', true);
   toast('Tema ' + (th === 'dark' ? 'claro' : 'escuro'));
+}
+
+function updateThemeIcon(th) {
+  var dark = th === 'dark';
+  if (dark) {
+    document.getElementById('icon-theme').innerHTML = '<path d="M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M3 12h1M12 3v1M20 12h1M12 20v1M5.6 5.6l.7.7M18.4 5.6l-.7.7M17.7 17.7l.7.7M6.3 17.7l-.7.7"/>';
+  } else {
+    document.getElementById('icon-theme').innerHTML = '<path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z"/>';
+  }
 }
 
 /* ============================================================ */
@@ -2842,6 +2932,118 @@ function updateNavBadges() {
 }
 
 /* ============================================================ */
+/* CUSTOMIZER                                                    */
+/* ============================================================ */
+var AX_SETTINGS_KEY = 'makro_tasks_cfg';
+var ACCENTS = [
+  { id:'verdigris', color:'#1E856C', label:'Verde' },
+  { id:'cobalt',    color:'#5883dd', label:'Azul' },
+  { id:'indigo',    color:'#807ad8', label:'Índigo' },
+  { id:'amethyst',  color:'#a56ec7', label:'Ametista' },
+  { id:'magenta',   color:'#cd5e9a', label:'Magenta' },
+  { id:'terracotta',color:'#cd674f', label:'Terracota' },
+  { id:'amber',     color:'#e0a53a', label:'Âmbar' },
+  { id:'olive',     color:'#84a725', label:'Oliva' },
+  { id:'forest',    color:'#36965c', label:'Floresta' },
+  { id:'teal',      color:'#15a4b7', label:'Ciano' },
+  { id:'slate',     color:'#72879d', label:'Ardósia' },
+  { id:'graphite',  color:'#86857d', label:'Grafite' }
+];
+var AX_MAP = { theme:'data-ax-theme', accent:'data-ax-accent', sidebar:'data-ax-sidebar', header:'data-ax-header', page:'data-ax-page' };
+
+function loadCfg() {
+  try { var d = localStorage.getItem(AX_SETTINGS_KEY); return d ? JSON.parse(d) : {}; } catch(e) { return {}; }
+}
+function saveCfg(s) {
+  try { localStorage.setItem(AX_SETTINGS_KEY, JSON.stringify(s)); } catch(e) {}
+}
+
+function applyAccent(accentId) {
+  var a = ACCENTS.filter(function(x) { return x.id === accentId; })[0] || ACCENTS[0];
+  var root = document.documentElement;
+  root.style.setProperty('--ax-accent', a.color);
+  root.style.setProperty('--ax-accent-strong', a.color);
+  root.style.setProperty('--ax-focus-ring', a.color + '80');
+  saveCfg(loadCfg());
+}
+
+window.setConfig = function(key, val) {
+  var s = loadCfg();
+  s[key] = val;
+  saveCfg(s);
+  if (key === 'theme') {
+    document.documentElement.setAttribute('data-ax-theme', val);
+    updateThemeIcon(val);
+    renderDashboard();
+    renderConfig();
+  }
+  if (key === 'accent') applyAccent(val);
+  if (AX_MAP[key]) document.documentElement.setAttribute(AX_MAP[key], val);
+  syncCfgUI();
+};
+
+window.resetConfig = function() {
+  localStorage.removeItem(AX_SETTINGS_KEY);
+  document.documentElement.removeAttribute('data-ax-theme');
+  document.documentElement.removeAttribute('data-ax-accent');
+  applyAccent('verdigris');
+  var st = null;
+  try { st = localStorage.getItem('ax:theme'); } catch(e) {}
+  document.documentElement.setAttribute('data-ax-theme', st === 'dark' ? 'dark' : 'light');
+  updateThemeIcon(st === 'dark' ? 'dark' : 'light');
+  syncCfgUI();
+  renderDashboard();
+  toast('Preferências restauradas');
+};
+
+function syncCfgUI() {
+  var s = loadCfg();
+  var vals = { theme: s.theme || 'dark', accent: s.accent || 'verdigris' };
+  var theme = document.getElementById('cfg-theme');
+  if (theme) {
+    theme.querySelectorAll('.ax-segmented__btn').forEach(function(b) {
+      b.classList.toggle('is-active', b.getAttribute('data-val') === vals.theme);
+    });
+  }
+  var accentGrid = document.getElementById('cfg-accent');
+  if (accentGrid) {
+    accentGrid.querySelectorAll('.ax-swatch').forEach(function(b) {
+      b.classList.toggle('is-active', b.getAttribute('data-val') === vals.accent);
+    });
+  }
+}
+
+function buildAccentSwatches() {
+  var grid = document.getElementById('cfg-accent');
+  if (!grid) return;
+  var html = '';
+  for (var i = 0; i < ACCENTS.length; i++) {
+    html += '<button type="button" class="ax-swatch" data-val="' + ACCENTS[i].id + '" style="--sw:' + ACCENTS[i].color + '" onclick="setConfig(\'accent\',\'' + ACCENTS[i].id + '\')" aria-label="' + ACCENTS[i].label + '" title="' + ACCENTS[i].label + '"><svg class="ax-swatch__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5l9 -9"/></svg></button>';
+  }
+  grid.innerHTML = html;
+}
+
+window.toggleCustomizer = function() {
+  var c = document.getElementById('ax-customizer');
+  if (!c) return;
+  if (c.classList.contains('is-open')) { closeCustomizer(); return; }
+  c.classList.add('is-open');
+  c.setAttribute('aria-hidden', 'false');
+};
+
+window.closeCustomizer = function() {
+  var c = document.getElementById('ax-customizer');
+  if (c) { c.classList.remove('is-open'); c.setAttribute('aria-hidden', 'true'); }
+};
+
+function initConfig() {
+  buildAccentSwatches();
+  var s = loadCfg();
+  if (s.accent) applyAccent(s.accent);
+  syncCfgUI();
+}
+
+/* ============================================================ */
 /* EVENTOS + INIT                                               */
 /* ============================================================ */
 function init() {
@@ -2849,6 +3051,7 @@ function init() {
   var st = null;
   try { st = localStorage.getItem('ax:theme'); } catch (e) {}
   applyTheme(st === 'dark' ? 'dark' : 'light', false);
+  initConfig();
 
   /* bindings */
   document.querySelectorAll('.is-nav').forEach(function (b) {
@@ -2967,6 +3170,39 @@ document.addEventListener('DOMContentLoaded', init);
 <button class="ax-fab" id="btn-fab" aria-label="Nova tarefa" title="Nova tarefa">
   <svg class="ax-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>
 </button>
+
+<!-- ================== CUSTOMIZER ================== -->
+<div class="ax-customizer" id="ax-customizer" aria-hidden="true">
+  <button class="ax-customizer__backdrop" onclick="closeCustomizer()" tabindex="-1" aria-label="Fechar"></button>
+  <div class="ax-customizer__panel" role="dialog" aria-modal="true" aria-label="Preferências">
+    <div class="ax-customizer__head">
+      <div class="ax-customizer__head-text">
+        <div class="ax-customizer__title">Preferências</div>
+        <p class="ax-customizer__sub">Personalize a aparência do aplicativo</p>
+      </div>
+      <button type="button" class="ax-icon-btn" onclick="closeCustomizer()" aria-label="Fechar">
+        <svg class="ax-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" width="20" height="20"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="ax-customizer__body">
+      <div class="ax-customizer__section">
+        <div class="ax-customizer__label">Tema</div>
+        <div class="ax-segmented" id="cfg-theme">
+          <button class="ax-segmented__btn is-active" data-val="dark" onclick="setConfig('theme','dark')">Escuro</button>
+          <button class="ax-segmented__btn" data-val="light" onclick="setConfig('theme','light')">Claro</button>
+        </div>
+      </div>
+      <div class="ax-customizer__section">
+        <div class="ax-customizer__label">Cor de destaque</div>
+        <div class="ax-swatch-grid" id="cfg-accent"></div>
+      </div>
+    </div>
+    <div class="ax-customizer__foot">
+      <button type="button" class="ax-btn" onclick="resetConfig()">Restaurar</button>
+      <button type="button" class="ax-btn ax-btn--primary" onclick="closeCustomizer()">Concluir</button>
+    </div>
+  </div>
+</div>
 
 </div><!-- #app-view -->
 
