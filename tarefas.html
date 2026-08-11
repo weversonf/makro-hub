@@ -2135,56 +2135,39 @@ function renderDashboard() {
              stat('<path d="M9 11l3 3l8 -8"/>', 'var(--ax-viz-emerald)', done, 'Concluídas', 'tarefas fechadas') +
              stat(ICONS.chart, 'var(--ax-viz-violet)', rate + '%', 'Taxa de conclusão', atrasadas ? '<a href="javascript:void(0)" onclick="S.listOverdueOnly=true;changeView(\'lista\')" style="color:var(--ax-danger-500);text-decoration:underline;">' + atrasadas + ' atrasadas</a>' : 'tudo em dia ✓');
 
-  /* throughput - 6 últimas semanas com nomes reais */
-  var weekNames = [];
-  for (var w = 5; w >= 0; w--) {
-    var ws = new Date();
-    ws.setDate(ws.getDate() - w * 7);
-    var we = new Date(ws);
-    we.setDate(we.getDate() + 6);
-    var s = ws.getFullYear() + '-' + String(ws.getMonth() + 1).padStart(2, '0') + '-' + String(ws.getDate()).padStart(2, '0');
-    var e = we.getFullYear() + '-' + String(we.getMonth() + 1).padStart(2, '0') + '-' + String(we.getDate()).padStart(2, '0');
-    var created = 0, doneW = 0;
-    for (var k = 0; k < dashActs.length; k++) {
-      var a = dashActs[k];
-      if (a.criadoEm && a.criadoEm >= s && a.criadoEm <= e) created++;
-      if (a.concluidoEm && a.concluidoEm >= s && a.concluidoEm <= e) doneW++;
-      if (a.stage === 'concluido' && !a.concluidoEm && a.dataVencimento && a.dataVencimento >= s && a.dataVencimento <= e) doneW++;
-    }
-    var shortLabel = String(ws.getDate()) + '/' + String(ws.getMonth() + 1);
-    weekNames.push({ label: shortLabel, created: created, done: doneW, net: created - doneW });
+  /* throughput - por tipo de demanda (categoria) */
+  var nonEdCats = S.categories.filter(function (c) { return c.id !== 1; });
+  var maxCat = 1;
+  for (var ct = 0; ct < nonEdCats.length; ct++) {
+    var cid = nonEdCats[ct].id;
+    var total = dashActs.filter(function (a) { return a.categoria === cid; }).length;
+    maxCat = Math.max(maxCat, total);
   }
-  var maxV = 1;
-  for (var mn = 0; mn < weekNames.length; mn++) maxV = Math.max(maxV, weekNames[mn].created, weekNames[mn].done);
 
   var sparkHTML = '<div style="display:flex;flex-direction:column;gap:10px;">';
-  for (var wk = 0; wk < weekNames.length; wk++) {
-    var wd = weekNames[wk];
-    var cw = maxV ? Math.round(wd.created / maxV * 100) : 0;
-    var dw = maxV ? Math.round(wd.done / maxV * 100) : 0;
-    var netColor = wd.net >= 0 ? 'var(--ax-danger-500)' : 'var(--ax-viz-emerald)';
-    var netLabel = wd.net === 0 ? '=' : (wd.net > 0 ? '+' + wd.net : String(wd.net));
+  for (var ct2 = 0; ct2 < nonEdCats.length; ct2++) {
+    var catId = nonEdCats[ct2].id;
+    var catTasks = dashActs.filter(function (a) { return a.categoria === catId; });
+    var catDone = catTasks.filter(function (a) { return a.stage === 'concluido'; }).length;
+    var catProgress = catTasks.length - catDone;
+    var barW = maxCat > 0 ? Math.round(catTasks.length / maxCat * 100) : 0;
+    var doneW = catTasks.length > 0 ? Math.round(catDone / catTasks.length * 100) : 0;
+
     sparkHTML += '<div style="display:flex;align-items:center;gap:10px;">' +
-      '<span style="width:40px;font-family:var(--ax-font-mono);font-size:var(--ax-text-xs);color:var(--ax-text-muted);font-weight:600;">' + wd.label + '</span>' +
-      '<div style="flex:1;display:flex;flex-direction:column;gap:3px;">' +
-        '<div style="display:flex;align-items:center;gap:6px;">' +
-          '<span style="width:48px;font-size:var(--ax-text-2xs);color:var(--ax-viz-cyan);font-weight:600;">CRIADAS</span>' +
-          '<div style="flex:1;height:18px;background:var(--ax-surface-subtle);border-radius:var(--ax-radius-sm);overflow:hidden;">' +
-            '<div style="height:100%;width:' + Math.max(cw, wd.created ? 4 : 0) + '%;background:var(--ax-viz-cyan);border-radius:var(--ax-radius-sm);transition:width .4s var(--ax-ease-standard);display:flex;align-items:center;justify-content:flex-end;padding-right:6px;">' +
-              (wd.created > 0 ? '<span style="font-family:var(--ax-font-mono);font-size:var(--ax-text-2xs);color:#fff;font-weight:600;">' + wd.created + '</span>' : '') +
-            '</div></div></div>' +
-        '<div style="display:flex;align-items:center;gap:6px;">' +
-          '<span style="width:48px;font-size:var(--ax-text-2xs);color:var(--ax-viz-emerald);font-weight:600;">CONCLUÍDAS</span>' +
-          '<div style="flex:1;height:18px;background:var(--ax-surface-subtle);border-radius:var(--ax-radius-sm);overflow:hidden;">' +
-            '<div style="height:100%;width:' + Math.max(dw, wd.done ? 4 : 0) + '%;background:var(--ax-viz-emerald);border-radius:var(--ax-radius-sm);transition:width .4s var(--ax-ease-standard);display:flex;align-items:center;justify-content:flex-end;padding-right:6px;">' +
-              (wd.done > 0 ? '<span style="font-family:var(--ax-font-mono);font-size:var(--ax-text-2xs);color:#fff;font-weight:600;">' + wd.done + '</span>' : '') +
-            '</div></div></div></div>' +
-      '<span class="ax-num" style="width:30px;text-align:right;font-family:var(--ax-font-mono);font-size:var(--ax-text-xs);font-weight:700;color:' + netColor + ';' + (wd.net === 0 ? 'opacity:.4' : '') + '">' + netLabel + '</span>' +
+      '<span style="width:100px;font-size:var(--ax-text-xs);color:var(--ax-text-strong);font-weight:600;text-align:right;flex:none;" class="ax-text-truncate">' + esc(nonEdCats[ct2].nome) + '</span>' +
+      '<div style="flex:1;height:22px;background:var(--ax-surface-subtle);border-radius:var(--ax-radius-sm);overflow:hidden;display:flex;">' +
+        (catProgress > 0 ? '<div style="width:' + doneW + '%;background:var(--ax-viz-amber);display:flex;align-items:center;justify-content:center;transition:width .4s var(--ax-ease-standard);"><span style="font-family:var(--ax-font-mono);font-size:var(--ax-text-2xs);color:var(--ax-text-strong);font-weight:600;">' + (doneW >= 15 ? catProgress : '') + '</span></div>' : '') +
+        (catDone > 0 ? '<div style="flex:1;background:var(--ax-viz-emerald);display:flex;align-items:center;justify-content:center;transition:width .4s var(--ax-ease-standard);"><span style="font-family:var(--ax-font-mono);font-size:var(--ax-text-2xs);color:var(--ax-text-strong);font-weight:600;">' + (doneW <= 85 ? catDone : '') + '</span></div>' : '') +
+      '</div>' +
+      '<span class="ax-num" style="width:40px;text-align:right;font-family:var(--ax-font-mono);font-size:var(--ax-text-xs);font-weight:700;color:var(--ax-text-muted);">' + catTasks.length + '</span>' +
       '</div>';
+  }
+  if (sparkHTML === '<div style="display:flex;flex-direction:column;gap:10px;">') {
+    sparkHTML += '<div style="color:var(--ax-text-subtle);font-size:var(--ax-text-sm);padding:8px 0;">Sem dados de demanda.</div>';
   }
   sparkHTML += '</div>';
 
-  var legend = '<div class="ax-legend"><span class="key"><span class="sw" style="background:var(--ax-viz-cyan)"></span> Criadas</span><span class="key"><span class="sw" style="background:var(--ax-viz-emerald)"></span> Concluídas</span><span class="key" style="color:var(--ax-text-subtle);font-size:var(--ax-text-2xs);">Saldo positivo = mais entrou do que saiu</span></div>';
+  var legend = '<div class="ax-legend"><span class="key"><span class="sw" style="background:var(--ax-viz-amber)"></span> Em andamento</span><span class="key"><span class="sw" style="background:var(--ax-viz-emerald)"></span> Concluídas</span></div>';
 
   /* status distribution */
   var statusData = [];
@@ -2256,36 +2239,24 @@ function renderDashboard() {
   }
   recHTML += '</tbody></table></div>';
 
-  /* categoria workload */
-  var catWork = '';
-  var nonEdCats = S.categories.filter(function (c) { return c.id !== 1; });
-  for (var cw = 0; cw < nonEdCats.length; cw++) {
-    var ccount = dashActs.filter(function (a) { return a.categoria === nonEdCats[cw].id; }).length;
-    var cpct = dashActs.length ? Math.round(ccount / dashActs.length * 100) : 0;
-    catWork += '<div class="ax-dist-row"><span class="name">' + esc(nonEdCats[cw].nome) + '</span>' +
-      '<span class="bar"><span class="fill" style="width:' + cpct + '%;background:' + nonEdCats[cw].cor + '"></span></span>' +
-      '<span class="val">' + ccount + '</span></div>';
-  }
-
   el.innerHTML =
     /* Row 1: KPIs */
     '<div class="ax-col--12" style="display:grid;grid-template-columns:repeat(12,1fr);gap:var(--ax-space-4);">' + kpis + '</div>' +
 
-    /* Row 2: Throughput (wider) + Status distribution */
+    /* Row 2: Throughput por demanda + Status doughnut */
     '<div class="ax-col--8">' +
-      '<div class="ax-card" style="height:100%"><div class="ax-card__header"><div><h2 class="ax-card__title">Task Throughput</h2><p class="ax-card__subtitle">Tarefas criadas vs. concluídas por semana</p></div>' + legend + '</div><div class="ax-card__body">' + sparkHTML + '</div></div>' +
+      '<div class="ax-card" style="height:100%"><div class="ax-card__header"><div><h2 class="ax-card__title">Task Throughput</h2><p class="ax-card__subtitle">Demandas por tipo — em andamento vs concluídas</p></div>' + legend + '</div><div class="ax-card__body">' + sparkHTML + '</div></div>' +
     '</div>' +
     '<div class="ax-col--4">' +
       '<div class="ax-card" style="height:100%"><div class="ax-card__header"><div><h2 class="ax-card__title">Status do projeto</h2><p class="ax-card__subtitle">Distribuição por estágio</p></div></div><div class="ax-card__body">' + doughnutSvg + distHTML + '</div></div>' +
     '</div>' +
 
-    /* Row 3: Tarefas recentes + (Próximos vencimentos + Workload) */
+    /* Row 3: Tarefas recentes + Próximos vencimentos */
     '<div class="ax-col--6">' +
       '<div class="ax-card"><div class="ax-card__header"><div><h2 class="ax-card__title">Tarefas recentes</h2><p class="ax-card__subtitle">Últimas atividades registradas</p></div></div><div class="ax-card__body" style="padding-top:8px;">' + recHTML + '</div></div>' +
     '</div>' +
     '<div class="ax-col--6">' +
-      '<div class="ax-card" style="margin-bottom:var(--ax-space-4);"><div class="ax-card__header"><div><h2 class="ax-card__title">Próximos vencimentos</h2><p class="ax-card__subtitle">Prazos mais próximos</p></div></div><div class="ax-card__body" style="padding-top:4px;">' + upHTML + '</div></div>' +
-      '<div class="ax-card"><div class="ax-card__header"><div><h2 class="ax-card__title">Workload por área</h2><p class="ax-card__subtitle">Tarefas por categoria</p></div></div><div class="ax-card__body">' + (catWork || '<div style="color:var(--ax-text-subtle);font-size:var(--ax-text-sm)">Sem categorias.</div>') + '</div></div>' +
+      '<div class="ax-card"><div class="ax-card__header"><div><h2 class="ax-card__title">Próximos vencimentos</h2><p class="ax-card__subtitle">Prazos mais próximos</p></div></div><div class="ax-card__body" style="padding-top:4px;">' + upHTML + '</div></div>' +
     '</div>';
   updateNavBadges();
 }
