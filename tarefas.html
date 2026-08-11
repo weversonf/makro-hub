@@ -1278,7 +1278,7 @@ h1, h2, h3, h4, p { margin: 0; }
         <button class="ax-tabs__tab is-active" data-tm-tab="detalhes">Detalhes</button>
         <button class="ax-tabs__tab" data-tm-tab="progresso">Progresso</button>
         <button class="ax-tabs__tab" data-tm-tab="checklist">Checklist <span class="ax-tabs__badge" id="tm-checklist-count">0</span></button>
-        <button class="ax-tabs__tab" data-tm-tab="canais">Canais</button>
+        <button class="ax-tabs__tab" data-tm-tab="canais" id="tm-tab-canais">Canais <span class="ax-tabs__badge" id="tm-canais-count">0</span></button>
       </div>
 
       <!-- tab: detalhes -->
@@ -2247,6 +2247,7 @@ function openNewTask(stageId) {
   setProgressStep(0);
   renderChecklistTMP();
   renderCanaisTMP([]);
+  updateCanaisTab();
   document.getElementById('tm-avatar').style.background = 'color-mix(in oklab,var(--ax-accent) 20%,transparent)';
   document.getElementById('tm-avatar').style.color = 'var(--ax-accent)';
   openOverlay('task-modal');
@@ -2312,13 +2313,31 @@ function openEditTask(id) {
   setProgressStep(a.progress);
   renderChecklistTMP();
   renderCanaisTMP(a.canais || []);
+  updateCanaisTab();
   openOverlay('task-modal');
+}
+
+function updateCanaisTab() {
+  var catId = Number(document.getElementById('tmf-cat').value);
+  var tabBtn = document.getElementById('tm-tab-canais');
+  var panel = document.querySelector('[data-tm-panel="canais"]');
+  var isEditorial = catId === 1;
+  if (isEditorial) {
+    tabBtn.classList.remove('hidden');
+  } else {
+    tabBtn.classList.add('hidden');
+    if (S.tab === 'canais') setTab('detalhes');
+  }
 }
 
 function setTab(tab) {
   S.tab = tab;
   var tabs = document.querySelectorAll('[data-tm-tab]');
-  for (var i = 0; i < tabs.length; i++) tabs[i].classList.toggle('is-active', tabs[i].getAttribute('data-tm-tab') === tab);
+  for (var i = 0; i < tabs.length; i++) {
+    var t = tabs[i];
+    if (t.classList.contains('hidden')) continue;
+    t.classList.toggle('is-active', t.getAttribute('data-tm-tab') === tab);
+  }
   var panels = document.querySelectorAll('[data-tm-panel]');
   for (var j = 0; j < panels.length; j++) panels[j].style.display = panels[j].getAttribute('data-tm-panel') === tab ? '' : 'none';
 }
@@ -2339,6 +2358,7 @@ function setProgressStep(val) {
 }
 
 function renderCanaisTMP(selected) {
+  document.getElementById('tm-canais-count').textContent = selected.length;
   var grid = document.getElementById('tm-canais-grid');
   var html = '';
   for (var i = 0; i < CANAIS.length; i++) {
@@ -2716,6 +2736,9 @@ function init() {
   });
   document.getElementById('tmf-stage').addEventListener('change', function () {
     if (this.value === 'concluido') setProgressStep(100);
+  });
+  document.getElementById('tmf-cat').addEventListener('change', function () {
+    updateCanaisTab();
   });
   document.querySelectorAll('.ax-overlay').forEach(function (ov) {
     ov.addEventListener('click', function (e) { if (e.target === ov) ov.classList.remove('open'); });
