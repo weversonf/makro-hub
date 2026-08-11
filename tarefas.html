@@ -6,6 +6,7 @@
 <title>Tarefas · Makro</title>
 <meta name="theme-color" content="#0A0C11" media="(prefers-color-scheme: dark)" />
 <meta name="theme-color" content="#FCFBF9" media="(prefers-color-scheme: light)" />
+<link rel="icon" type="image/png" href="https://makroengenharia.com.br/wp-content/uploads/2026/08/ICONE-ESTRELA-LOGO-MAKRO-VERMELHA.png" />
 
 <!-- Anti-flash theme restore (lê localStorage antes do primeiro paint) -->
 <script>
@@ -227,11 +228,13 @@ h1, h2, h3, h4, p { margin: 0; }
 }
 .ax-sidebar__logo { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .ax-sidebar__mark { display: flex; flex: none; }
+.ax-sidebar__mark img { width: 28px; height: 28px; object-fit: contain; }
 .ax-sidebar__wordmark {
   font-family: var(--ax-font-display); font-weight: 700; letter-spacing: .02em;
   color: var(--ax-text-strong); font-size: 17px; white-space: nowrap;
   transition: opacity var(--ax-motion-fast) var(--ax-ease-standard);
 }
+.ax-sidebar__wordmark img { height: 28px; width: auto; object-fit: contain; }
 [data-ax-collapsed] .ax-sidebar__wordmark { opacity: 0; width: 0; overflow: hidden; }
 
 .ax-sidebar__nav {
@@ -830,7 +833,7 @@ h1, h2, h3, h4, p { margin: 0; }
 <div id="auth-gate">
   <div id="auth-loading"><div class="ax-spinner" aria-hidden="true"></div></div>
   <div id="auth-login-form" class="hidden" style="text-align:center;">
-    <svg width="44" height="44" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="axmk2" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse"><stop stop-color="#2BC4B0"/><stop offset="0.55" stop-color="#1E9E96"/><stop offset="1" stop-color="#6D5CF0"/></linearGradient></defs><path d="M4 4 H16 A12 12 0 0 1 28 16 V28 A0 0 0 0 1 28 28 H16 A12 12 0 0 1 4 16 V4 Z" fill="url(#axmk2)"/><circle cx="20.5" cy="11.5" r="2.6" fill="#0A0C11" fill-opacity="0.92"/></svg>
+    <img src="https://makroengenharia.com.br/wp-content/uploads/2026/08/ICONE-ESTRELA-LOGO-MAKRO-VERMELHA.png" alt="Makro" width="48" height="48" style="border-radius:8px;">
     <h2 style="font-family:var(--ax-font-display);font-size:var(--ax-text-xl);color:var(--ax-text-strong);margin-top:16px;">Makro · Tarefas</h2>
     <p style="font-size:var(--ax-text-sm);color:var(--ax-text-muted);margin-top:6px;">Faça login com sua conta Google</p>
     <button id="btn-google-login" style="margin-top:20px;padding:12px 24px;background:var(--ax-surface);border:1px solid var(--ax-border);border-radius:var(--ax-radius-md);font-size:var(--ax-text-sm);font-weight:600;color:var(--ax-text-strong);display:inline-flex;align-items:center;gap:10px;cursor:pointer;font-family:inherit;transition:all var(--ax-motion-fast);">
@@ -857,9 +860,11 @@ h1, h2, h3, h4, p { margin: 0; }
     <div class="ax-sidebar__brand">
       <a class="ax-sidebar__logo" id="brand-home" href="javascript:void(0)">
         <span class="ax-sidebar__mark">
-          <svg class="ax-icon" width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="axmk" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse"><stop stop-color="#2BC4B0"/><stop offset="0.55" stop-color="#1E9E96"/><stop offset="1" stop-color="#6D5CF0"/></linearGradient></defs><path d="M4 4 H16 A12 12 0 0 1 28 16 V28 A0 0 0 0 1 28 28 H16 A12 12 0 0 1 4 16 V4 Z" fill="url(#axmk)"/><circle cx="20.5" cy="11.5" r="2.6" fill="#0A0C11" fill-opacity="0.92"/></svg>
+          <img src="https://makroengenharia.com.br/wp-content/uploads/2026/08/ICONE-ESTRELA-LOGO-MAKRO-VERMELHA.png" alt="Makro" width="28" height="28">
         </span>
-        <span class="ax-sidebar__wordmark">MAKRO</span>
+        <span class="ax-sidebar__wordmark">
+          <img src="https://makroengenharia.com.br/wp-content/uploads/2023/03/logo-1.png" alt="Makro Engenharia" height="28">
+        </span>
       </a>
     </div>
 
