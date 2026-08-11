@@ -24,7 +24,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -36,9 +36,9 @@
 /* DESIGN TOKENS                                                */
 /* ============================================================ */
 :root {
-  --ax-font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
-  --ax-font-sans: 'Inter', system-ui, sans-serif;
-  --ax-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --ax-font-display: 'Ubuntu', system-ui, sans-serif;
+  --ax-font-sans: 'Ubuntu', system-ui, sans-serif;
+  --ax-font-mono: 'Ubuntu', ui-monospace, monospace;
 
   --ax-accent: #1E856C;
   --ax-on-accent: #FFFFFF;
@@ -820,28 +820,109 @@ h1, h2, h3, h4, p { margin: 0; }
 .ax-fab:active { transform: scale(.96); }
 .hidden { display: none !important; }
 
+/* ============================================================ */
+/* CALENDAR                                                     */
+/* ============================================================ */
+.cal-grid { display: flex; flex-direction: column; border: 1px solid var(--ax-border); border-radius: var(--ax-radius-lg); overflow: hidden; }
+.cal-row { display: grid; grid-template-columns: repeat(7, 1fr); }
+.cal-row--head { border-bottom: 1px solid var(--ax-border); }
+.cal-cel {
+  min-height: 110px; padding: 8px; border-right: 1px solid var(--ax-border);
+  border-bottom: 1px solid var(--ax-border); font-size: var(--ax-text-xs);
+  cursor: default; transition: background var(--ax-motion-fast);
+}
+.cal-cel:nth-child(7n) { border-right: 0; }
+.cal-cel--head {
+  min-height: auto; padding: 10px 8px; background: var(--ax-surface-subtle);
+  font-size: var(--ax-text-2xs); font-weight: 600; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--ax-text-subtle); text-align: center;
+  cursor: default;
+}
+.cal-cel--other { opacity: .35; }
+.cal-cel--today { background: color-mix(in oklab, var(--ax-accent) 6%, transparent); }
+.cal-cel:hover { background: var(--ax-surface-subtle); }
+.cal-cel__num {
+  font-family: var(--ax-font-mono); font-weight: 600; font-size: var(--ax-text-sm);
+  color: var(--ax-text-muted); margin-bottom: 6px;
+}
+.cal-cel--today .cal-cel__num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--ax-accent); color: var(--ax-on-accent); font-size: var(--ax-text-xs);
+}
+.cal-event {
+  display: block; padding: 3px 7px; margin-bottom: 3px; border-radius: 5px;
+  font-size: var(--ax-text-2xs); font-weight: 600; line-height: 1.35;
+  cursor: pointer; transition: opacity var(--ax-motion-fast);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  background: color-mix(in oklab, var(--ax-accent) 18%, transparent);
+  color: var(--ax-text-strong); border-left: 3px solid var(--ax-accent);
+}
+.cal-event:hover { opacity: .78; }
+.cal-event--post { border-left-color: var(--ax-viz-violet); background: color-mix(in oklab, var(--ax-viz-violet) 14%, transparent); }
+.cal-event--done { opacity: .55; text-decoration: line-through; }
+.cal-more {
+  font-size: var(--ax-text-2xs); color: var(--ax-text-subtle); padding-left: 7px;
+  cursor: pointer; margin-top: 2px;
+}
+.cal-more:hover { color: var(--ax-accent); }
+
+@media (max-width: 768px) {
+  .cal-cel { min-height: 72px; padding: 5px; }
+  .cal-event { font-size: 9px; padding: 2px 4px; }
+  .cal-cel__num { font-size: var(--ax-text-xs); margin-bottom: 3px; }
+}
+
 #auth-gate {
   position: fixed; inset: 0; z-index: 200;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  background: var(--ax-canvas); gap: 24px;
+  background: var(--ax-canvas);
 }
-#btn-google-login:hover { background: var(--ax-surface-2); }
+.auth-center {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 100vh; padding: var(--ax-space-5);
+}
+#btn-google-login:hover { background: var(--ax-surface-2); border-color: var(--ax-border-strong); }
 </style>
 </head>
 <body>
 
 <div id="auth-gate">
-  <div id="auth-loading"><div class="ax-spinner" aria-hidden="true"></div></div>
-  <div id="auth-login-form" class="hidden" style="text-align:center;">
-    <img src="https://makroengenharia.com.br/wp-content/uploads/2026/08/ICONE-ESTRELA-LOGO-MAKRO-VERMELHA.png" alt="Makro" width="48" height="48" style="border-radius:8px;">
-    <h2 style="font-family:var(--ax-font-display);font-size:var(--ax-text-xl);color:var(--ax-text-strong);margin-top:16px;">Makro · Tarefas</h2>
-    <p style="font-size:var(--ax-text-sm);color:var(--ax-text-muted);margin-top:6px;">Faça login com sua conta Google</p>
-    <button id="btn-google-login" style="margin-top:20px;padding:12px 24px;background:var(--ax-surface);border:1px solid var(--ax-border);border-radius:var(--ax-radius-md);font-size:var(--ax-text-sm);font-weight:600;color:var(--ax-text-strong);display:inline-flex;align-items:center;gap:10px;cursor:pointer;font-family:inherit;transition:all var(--ax-motion-fast);">
-      <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-      Entrar com Google
-    </button>
-    <p id="auth-error" class="hidden" style="margin-top:12px;font-size:var(--ax-text-xs);color:var(--ax-danger-500);"></p>
-  </div>
+  <div class="ax-loader" id="auth-loading" role="status"><div class="ax-spinner" aria-hidden="true"></div></div>
+  <div class="ax-ambient" aria-hidden="true"><i></i></div>
+
+  <main class="auth-center" id="auth-main" style="display:none;position:relative;z-index:1;width:100%;max-width:420px;">
+    <div style="width:100%;display:flex;flex-direction:column;gap:var(--ax-space-5);">
+
+      <!-- Brand -->
+      <div style="display:flex;align-items:center;justify-content:center;gap:var(--ax-space-3);text-decoration:none;flex-direction:column;">
+        <img src="https://makroengenharia.com.br/wp-content/uploads/2023/03/logo-1.png" alt="Makro" height="28" style="margin-bottom:8px;">
+        <span class="auth-subtitle" style="font-size:var(--ax-text-md);color:var(--ax-text-muted);">Gerencie suas tarefas e editorial</span>
+      </div>
+
+      <!-- Auth Card -->
+      <section class="ax-card" role="region" aria-label="Entrar" style="border-radius:var(--ax-radius-xl);">
+        <div class="ax-card__body" style="padding:var(--ax-space-8);display:flex;flex-direction:column;gap:var(--ax-space-5);">
+
+          <header style="text-align:center;display:flex;flex-direction:column;gap:var(--ax-space-1);">
+            <h1 style="margin:0;font-family:var(--ax-font-display);font-size:var(--ax-text-2xl);font-weight:700;color:var(--ax-text-strong);letter-spacing:-.015em;">Entrar</h1>
+            <p style="margin:0;font-size:var(--ax-text-sm);color:var(--ax-text-muted);">Faça login com sua conta Google para continuar.</p>
+          </header>
+
+          <p id="auth-error" class="hidden" style="margin:0;font-size:var(--ax-text-xs);color:var(--ax-danger-500);text-align:center;padding:var(--ax-space-3) var(--ax-space-4);background:var(--ax-danger-soft);border-radius:var(--ax-radius-md);"></p>
+
+          <button id="btn-google-login" class="ax-btn ax-btn--secondary" style="justify-content:center;height:48px;font-size:var(--ax-text-md);font-weight:600;gap:var(--ax-space-3);">
+            <svg viewBox="0 0 48 48" width="22" height="22" aria-hidden="true"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
+            Entrar com Google
+          </button>
+        </div>
+      </section>
+
+      <p style="text-align:center;margin:0;font-size:var(--ax-text-2xs);color:var(--ax-text-subtle);">
+        © 2026 Makro Engenharia
+      </p>
+    </div>
+  </main>
 </div>
 
 <div id="app-view" class="hidden">
@@ -879,6 +960,13 @@ h1, h2, h3, h4, p { margin: 0; }
         <svg class="ax-nav__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l11 0"/><path d="M9 12l11 0"/><path d="M9 18l11 0"/><path d="M5 6l0 .01"/><path d="M5 12l0 .01"/><path d="M5 18l0 .01"/></svg>
         <span class="ax-nav__label">Tarefas</span>
         <span class="ax-nav__badge" id="nav-badge-lista">0</span>
+      </button>
+
+      <p class="ax-sidebar__section">Editorial</p>
+      <button class="ax-nav__item is-nav" data-view="editorial">
+        <svg class="ax-nav__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12"/><path d="M16 3l0 4"/><path d="M8 3l0 4"/><path d="M4 11l16 0"/><path d="M8 15h2v2h-2z"/></svg>
+        <span class="ax-nav__label">Calendário Editorial</span>
+        <span class="ax-nav__badge" id="nav-badge-editorial">0</span>
       </button>
 
       <p class="ax-sidebar__section">Gerenciar</p>
@@ -1019,6 +1107,55 @@ h1, h2, h3, h4, p { margin: 0; }
               <div class="ax-card__body">
                 <div class="ax-note" style="font-size:var(--ax-text-sm);color:var(--ax-text-muted);line-height:1.6;">
                   Cada categoria pode receber uma cor. Ela é usada nos avatares do kanban, na lista e no dashboard.
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ VIEW: EDITORIAL (Calendário) ============ -->
+      <section class="ax-view" id="view-editorial">
+        <div class="ax-dash-grid">
+          <div class="ax-col--12">
+            <section class="ax-card" role="region" aria-label="Calendário Editorial">
+              <div class="ax-card__header">
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <button class="ax-icon-btn" onclick="calPrev()" aria-label="Mês anterior">
+                    <svg class="ax-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6l6 6"/></svg>
+                  </button>
+                  <h2 class="ax-card__title" id="cal-month-label">Agosto 2026</h2>
+                  <button class="ax-icon-btn" onclick="calNext()" aria-label="Próximo mês">
+                    <svg class="ax-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6l-6 6"/></svg>
+                  </button>
+                  <button class="ax-btn ax-btn--secondary ax-btn--sm ax-btn--pill" onclick="calToday()">Hoje</button>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <button class="ax-btn ax-btn--primary ax-btn--sm" onclick="openNewTask('afazer')">Nova tarefa editorial</button>
+                </div>
+              </div>
+              <div class="ax-card__body" style="padding-top:4px;">
+                <!-- Calendar grid header (dias da semana) -->
+                <div class="cal-grid" id="cal-grid">
+                  <div class="cal-row cal-row--head">
+                    <div class="cal-cel cal-cel--head">Dom</div>
+                    <div class="cal-cel cal-cel--head">Seg</div>
+                    <div class="cal-cel cal-cel--head">Ter</div>
+                    <div class="cal-cel cal-cel--head">Qua</div>
+                    <div class="cal-cel cal-cel--head">Qui</div>
+                    <div class="cal-cel cal-cel--head">Sex</div>
+                    <div class="cal-cel cal-cel--head">Sáb</div>
+                  </div>
+                </div>
+                <!-- Day detail sidebar (hidden by default) -->
+                <div id="cal-detail" class="hidden" style="margin-top:var(--ax-space-4);padding:var(--ax-space-4);background:var(--ax-surface-subtle);border-radius:var(--ax-radius-lg);border:1px solid var(--ax-border);">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--ax-space-3);">
+                    <h3 class="ax-card__title" id="cal-detail-title"></h3>
+                    <button class="ax-icon-btn" onclick="closeCalDetail()" aria-label="Fechar">
+                      <svg class="ax-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>
+                    </button>
+                  </div>
+                  <div id="cal-detail-body"></div>
                 </div>
               </div>
             </section>
@@ -1555,6 +1692,7 @@ function initials(str) {
 var VIEW_META = {
   dash:       { title: 'Dashboard',          crumb: ['Projetos', 'Dashboard'] },
   lista:      { title: 'Tarefas',            crumb: ['Atividades', 'Lista de Tarefas'] },
+  editorial:  { title: 'Calendário Editorial', crumb: ['Editorial', 'Calendário'] },
   categorias: { title: 'Categorias',         crumb: ['Gerenciar', 'Categorias'] },
   config:     { title: 'Configurações',      crumb: ['Gerenciar', 'Configurações'] }
 };
@@ -1572,6 +1710,7 @@ function changeView(v) {
   updatePageHead();
   if (v === 'dash') renderDashboard();
   if (v === 'lista') renderLista();
+  if (v === 'editorial') renderCalendario();
   if (v === 'categorias') renderCategorias();
   if (v === 'config') renderConfig();
   document.getElementById('ax-main').scrollTop = 0;
@@ -1596,8 +1735,12 @@ function updatePageHead() {
   if (S.view === 'dash') {
     sub.innerHTML = '<span class="ax-num">' + total + '</span> tarefas · <span class="ax-num">' + pend + '</span> pendentes · <span class="ax-num">' + rate + '%</span> concluídas.';
   } else if (S.view === 'lista') {
+    var nonEd = S.activities.filter(function (a) { return a.categoria !== 1; });
     var f = filteredTasks().length;
-    sub.innerHTML = '<span class="ax-num">' + f + '</span> exibidas de <span class="ax-num">' + total + '</span> tarefas.';
+    sub.innerHTML = '<span class="ax-num">' + f + '</span> exibidas de <span class="ax-num">' + nonEd.length + '</span> tarefas.';
+  } else if (S.view === 'editorial') {
+    var ed = countCat(1);
+    sub.innerHTML = '<span class="ax-num">' + ed + '</span> atividades · calendário de publicações.';
   } else if (S.view === 'categorias') {
     sub.innerHTML = '<span class="ax-num">' + S.categories.length + '</span> áreas · cores usadas em todo o painel.';
   } else {
@@ -1775,6 +1918,7 @@ function filteredTasks() {
   var out = [];
   for (var i = 0; i < S.activities.length; i++) {
     var a = S.activities[i];
+    if (a.categoria === 1) continue; /* Editorial fica só no calendário editorial */
     if (S.listStage !== 'all' && a.stage !== S.listStage) continue;
     if (S.listCat !== 'all' && a.categoria !== S.listCat) continue;
     if (q) {
@@ -1963,6 +2107,7 @@ function handleDrop(e, colId) {
   if (a && a.stage !== colId) {
     a.stage = colId;
     if (colId === 'concluido') { a.progress = 100; a.concluidoEm = todayISO(); }
+    else if (a.progress === 100) { a.progress = 99; a.concluidoEm = null; }
     else if (a.concluidoEm) a.concluidoEm = null;
     if (a._fbId) fb.updateDoc(userDoc('activities', a._fbId), { stage: a.stage, progress: a.progress, concluidoEm: a.concluidoEm || null }).catch(function () {});
     renderLista();
@@ -2182,6 +2327,8 @@ function setProgressStep(val) {
   val = Math.max(0, Math.min(100, val));
   document.getElementById('tmf-progress-fill').style.width = val + '%';
   document.getElementById('tmf-progress-label').textContent = val + '%';
+  if (val >= 100) { document.getElementById('tmf-stage').value = 'concluido'; }
+  else if (document.getElementById('tmf-stage').value === 'concluido') { document.getElementById('tmf-stage').value = 'execucao'; }
   var steps = document.getElementById('tm-prof-steps');
   var html = '';
   for (var i = 0; i <= 10; i++) {
@@ -2276,6 +2423,7 @@ function saveTask() {
     canais: getSelectedCanais()
   };
   if (data.stage === 'concluido') data.progress = 100;
+  if (data.progress >= 100 && data.stage !== 'concluido') data.stage = 'concluido';
 
   if (S.editId) {
     var a = getTask(S.editId);
@@ -2369,6 +2517,123 @@ function handleHeaderSearch(v) {
 }
 
 /* ============================================================ */
+/* CALENDÁRIO EDITORIAL                                         */
+/* ============================================================ */
+var CAL_MONTHS = 'Janeiro Fevereiro Março Abril Maio Junho Julho Agosto Setembro Outubro Novembro Dezembro'.split(' ');
+var calDate = new Date();
+
+function calToday() { calDate = new Date(); renderCalendario(); }
+function calPrev() { calDate.setMonth(calDate.getMonth() - 1); renderCalendario(); }
+function calNext() { calDate.setMonth(calDate.getMonth() + 1); renderCalendario(); }
+function closeCalDetail() { document.getElementById('cal-detail').classList.add('hidden'); }
+
+function renderCalendario() {
+  var y = calDate.getFullYear();
+  var m = calDate.getMonth();
+  document.getElementById('cal-month-label').textContent = CAL_MONTHS[m] + ' ' + y;
+
+  var tasks = S.activities.filter(function (a) { return a.categoria === 1; });
+  /* Map tasks to days by dataPostagem (preferred) or dataVencimento */
+  var dayMap = {};
+  for (var i = 0; i < tasks.length; i++) {
+    var key = tasks[i].dataPostagem || tasks[i].dataVencimento;
+    if (!key) continue;
+    if (!dayMap[key]) dayMap[key] = [];
+    dayMap[key].push(tasks[i]);
+  }
+
+  var firstDay = new Date(y, m, 1).getDay();
+  var daysInMonth = new Date(y, m + 1, 0).getDate();
+  var prevDays = new Date(y, m, 0).getDate();
+  var today = todayISO();
+
+  var html = '';
+  var day = 1;
+  var totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+
+  for (var row = 0; row < totalCells / 7; row++) {
+    html += '<div class="cal-row">';
+    for (var col = 0; col < 7; col++) {
+      var cellNum = row * 7 + col + 1;
+      if (cellNum <= firstDay) {
+        var pDay = prevDays - firstDay + cellNum;
+        var pDate = y + '-' + String(m === 0 ? 12 : m).padStart(2, '0') + '-' + String(pDay).padStart(2, '0');
+        html += '<div class="cal-cel cal-cel--other"><div class="cal-cel__num">' + pDay + '</div>' + renderCalEvents(dayMap[pDate]) + '</div>';
+      } else if (day > daysInMonth) {
+        var nDay = day - daysInMonth;
+        var nDate = y + '-' + String(m + 2 > 12 ? 1 : m + 2).padStart(2, '0') + '-' + String(nDay).padStart(2, '0');
+        html += '<div class="cal-cel cal-cel--other"><div class="cal-cel__num">' + nDay + '</div>' + renderCalEvents(dayMap[nDate]) + '</div>';
+        day++;
+      } else {
+        var dDate = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+        var isToday = dDate === today;
+        var cellClass = 'cal-cel';
+        if (isToday) cellClass += ' cal-cel--today';
+        html += '<div class="' + cellClass + '" onclick="openCalDay(\'' + dDate + '\')" style="cursor:pointer">';
+        html += '<div class="cal-cel__num">' + day + '</div>';
+        html += renderCalEvents(dayMap[dDate], 3);
+        html += '</div>';
+        day++;
+      }
+    }
+    html += '</div>';
+  }
+
+  var grid = document.getElementById('cal-grid');
+  var headRow = grid.querySelector('.cal-row--head');
+  grid.innerHTML = headRow.outerHTML + html;
+  closeCalDetail();
+  updateNavBadges();
+}
+
+function renderCalEvents(arr, limit) {
+  if (!arr || !arr.length) return '';
+  var out = '';
+  var max = limit || 99;
+  for (var i = 0; i < Math.min(arr.length, max); i++) {
+    var ev = arr[i];
+    var evClass = 'cal-event';
+    if (ev.dataPostagem) evClass += ' cal-event--post';
+    if (ev.stage === 'concluido') evClass += ' cal-event--done';
+    out += '<div class="' + evClass + '" onclick="event.stopPropagation();openEditTask(' + ev.id + ')" title="' + esc((ev.dataPostagem ? 'Post: ' : 'Venc: ') + esc(ev.titulo)) + '">' + esc(ev.titulo) + '</div>';
+  }
+  if (arr.length > max) {
+    out += '<div class="cal-more">+' + (arr.length - max) + ' mais</div>';
+  }
+  return out;
+}
+
+function openCalDay(dateStr) {
+  var tasks = S.activities.filter(function (a) { return a.categoria === 1; });
+  var dayTasks = tasks.filter(function (a) {
+    var key = a.dataPostagem || a.dataVencimento;
+    return key && key === dateStr;
+  });
+
+  var parts = dateStr.split('-');
+  document.getElementById('cal-detail-title').textContent = parts[2] + '/' + parts[1] + '/' + parts[0];
+
+  var body = document.getElementById('cal-detail-body');
+  if (dayTasks.length === 0) {
+    body.innerHTML = '<p style="color:var(--ax-text-subtle);font-size:var(--ax-text-sm);">Nenhuma atividade editorial nesta data.</p>';
+  } else {
+    var html = '<div class="ax-table-wrap"><table class="ax-table ax-table--hover"><thead><tr><th>Tarefa</th><th>Estágio</th><th>Progresso</th><th>Tipo</th></tr></thead><tbody>';
+    for (var i = 0; i < dayTasks.length; i++) {
+      var a = dayTasks[i];
+      var st = stageOf(a.stage);
+      var isPost = !!a.dataPostagem;
+      html += '<tr class="row-click" onclick="openEditTask(' + a.id + ')"><td><div class="ax-strong">' + esc(a.titulo) + '</div><div style="font-size:var(--ax-text-xs);color:var(--ax-text-subtle);">' + esc(a.descricao || '') + '</div></td>' +
+        '<td><span class="ax-badge ax-badge--soft ax-badge--' + st.tone + ' ax-badge--pill"><span class="ax-badge__dot"></span>' + esc(st.label) + '</span></td>' +
+        '<td><div class="progress-inline" style="min-width:90px;"><div class="ax-progress ax-progress--sm" style="flex:1"><div class="ax-progress__track"><div class="ax-progress__fill" style="width:' + a.progress + '%;background:' + progColor(a.progress) + '"></div></div></div><span class="pct">' + a.progress + '%</span></div></td>' +
+        '<td><span class="ax-badge ax-badge--soft ax-badge--pill" style="--_b500:' + (isPost ? 'var(--ax-viz-violet)' : 'var(--ax-text-muted)') + '">' + (isPost ? 'Postagem' : 'Vencimento') + '</span></td></tr>';
+    }
+    html += '</tbody></table></div>';
+    body.innerHTML = html;
+  }
+  document.getElementById('cal-detail').classList.remove('hidden');
+}
+
+/* ============================================================ */
 /* RENDER ALL                                                   */
 /* ============================================================ */
 function renderAllFilters() {
@@ -2383,9 +2648,11 @@ function renderAll() {
 }
 function updateNavBadges() {
   var total = S.activities.length;
-  var pend = total - countStage('concluido');
+  var nonEd = S.activities.filter(function (a) { return a.categoria !== 1; }).length;
+  var pend = nonEd - S.activities.filter(function (a) { return a.categoria !== 1 && a.stage === 'concluido'; }).length;
   document.getElementById('nav-badge-dash').textContent = total;
-  document.getElementById('nav-badge-lista').textContent = pend;
+  document.getElementById('nav-badge-lista').textContent = nonEd;
+  document.getElementById('nav-badge-editorial').textContent = countCat(1);
 }
 
 /* ============================================================ */
@@ -2447,6 +2714,9 @@ function init() {
   document.getElementById('tm-checklist-input').addEventListener('keydown', function (e) {
     if (e.key === 'Enter') { e.preventDefault(); addChecklistItem(); }
   });
+  document.getElementById('tmf-stage').addEventListener('change', function () {
+    if (this.value === 'concluido') setProgressStep(100);
+  });
   document.querySelectorAll('.ax-overlay').forEach(function (ov) {
     ov.addEventListener('click', function (e) { if (e.target === ov) ov.classList.remove('open'); });
   });
@@ -2467,21 +2737,25 @@ function init() {
 
   /* auth gate */
   var authGate = document.getElementById('auth-gate');
-  var appView = document.getElementById('app-view');
   var authLoading = document.getElementById('auth-loading');
-  var authForm = document.getElementById('auth-login-form');
+  var authMain = document.getElementById('auth-main');
+  var appView = document.getElementById('app-view');
   var btnLogin = document.getElementById('btn-google-login');
   var authError = document.getElementById('auth-error');
 
   btnLogin.addEventListener('click', function () {
-    _auth.signInWithPopup(_googleProvider).catch(function (e) {
+    btnLogin.classList.add('is-loading');
+    _auth.signInWithPopup(_googleProvider).then(function () {
+      btnLogin.classList.remove('is-loading');
+    }).catch(function (e) {
+      btnLogin.classList.remove('is-loading');
       authError.textContent = 'Erro: ' + e.message;
       authError.classList.remove('hidden');
     });
   });
 
   _auth.onAuthStateChanged(function (user) {
-    authLoading.classList.add('hidden');
+    authLoading.style.display = 'none';
     if (user) {
       authGate.style.display = 'none';
       appView.classList.remove('hidden');
@@ -2492,8 +2766,8 @@ function init() {
       }
     } else {
       authGate.style.display = '';
+      authMain.style.display = '';
       appView.classList.add('hidden');
-      authForm.classList.remove('hidden');
     }
   });
 }
