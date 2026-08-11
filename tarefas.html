@@ -1675,6 +1675,7 @@ var S = {
   listQ: '',
   listMode: 'table',
   showConcluidoKanban: false,
+  listOverdueOnly: false,
   editId: null,
   draftChecklist: [],
   draftImages: [],
@@ -1948,7 +1949,11 @@ function updatePageHead() {
   } else if (S.view === 'lista') {
     var nonEd = S.activities.filter(function (a) { return a.categoria !== 1; });
     var f = filteredTasks().length;
-    sub.innerHTML = '<span class="ax-num">' + f + '</span> exibidas de <span class="ax-num">' + nonEd.length + '</span> tarefas.';
+    if (S.listOverdueOnly) {
+      sub.innerHTML = '<span class="ax-num" style="color:var(--ax-danger-500)">' + f + '</span> tarefas atrasadas · <button class="ax-btn ax-btn--link ax-btn--sm" onclick="S.listOverdueOnly=false;renderAll();" style="font-size:var(--ax-text-xs);">limpar filtro</button>';
+    } else {
+      sub.innerHTML = '<span class="ax-num">' + f + '</span> exibidas de <span class="ax-num">' + nonEd.length + '</span> tarefas.';
+    }
   } else if (S.view === 'editorial') {
     var ed = countCat(1);
     sub.innerHTML = '<span class="ax-num">' + ed + '</span> atividades · calendário de publicações.';
@@ -2016,7 +2021,7 @@ function renderDashboard() {
   var kpis = stat(ICONS.list, 'var(--ax-viz-cyan)', total, 'Tarefas totais', 'ativas neste quadro') +
              stat(ICONS.spark, 'var(--ax-viz-amber)', exec, 'Em execução', 'em andamento agora') +
              stat('<path d="M9 11l3 3l8 -8"/>', 'var(--ax-viz-emerald)', done, 'Concluídas', 'tarefas fechadas') +
-             stat(ICONS.chart, 'var(--ax-viz-violet)', rate + '%', 'Taxa de conclusão', atrasadas ? '<span style="color:var(--ax-danger-500)">' + atrasadas + ' atrasadas</span>' : 'tudo em dia ✓');
+             stat(ICONS.chart, 'var(--ax-viz-violet)', rate + '%', 'Taxa de conclusão', atrasadas ? '<a href="javascript:void(0)" onclick="S.listOverdueOnly=true;changeView(\'lista\')" style="color:var(--ax-danger-500);text-decoration:underline;">' + atrasadas + ' atrasadas</a>' : 'tudo em dia ✓');
 
   /* throughput - 6 últimas semanas com nomes reais */
   var weekNames = [];
@@ -2189,6 +2194,7 @@ function filteredTasks() {
   for (var i = 0; i < S.activities.length; i++) {
     var a = S.activities[i];
     if (a.categoria === 1) continue; /* Editorial fica só no calendário editorial */
+    if (S.listOverdueOnly && !isOverdue(a)) continue; /* Filtro de atrasadas */
     if (S.listStage !== 'all' && a.stage !== S.listStage) continue;
     if (S.listCat !== 'all' && a.categoria !== S.listCat) continue;
     if (q) {
