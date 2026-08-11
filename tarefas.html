@@ -3640,8 +3640,12 @@ function init() {
 
   btnLogin.addEventListener('click', function () {
     _auth.signInWithPopup(_googleProvider).catch(function (e) {
-      authError.textContent = 'Erro: ' + e.message;
-      authError.classList.remove('hidden');
+      if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
+        _auth.signInWithRedirect(_googleProvider);
+      } else {
+        authError.textContent = 'Erro: ' + e.message;
+        authError.classList.remove('hidden');
+      }
     });
   });
 
