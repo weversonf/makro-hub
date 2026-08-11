@@ -1939,15 +1939,23 @@ function renderDashboard() {
   }
 
   el.innerHTML =
+    /* Row 1: KPIs */
     '<div class="ax-col--12" style="display:grid;grid-template-columns:repeat(12,1fr);gap:var(--ax-space-4);">' + kpis + '</div>' +
 
-    '<div class="ax-col--8"><div class="ax-card" style="height:100%"><div class="ax-card__header"><div><h2 class="ax-card__title">Task Throughput</h2><p class="ax-card__subtitle">Tarefas criadas vs. concluídas por semana</p></div>' + legend + '</div><div class="ax-card__body">' + sparkHTML + '</div></div>' +
-    '<div style="height:16px"></div>' +
-    '<div class="ax-card"><div class="ax-card__header"><div><h2 class="ax-card__title">Tarefas recentes</h2><p class="ax-card__subtitle">Últimas atividades registradas</p></div></div><div class="ax-card__body" style="padding-top:8px;">' + recHTML + '</div></div></div>' +
+    /* Row 2: Throughput (wider) + Status distribution */
+    '<div class="ax-col--8">' +
+      '<div class="ax-card" style="height:100%"><div class="ax-card__header"><div><h2 class="ax-card__title">Task Throughput</h2><p class="ax-card__subtitle">Tarefas criadas vs. concluídas por semana</p></div>' + legend + '</div><div class="ax-card__body">' + sparkHTML + '</div></div>' +
+    '</div>' +
+    '<div class="ax-col--4">' +
+      '<div class="ax-card" style="height:100%"><div class="ax-card__header"><div><h2 class="ax-card__title">Status do projeto</h2><p class="ax-card__subtitle">Distribuição por estágio</p></div></div><div class="ax-card__body">' + distHTML + '</div></div>' +
+    '</div>' +
 
-    '<div class="ax-col--4" style="display:flex;flex-direction:column;gap:var(--ax-space-4);">' +
-      '<div class="ax-card"><div class="ax-card__header"><div><h2 class="ax-card__title">Status do projeto</h2><p class="ax-card__subtitle">Distribuição por estágio</p></div></div><div class="ax-card__body">' + distHTML + '</div></div>' +
-      '<div class="ax-card"><div class="ax-card__header"><div><h2 class="ax-card__title">Próximos vencimentos</h2><p class="ax-card__subtitle">Prazos mais próximos</p></div></div><div class="ax-card__body" style="padding-top:4px;">' + upHTML + '</div></div>' +
+    /* Row 3: Tarefas recentes + (Próximos vencimentos + Workload) */
+    '<div class="ax-col--6">' +
+      '<div class="ax-card"><div class="ax-card__header"><div><h2 class="ax-card__title">Tarefas recentes</h2><p class="ax-card__subtitle">Últimas atividades registradas</p></div></div><div class="ax-card__body" style="padding-top:8px;">' + recHTML + '</div></div>' +
+    '</div>' +
+    '<div class="ax-col--6">' +
+      '<div class="ax-card" style="margin-bottom:var(--ax-space-4);"><div class="ax-card__header"><div><h2 class="ax-card__title">Próximos vencimentos</h2><p class="ax-card__subtitle">Prazos mais próximos</p></div></div><div class="ax-card__body" style="padding-top:4px;">' + upHTML + '</div></div>' +
       '<div class="ax-card"><div class="ax-card__header"><div><h2 class="ax-card__title">Workload por área</h2><p class="ax-card__subtitle">Tarefas por categoria</p></div></div><div class="ax-card__body">' + (catWork || '<div style="color:var(--ax-text-subtle);font-size:var(--ax-text-sm)">Sem categorias.</div>') + '</div></div>' +
     '</div>';
   updateNavBadges();
