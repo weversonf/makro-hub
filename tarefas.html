@@ -432,14 +432,112 @@ h1, h2, h3, h4, p { margin: 0; }
 .ax-col--8 { grid-column: span 8; }
 .ax-col--9 { grid-column: span 9; }
 .ax-col--12 { grid-column: span 12; }
+/* ============================================================ */
+/* RESPONSIVO                                                    */
+/* ============================================================ */
 @media (max-width: 1100px) {
   .ax-col--3 { grid-column: span 6; }
   .ax-col--4, .ax-col--6, .ax-col--8, .ax-col--9 { grid-column: span 12; }
 }
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+  /* Mobile shell */
+  .ax-shell { margin-left: 0 !important; }
+  [data-ax-collapsed] .ax-shell { margin-left: 0 !important; }
+  .ax-sidebar {
+    transform: translateX(-100%);
+    transition: transform var(--ax-motion-med) var(--ax-ease-standard);
+    z-index: 70;
+  }
+  .ax-sidebar.ax-sidebar--open {
+    transform: translateX(0);
+    box-shadow: var(--ax-shadow-lg);
+  }
+  .ax-sidebar--open + .ax-sidebar__overlay {
+    display: block;
+  }
+  .ax-sidebar__overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 69;
+    background: var(--ax-backdrop);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  /* Header mobile */
+  .ax-header { padding: 0 10px; height: 52px; }
+  .ax-header__search { max-width: 160px; }
+  .ax-header__search input { height: 36px; font-size: var(--ax-text-xs); }
+
+  /* Main padding */
+  .ax-main { padding: var(--ax-space-3) 12px var(--ax-space-8); }
+
+  /* Grid collapse */
   .ax-col--3 { grid-column: span 12; }
   .ax-dash-grid { gap: var(--ax-space-3); }
-  .ax-main { padding: var(--ax-space-4) 14px var(--ax-space-8); }
+
+  /* Page head */
+  .ax-page-head__row { flex-direction: column; align-items: flex-start; }
+  .ax-page-head__title { font-size: var(--ax-text-xl); }
+  .ax-page-head__actions { width: 100%; }
+  .ax-page-head__actions .ax-btn { flex: 1; justify-content: center; }
+
+  /* Toolbar wrap */
+  .ax-toolbar { flex-wrap: wrap; }
+
+  /* Modal fullscreen */
+  .ax-overlay { padding: 0; align-items: flex-end; }
+  .ax-modal {
+    max-width: 100%; max-height: 92vh;
+    border-radius: var(--ax-radius-xl) var(--ax-radius-xl) 0 0;
+  }
+  .ax-modal__body { padding: var(--ax-space-3); }
+  .ax-modal__head { padding: var(--ax-space-3); }
+  .ax-row--2, .ax-row--3 { grid-template-columns: 1fr; gap: var(--ax-space-3); }
+  .ax-hero { flex-direction: column; }
+  .ax-hero__side { width: 100%; text-align: left !important; }
+
+  /* Kanban mobile */
+  .ax-pl-board { flex-direction: column; gap: var(--ax-space-3); }
+  .ax-pl-col { flex: 0 0 auto; width: 100%; }
+
+  /* FAB position */
+  .ax-fab { bottom: 80px; }
+
+  /* Footer */
+  .ax-footer { flex-direction: column; gap: 8px; text-align: center; padding: var(--ax-space-3) 12px; }
+
+  /* Calendar mobile */
+  .cal-cel { min-height: 64px; padding: 4px; }
+  .cal-event { font-size: 8px; padding: 1px 3px; }
+  .cal-cel__num { font-size: var(--ax-text-xs); margin-bottom: 2px; }
+  #mini-month-label, #cal-upcoming, #mini-dow, #mini-grid { display: none; }
+
+  /* NPS e Banco de Horas padding */
+  #banco-horas-root, #nps-root { padding: var(--ax-space-3); }
+
+  /* Customizer full width */
+  .ax-customizer__panel { max-width: 100%; }
+
+  /* Auth card */
+  .auth-center { padding: var(--ax-space-3); }
+  #auth-main { max-width: 100%; }
+
+  /* Hide sidebar wordmark always on mobile */
+  .ax-sidebar__wordmark { display: none; }
+  .ax-sidebar__brand { justify-content: center; padding: 0 8px; }
+
+  /* Spacer hide */
+  .ax-header__spacer { display: none; }
+}
+
+@media (max-width: 480px) {
+  .ax-header { height: 46px; }
+  .ax-header__search { display: none; }
+  .ax-header__right { gap: 2px; }
+  .ax-page-head__title { font-size: var(--ax-text-lg); }
+  .ax-card__header { padding: var(--ax-space-3) var(--ax-space-3) 0; }
+  .ax-card__body { padding: var(--ax-space-3); }
+  .ax-fab { width: 44px; height: 44px; bottom: 72px; right: 12px; }
 }
 
 .ax-divider { height: 1px; background: var(--ax-border); border: 0; margin: var(--ax-space-4) 0; }
@@ -1025,6 +1123,7 @@ h1, h2, h3, h4, p { margin: 0; }
 <div class="ax-ambient" aria-hidden="true"><i></i><i></i></div>
 
 <div class="ax-layout">
+  <div class="ax-sidebar__overlay" id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
 
   <!-- ===================== SIDEBAR ===================== -->
   <aside class="ax-sidebar" id="ax-sidebar">
@@ -1800,6 +1899,19 @@ function signOut() {
   S._initDone = false;
   S.activities = [];
   S.categories = [];
+}
+
+function toggleMobileSidebar() {
+  var sb = document.getElementById('ax-sidebar');
+  var ov = document.getElementById('sidebar-overlay');
+  sb.classList.toggle('ax-sidebar--open');
+  if (ov) ov.style.display = sb.classList.contains('ax-sidebar--open') ? 'block' : 'none';
+}
+function closeMobileSidebar() {
+  var sb = document.getElementById('ax-sidebar');
+  var ov = document.getElementById('sidebar-overlay');
+  if (sb) sb.classList.remove('ax-sidebar--open');
+  if (ov) ov.style.display = 'none';
 }
 
 /* ============================================================ */
@@ -3386,12 +3498,28 @@ function init() {
   document.querySelectorAll('.is-nav').forEach(function (b) {
     b.addEventListener('click', function () { changeView(b.getAttribute('data-view')); });
   });
-  document.getElementById('brand-home').addEventListener('click', function () { changeView('dash'); });
   document.getElementById('btn-sidebar').addEventListener('click', function () {
+    var isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+      toggleMobileSidebar();
+      return;
+    }
     var D = document.documentElement;
     if (D.hasAttribute('data-ax-collapsed')) D.removeAttribute('data-ax-collapsed');
     else D.setAttribute('data-ax-collapsed', '');
     try { localStorage.setItem('ax:collapsed', D.hasAttribute('data-ax-collapsed') ? '1' : '0'); } catch (e) {}
+  });
+
+  /* Fecha sidebar ao clicar em nav no mobile */
+  document.querySelectorAll('.is-nav').forEach(function(b) {
+    b.addEventListener('click', function() {
+      if (window.innerWidth <= 768) closeMobileSidebar();
+    });
+  });
+
+  document.getElementById('brand-home').addEventListener('click', function () {
+    changeView('dash');
+    if (window.innerWidth <= 768) closeMobileSidebar();
   });
   document.getElementById('btn-theme').addEventListener('click', toggleTheme);
   document.getElementById('btn-fab').addEventListener('click', function () { openNewTask(); });
