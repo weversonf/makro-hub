@@ -3252,11 +3252,12 @@ function init() {
   }
 
   btnLogin.addEventListener('click', function () {
+    if (!_auth) { toast('Firebase indisponível. Recarregue a página.', 'error'); return; }
     btnLogin.classList.add('is-loading');
-    _auth.signInWithPopup(_googleProvider).then(function () {
+    btnLogin.disabled = true;
+    _auth.signInWithRedirect(_googleProvider).catch(function (e) {
       btnLogin.classList.remove('is-loading');
-    }).catch(function (e) {
-      btnLogin.classList.remove('is-loading');
+      btnLogin.disabled = false;
       authError.textContent = 'Erro: ' + e.message;
       authError.classList.remove('hidden');
     });
@@ -3278,6 +3279,16 @@ function init() {
       appView.classList.add('hidden');
     }
   });
+
+  /* Trata retorno do redirect */
+  try {
+    _auth.getRedirectResult().catch(function (e) {
+      if (e.code !== 'auth/redirect-cancelled-by-user') {
+        authError.textContent = 'Erro no login: ' + e.message;
+        authError.classList.remove('hidden');
+      }
+    });
+  } catch(ex) {}
 }
 
 document.addEventListener('DOMContentLoaded', init);
