@@ -2005,6 +2005,7 @@ function renderCatPills() {
   if (!el) return;
   var html = '<option value="all"' + (S.listCat === 'all' ? ' selected' : '') + '>Todas as categorias</option>';
   for (var i = 0; i < S.categories.length; i++) {
+    if (S.categories[i].id === 1) continue; /* Editorial não aparece em Tarefas */
     html += '<option value="' + S.categories[i].id + '"' + (S.listCat === S.categories[i].id ? ' selected' : '') + '>' + esc(S.categories[i].nome) + '</option>';
   }
   el.innerHTML = html;
@@ -2287,8 +2288,8 @@ function openNewTask(stageId) {
 
   var catSel = document.getElementById('tmf-cat');
   catSel.innerHTML = '<option value="">Sem categoria</option>';
-  for (var i = 0; i < S.categories.length; i++) catSel.innerHTML += '<option value="' + S.categories[i].id + '">' + esc(S.categories[i].nome) + '</option>';
-  if (S.categories.length) catSel.value = S.categories[0].id;
+  for (var i = 0; i < S.categories.length; i++) { if (S.categories[i].id === 1) continue; catSel.innerHTML += '<option value="' + S.categories[i].id + '">' + esc(S.categories[i].nome) + '</option>'; }
+  if (S.categories.length > 0) catSel.value = S.categories[0].id === 1 && S.categories.length > 1 ? S.categories[1].id : S.categories[0].id;
 
   var stSel = document.getElementById('tmf-stage');
   stSel.innerHTML = '';
@@ -2344,7 +2345,7 @@ function openEditTask(id) {
 
   var catSel = document.getElementById('tmf-cat');
   catSel.innerHTML = '<option value="">Sem categoria</option>';
-  for (var i = 0; i < S.categories.length; i++) catSel.innerHTML += '<option value="' + S.categories[i].id + '">' + esc(S.categories[i].nome) + '</option>';
+  for (var i = 0; i < S.categories.length; i++) { if (S.categories[i].id === 1) continue; catSel.innerHTML += '<option value="' + S.categories[i].id + '">' + esc(S.categories[i].nome) + '</option>'; }
   catSel.value = a.categoria || '';
 
   var stSel = document.getElementById('tmf-stage');
