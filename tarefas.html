@@ -1417,19 +1417,19 @@ h1, h2, h3, h4, p { margin: 0; }
               <div class="ax-card__header">
                 <div>
                   <h2 class="ax-card__title">Dados</h2>
-                  <p class="ax-card__subtitle">Firebase — dados sincronizados em tempo real com o Makro Hub.</p>
+                  <p class="ax-card__subtitle">Backup completo das tarefas e categorias para salvar ou restaurar seus conteúdos.</p>
                 </div>
               </div>
               <div class="ax-card__body" style="display:flex;gap:10px;flex-wrap:wrap;">
-                <button class="ax-btn ax-btn--secondary" id="btn-export">
+                <button type="button" class="ax-btn ax-btn--secondary" id="btn-export" title="Baixar um backup JSON das tarefas e categorias">
                   <svg class="ax-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15l0 -10"/><path d="M7 8l5 -5l5 5"/><path d="M4 17v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1 -1v-3"/></svg>
                   Exportar backup
                 </button>
-                <button class="ax-btn ax-btn--secondary" id="btn-import">
+                <button type="button" class="ax-btn ax-btn--secondary" id="btn-import" title="Restaurar tarefas e categorias de um backup JSON">
                   <svg class="ax-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 10"/><path d="M7 10l5 5l5 -5"/><path d="M4 17v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1 -1v-3"/></svg>
                   Importar backup
                 </button>
-                <input type="file" id="import-file" accept="application/json" style="display:none">
+                <input type="file" id="import-file" accept=".json,application/json" style="display:none">
               </div>
             </section>
             <div style="height:16px"></div>
@@ -3144,19 +3144,144 @@ function renderConfig() {
   buildAccentSwatches();
   syncCfgUI();
 }
+function backupItems(items) {
+  return (items || []).map(function (item) {
+    var copy = {};
+    for (var key in item) {
+      if (key !== '_fbId' && Object.prototype.hasOwnProperty.call(item, key)) copy[key] = item[key];
+    }
+    return copy;
+  });
+}
+
 function exportBackup() {
-  var payload = { activities: S.activities, categories: S.categories, exportedAt: new Date().toISOString() };
-  var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  var payload = {
+    schemaVersion: 1,
+    exportedAt: new Date().toISOString(),
+    activities: backupItems(S.activities),
+    categories: backupItems(S.categories)
+  };
+  var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
   a.href = url;
   a.download = 'makro_tarefas_backup_' + todayISO() + '.json';
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
-  toast('Backup exportado');
+  a.remove();
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  toast('Backup exportado com ' + S.activities.length + ' tarefa(s) e ' + S.categories.length + ' categoria(s)');
 }
+
+function normalizeBackupData(data) {
+  if (!data || !Array.isArray(data.activities) || !Array.isArray(data.categories)) throw new Error('Formato de backup inválido.');
+
+  var categories = [], usedCatIds = {}, nextCatId = 1;
+  for (var i = 0; i < data.categories.length; i++) {
+    var rawCat = data.categories[i];
+    if (!rawCat || typeof rawCat !== 'object') continue;
+    var cat = {};
+    for (var catKey in rawCat) {
+      if (catKey !== '_fbId' && Object.prototype.hasOwnProperty.call(rawCat, catKey)) cat[catKey] = rawCat[catKey];
+    }
+    var catId = Number(cat.id);
+    if (!isFinite(catId) || catId <= 0 || usedCatIds[catId]) {
+      while (usedCatIds[nextCatId]) nextCatId++;
+      catId = nextCatId++;
+    }
+    usedCatIds[catId] = true;
+    if (catId >= nextCatId) nextCatId = catId + 1;
+    cat.id = catId;
+    cat.nome = String(cat.nome || '').trim();
+    if (!cat.nome) cat.nome = 'Categoria sem nome';
+    cat.cor = /^#[0-9a-f]{6}$/i.test(String(cat.cor || '')) ? String(cat.cor) : SWATCHES[categories.length % SWATCHES.length];
+    categories.push(cat);
+  }
+
+  var activities = [], usedActivityIds = {}, nextActivityId = 1;
+  for (var j = 0; j < data.activities.length; j++) {
+    var rawActivity = data.activities[j];
+    if (!rawActivity || typeof rawActivity !== 'object') continue;
+    var activity = {};
+    for (var activityKey in rawActivity) {
+      if (activityKey !== '_fbId' && Object.prototype.hasOwnProperty.call(rawActivity, activityKey)) activity[activityKey] = rawActivity[activityKey];
+    }
+    activity.titulo = String(activity.titulo || '').trim();
+    if (!activity.titulo) continue;
+    var activityId = Number(activity.id);
+    if (!isFinite(activityId) || activityId <= 0 || usedActivityIds[activityId]) {
+      while (usedActivityIds[nextActivityId]) nextActivityId++;
+      activityId = nextActivityId++;
+    }
+    usedActivityIds[activityId] = true;
+    if (activityId >= nextActivityId) nextActivityId = activityId + 1;
+    activity.id = activityId;
+    activity.categoria = activity.categoria === null || activity.categoria === '' || typeof activity.categoria === 'undefined' ? null : Number(activity.categoria);
+    if (activity.categoria !== null && (!isFinite(activity.categoria) || !usedCatIds[activity.categoria])) activity.categoria = null;
+    activity.stage = STAGES.some(function (stage) { return stage.id === activity.stage; }) ? activity.stage : 'afazer';
+    activity.prioridade = PRIOS[activity.prioridade] ? activity.prioridade : 'baixa';
+    activity.progress = Math.max(0, Math.min(100, Number(activity.progress) || 0));
+    activity.canais = Array.isArray(activity.canais) ? activity.canais : [];
+    activity.idCheck = Array.isArray(activity.idCheck) ? activity.idCheck : [];
+    activity.imagens = Array.isArray(activity.imagens) ? activity.imagens : [];
+    if (activity.stage === 'concluido') activity.progress = 100;
+    activities.push(activity);
+  }
+
+  return { activities: activities, categories: categories, nextId: nextActivityId, nextCatId: nextCatId };
+}
+
+function saveLocalBackup(data) {
+  try {
+    localStorage.setItem('makro_tasks_local', JSON.stringify({
+      activities: data.activities,
+      categories: data.categories,
+      nextId: data.nextId,
+      nextCatId: data.nextCatId
+    }));
+  } catch (e) {
+    throw new Error('Não foi possível gravar o backup local.');
+  }
+}
+
+function replaceFirebaseCollection(path, items) {
+  return fb.getDocs(userPath(path)).then(function (snapshot) {
+    var deletions = [];
+    snapshot.forEach(function (doc) { deletions.push(fb.deleteDoc(doc.ref)); });
+    return Promise.all(deletions);
+  }).then(function () {
+    return Promise.all(items.map(function (item) {
+      return fb.addDoc(userPath(path), item).then(function (doc) {
+        return Object.assign({}, item, { _fbId: doc.id });
+      });
+    }));
+  });
+}
+
+function persistImportedBackup(data) {
+  var currentUser = _activeUser || (_auth && _auth.currentUser);
+  if (_firebaseReady && _db && currentUser) {
+    return Promise.all([
+      replaceFirebaseCollection('activities', data.activities),
+      replaceFirebaseCollection('categories', data.categories)
+    ]).then(function (result) {
+      S.activities = result[0];
+      S.categories = result[1];
+      S.nextId = data.nextId;
+      S.nextCatId = data.nextCatId;
+    });
+  }
+  S.activities = data.activities;
+  S.categories = data.categories;
+  S.nextId = data.nextId;
+  S.nextCatId = data.nextCatId;
+  saveLocalBackup(data);
+  return Promise.resolve();
+}
+
 function importBackup() {
-  document.getElementById('import-file').click();
+  var input = document.getElementById('import-file');
+  if (input) input.click();
 }
 
 /* ============================================================ */
@@ -3660,23 +3785,41 @@ function init() {
   document.getElementById('btn-export').addEventListener('click', exportBackup);
   document.getElementById('btn-import').addEventListener('click', importBackup);
   document.getElementById('import-file').addEventListener('change', function (e) {
-    var f = e.target.files[0];
+    var input = e.target;
+    var f = input.files && input.files[0];
     if (!f) return;
+    var btn = document.getElementById('btn-import');
+    if (btn) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); }
     var rd = new FileReader();
+    rd.onerror = function () {
+      if (btn) { btn.disabled = false; btn.removeAttribute('aria-busy'); }
+      input.value = '';
+      toast('Não foi possível ler o arquivo.', 'error');
+    };
     rd.onload = function () {
       try {
-        var d = JSON.parse(rd.result);
-        if (!d || !Array.isArray(d.activities) || !Array.isArray(d.categories)) throw 0;
-        S.activities = d.activities;
-        S.categories = d.categories;
-        S.nextId = 10000;
-        S.nextCatId = 10000;
-        renderAll();
-        toast('Backup importado');
-      } catch (err) { toast('Arquivo inválido.', 'error'); }
+        var data = normalizeBackupData(JSON.parse(rd.result));
+        var confirmed = window.confirm('A importação substituirá as tarefas e categorias atuais. Deseja continuar?');
+        if (!confirmed) return;
+        persistImportedBackup(data).then(function () {
+          renderAll();
+          renderAllFilters();
+          toast('Backup importado e salvo com sucesso');
+        }).catch(function (err) {
+          console.error('Erro ao persistir backup:', err);
+          toast('Não foi possível salvar o backup.', 'error');
+        }).then(function () {
+          if (btn) { btn.disabled = false; btn.removeAttribute('aria-busy'); }
+          input.value = '';
+        });
+      } catch (err) {
+        console.error('Arquivo de backup inválido:', err);
+        if (btn) { btn.disabled = false; btn.removeAttribute('aria-busy'); }
+        input.value = '';
+        toast(err.message || 'Arquivo inválido.', 'error');
+      }
     };
     rd.readAsText(f);
-    e.target.value = '';
   });
 
   document.querySelectorAll('[data-lis-view]').forEach(function (b) {
