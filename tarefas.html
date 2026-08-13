@@ -651,7 +651,7 @@ h1, h2, h3, h4, p { margin: 0; }
 .ax-multi-select { position: relative; min-width: 190px; }
 .ax-multi-select__trigger { width: 100%; text-align: left; padding-right: 30px; cursor: pointer; }
 .ax-multi-select__trigger::after { content: '⌄'; position: absolute; right: 12px; top: 50%; transform: translateY(-54%); color: var(--ax-text-subtle); pointer-events: none; }
-.ax-multi-select__menu { position: absolute; z-index: 80; top: calc(100% + 6px); left: 0; right: 0; min-width: 210px; padding: 6px; background: var(--ax-surface); border: 1px solid var(--ax-border); border-radius: var(--ax-radius-md); box-shadow: var(--ax-shadow-lg); }
+.ax-multi-select__menu { position: absolute; z-index: 1000; top: calc(100% + 6px); left: 0; right: 0; min-width: 210px; padding: 6px; background: var(--ax-surface); border: 1px solid var(--ax-border); border-radius: var(--ax-radius-md); box-shadow: var(--ax-shadow-lg); }
 .ax-multi-select__menu[hidden] { display: none; }
 .ax-multi-select__option { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 10px; border: 0; border-radius: var(--ax-radius-sm); background: transparent; color: var(--ax-text); font: inherit; font-size: var(--ax-text-xs); text-align: left; cursor: pointer; }
 .ax-multi-select__option:hover, .ax-multi-select__option:focus-visible { background: var(--ax-surface-hover); outline: none; }
@@ -1266,8 +1266,8 @@ h1, h2, h3, h4, p { margin: 0; }
       <section class="ax-view" id="view-lista">
         <div class="ax-dash-grid">
           <div class="ax-col--12">
-            <section class="ax-card" role="region" aria-label="Filtros">
-              <div class="ax-card__body ax-toolbar" style="flex-wrap:nowrap;gap:var(--ax-space-3);">
+            <section class="ax-card" role="region" aria-label="Filtros" style="overflow:visible;">
+              <div class="ax-card__body ax-toolbar" style="flex-wrap:nowrap;gap:var(--ax-space-3);overflow:visible;">
                 <div class="ax-header__search" style="max-width:none;flex:1 1 280px;margin-inline-end:auto;">
                   <svg class="ax-icon" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--ax-text-subtle);pointer-events:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/></svg>
                   <input type="search" class="ax-input" id="lista-search" placeholder="Buscar por título, descrição ou categoria…" style="padding-left:36px;" aria-label="Buscar tarefas">
@@ -2135,6 +2135,7 @@ var VIEW_META = {
 };
 
 function changeView(v) {
+  closeTaskModal();
   S.view = v;
   var navs = document.querySelectorAll('.is-nav');
   for (var i = 0; i < navs.length; i++) {
@@ -2492,10 +2493,8 @@ function resetListStageFilter() {
   S.showConcluidoKanban = true;
   renderLista();
   updateNavBadges();
-  var menu = document.getElementById('lista-stage-filter-menu');
-  var trigger = document.getElementById('lista-stage-filter');
-  if (menu) menu.hidden = true;
-  if (trigger) trigger.setAttribute('aria-expanded', 'false');
+  // Mantemos o menu aberto para feedback visual da seleção múltipla, 
+  // a menos que o usuário clique fora.
 }
 function setListStage(s) {
   var next = Array.isArray(s) ? s.slice() : [s];
