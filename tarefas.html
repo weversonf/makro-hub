@@ -839,6 +839,10 @@ h1, h2, h3, h4, p { margin: 0; }
 .ax-hero__title-row { display: flex; align-items: center; gap: var(--ax-space-2); flex-wrap: wrap; }
 .ax-hero__title { font-family: var(--ax-font-display); font-size: var(--ax-text-xl); font-weight: 700; color: var(--ax-text-strong); }
 .ax-hero__desc { margin-top: 6px; color: var(--ax-text-muted); font-size: var(--ax-text-sm); line-height: 1.6; max-width: 60ch; }
+.ax-hero__desc-input { display:block; width:100%; max-width:100%; min-height:38px; padding:6px 8px; border:1px solid transparent; border-radius:var(--ax-radius-sm); background:transparent; color:var(--ax-text-muted); resize:vertical; cursor:text; }
+.ax-hero__desc-input::placeholder { color:var(--ax-text-subtle); opacity:1; }
+.ax-hero__desc-input:focus { border-color:var(--ax-accent); background:var(--ax-surface-subtle); color:var(--ax-text); outline:2px solid color-mix(in oklab,var(--ax-accent) 22%,transparent); outline-offset:1px; }
+.ax-hero__desc-input[readonly] { cursor:text; }
 .ax-hero__meta { display: flex; gap: var(--ax-space-4); margin-top: var(--ax-space-3); flex-wrap: wrap; font-size: var(--ax-text-xs); color: var(--ax-text-muted); }
 .ax-hero__meta .item { display: inline-flex; align-items: center; gap: 6px; }
 .ax-hero__meta .ax-icon { width: 14px; height: 14px; color: var(--ax-text-subtle); }
@@ -1519,7 +1523,7 @@ h1, h2, h3, h4, p { margin: 0; }
           <span class="ax-badge ax-badge--soft ax-badge--pill" id="tm-hero-stage"></span>
           <span class="ax-badge ax-badge--soft ax-badge--pill" id="tm-hero-prio" role="button" tabindex="0" aria-haspopup="listbox" aria-expanded="false" style="cursor:pointer;user-select:none;" onclick="togglePrioDropdown(event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();togglePrioDropdown(event);}" title="Clique para alterar prioridade">Baixa</span>
         </div>
-        <p class="ax-hero__desc" id="tm-hero-desc"></p>
+        <textarea class="ax-hero__desc ax-hero__desc-input" id="tm-hero-desc" rows="2" readonly onclick="enableTaskDescription(this)" onfocus="if(this.readOnly) enableTaskDescription(this)" placeholder="Clique para adicionar uma descrição…" aria-label="Descrição da tarefa"></textarea>
         <div class="ax-hero__meta" id="tm-hero-meta"></div>
       </div>
 
@@ -1532,10 +1536,7 @@ h1, h2, h3, h4, p { margin: 0; }
 
       <!-- tab: detalhes -->
       <div class="ax-tab-panel" data-tm-panel="detalhes">
-        <div class="ax-field">
-          <label class="ax-label" for="tmf-desc">Descrição</label>
-          <textarea class="ax-textarea" id="tmf-desc" placeholder="Detalhe o que precisa ser feito…"></textarea>
-        </div>
+        <!-- A descrição é editada diretamente no bloco principal acima. -->
         <!-- Progresso inline -->
         <div style="display:flex;align-items:center;gap:var(--ax-space-2);margin-bottom:var(--ax-space-3);">
           <span class="ax-label" style="white-space:nowrap;">Progresso</span>
@@ -2732,13 +2733,17 @@ function openNewTask(stageId) {
   S.draftChecklist = [];
   S.draftImages = [];
   document.getElementById('tm-eyebrow').textContent = 'Nova tarefa';
-  document.getElementById('tm-hero').style.display = 'none';
+  document.getElementById('tm-hero').style.display = '';
+  document.querySelector('#tm-hero .ax-hero__title-row').style.display = 'none';
+  document.getElementById('tm-hero-meta').style.display = 'none';
   document.getElementById('tm-tabs').style.display = '';
   setTab('detalhes');
   document.getElementById('tm-delete').style.display = 'none';
 
   document.getElementById('tm-title').value = '';
-  document.getElementById('tmf-desc').value = '';
+  var newDesc = document.getElementById('tm-hero-desc');
+  newDesc.value = '';
+  newDesc.readOnly = true;
   document.getElementById('tmf-due').value = '';
   document.getElementById('tmf-post').value = '';
   /* prioridade padrão: baixa */
@@ -2775,8 +2780,12 @@ function openEditTask(id) {
 
   /* hero overview */
   document.getElementById('tm-hero').style.display = '';
+  document.querySelector('#tm-hero .ax-hero__title-row').style.display = '';
+  document.getElementById('tm-hero-meta').style.display = '';
   document.getElementById('tm-title').value = a.titulo;
-  document.getElementById('tm-hero-desc').textContent = a.descricao || 'Sem descrição.';
+  var editDesc = document.getElementById('tm-hero-desc');
+  editDesc.value = a.descricao || '';
+  editDesc.readOnly = true;
   var st = stageOf(a.stage);
   document.getElementById('tm-hero-stage').className = 'ax-badge ax-badge--soft ax-badge--' + st.tone + ' ax-badge--pill';
   document.getElementById('tm-hero-stage').innerHTML = '<span class="ax-badge__dot"></span>' + esc(st.label);
@@ -2793,7 +2802,7 @@ function openEditTask(id) {
     (a.dataPostagem ? '<span class="item">' + ico('send', 14) + '<span>Post ' + fmtDate(a.dataPostagem) + '</span></span>' : '');
 
   document.getElementById('tm-title').value = a.titulo;
-  document.getElementById('tmf-desc').value = a.descricao || '';
+  document.getElementById('tm-hero-desc').value = a.descricao || '';
   document.getElementById('tmf-due').value = a.dataVencimento || '';
   document.getElementById('tmf-post').value = a.dataPostagem || '';
   /* prioridade via hero badge, não mais via select */
@@ -2895,14 +2904,20 @@ function setHeroPrio(p) {
   updatePrioBadge();
 }
 
+function enableTaskDescription(field) {
+  if (!field) return;
+  field.readOnly = false;
+  field.focus();
+}
+
 function updateModalForEditorial() {
   var catId = Number(document.getElementById('tmf-cat').value);
   var isEditorial = catId === 1;
   var tabBtn = document.getElementById('tm-tab-canais');
   var tabChecklist = document.querySelector('[data-tm-tab="checklist"]');
   var tabImagens = document.getElementById('tm-tab-imagens');
-  var descField = document.getElementById('tmf-desc');
-  var descLabel = document.querySelector('label[for="tmf-desc"]');
+  var descField = document.getElementById('tm-hero-desc');
+  var descLabel = null;
   var charCount = document.getElementById('tm-char-count');
   var modal = document.querySelector('.ax-modal');
 
@@ -3113,7 +3128,7 @@ function saveTask() {
   if (!titulo) { toast('Informe um título.', 'error'); return; }
   var data = {
     titulo: titulo,
-    descricao: document.getElementById('tmf-desc').value.trim(),
+    descricao: document.getElementById('tm-hero-desc').value.trim(),
     categoria: Number(document.getElementById('tmf-cat').value) || null,
     stage: document.getElementById('tmf-stage').value,
     prioridade: S._heroPrio || 'baixa',
