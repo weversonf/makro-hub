@@ -1273,7 +1273,7 @@ h1, h2, h3, h4, p { margin: 0; }
                   <input type="search" class="ax-input" id="lista-search" placeholder="Buscar por título, descrição ou categoria…" style="padding-left:36px;" aria-label="Buscar tarefas">
                 </div>
                 <div class="ax-select-wrap ax-multi-select" id="lista-stage-filter-wrap">
-                  <button type="button" class="ax-select ax-select--sm ax-multi-select__trigger" id="lista-stage-filter" aria-label="Filtrar por estágio" aria-haspopup="listbox" aria-expanded="false">Todas as etapas</button>
+                  <button type="button" class="ax-select ax-select--sm ax-multi-select__trigger" id="lista-stage-filter" aria-label="Filtrar por estágio" aria-haspopup="listbox" aria-expanded="false" onclick="toggleStageFilter(event)">Todas as etapas</button>
                   <div class="ax-multi-select__menu" id="lista-stage-filter-menu" role="listbox" aria-label="Estágios selecionados" aria-multiselectable="true" hidden></div>
                 </div>
                 <div class="ax-select-wrap">
@@ -2456,6 +2456,25 @@ function renderStagePills() {
       setListStage(next.length ? next : ['all']);
     });
   });
+}
+function toggleStageFilter(event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  var trigger = document.getElementById('lista-stage-filter');
+  var menu = document.getElementById('lista-stage-filter-menu');
+  if (!trigger || !menu) return false;
+  var shouldOpen = menu.hidden;
+  if (shouldOpen) {
+    renderStagePills();
+    menu.hidden = false;
+    trigger.setAttribute('aria-expanded', 'true');
+  } else {
+    menu.hidden = true;
+    trigger.setAttribute('aria-expanded', 'false');
+  }
+  return false;
 }
 function renderCatPills() {
   var el = document.getElementById('lista-cat-filter');
@@ -3882,13 +3901,7 @@ function init() {
     handleHeaderSearch(e.target.value);
   });
   document.getElementById('lista-search').addEventListener('input', function (e) { S.listQ = e.target.value; buildListBody(); });
-  document.getElementById('lista-stage-filter').addEventListener('click', function (event) {
-    event.stopPropagation();
-    var menu = document.getElementById('lista-stage-filter-menu');
-    if (!menu) return;
-    menu.hidden = !menu.hidden;
-    this.setAttribute('aria-expanded', menu.hidden ? 'false' : 'true');
-  });
+
   document.addEventListener('click', function (event) {
     var wrap = document.getElementById('lista-stage-filter-wrap');
     var menu = document.getElementById('lista-stage-filter-menu');
