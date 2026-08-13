@@ -827,6 +827,9 @@ h1, h2, h3, h4, p { margin: 0; }
 .ax-modal__head-main { flex: 1; min-width: 0; }
 .ax-modal__eyebrow { font-size: var(--ax-text-2xs); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ax-text-subtle); }
 .ax-modal__title { margin-top: 2px; font-family: var(--ax-font-display); font-size: var(--ax-text-xl); font-weight: 700; color: var(--ax-text-strong); }
+.ax-modal__title-input { display:block; width:100%; min-width:0; margin:2px 0 0; padding:0; border:1px solid transparent; border-radius:var(--ax-radius-sm); background:transparent; color:var(--ax-text-strong); font-family:var(--ax-font-display); font-size:var(--ax-text-xl); font-weight:700; line-height:1.2; }
+.ax-modal__title-input::placeholder { color:var(--ax-text-subtle); opacity:1; }
+.ax-modal__title-input:focus { margin-left:-6px; width:calc(100% + 12px); padding:4px 6px; border-color:var(--ax-accent); background:var(--ax-surface-subtle); outline:2px solid color-mix(in oklab,var(--ax-accent) 22%,transparent); outline-offset:1px; }
 .ax-modal__body { padding: var(--ax-space-5); overflow-y: auto; display: flex; flex-direction: column; gap: var(--ax-space-5); }
 .ax-modal__foot { padding: var(--ax-space-4) var(--ax-space-5); border-top: 1px solid var(--ax-border); display: flex; gap: 9px; align-items: center; }
 
@@ -1502,7 +1505,7 @@ h1, h2, h3, h4, p { margin: 0; }
       </span>
       <div class="ax-modal__head-main">
         <div class="ax-modal__eyebrow" id="tm-eyebrow">Nova tarefa</div>
-        <div class="ax-modal__title" id="tm-title">Tarefa</div>
+        <input class="ax-modal__title-input" id="tm-title" type="text" aria-label="Título da tarefa" placeholder="Título da tarefa" autocomplete="off">
       </div>
       <button class="ax-icon-btn" onclick="closeTaskModal()" aria-label="Fechar">
         <svg class="ax-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>
@@ -1513,7 +1516,6 @@ h1, h2, h3, h4, p { margin: 0; }
       <!-- hero overview -->
       <div class="ax-hero" id="tm-hero" style="display:none;">
         <div class="ax-hero__title-row">
-          <h2 class="ax-hero__title" id="tm-hero-title"></h2>
           <span class="ax-badge ax-badge--soft ax-badge--pill" id="tm-hero-stage"></span>
           <span class="ax-badge ax-badge--soft ax-badge--pill" id="tm-hero-prio" role="button" tabindex="0" aria-haspopup="listbox" aria-expanded="false" style="cursor:pointer;user-select:none;" onclick="togglePrioDropdown(event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();togglePrioDropdown(event);}" title="Clique para alterar prioridade">Baixa</span>
         </div>
@@ -1530,10 +1532,6 @@ h1, h2, h3, h4, p { margin: 0; }
 
       <!-- tab: detalhes -->
       <div class="ax-tab-panel" data-tm-panel="detalhes">
-        <div class="ax-field">
-          <label class="ax-label" for="tmf-titulo">Título</label>
-          <input class="ax-input" id="tmf-titulo" placeholder="Ex.: Revisar posts do LinkedIn">
-        </div>
         <div class="ax-field">
           <label class="ax-label" for="tmf-desc">Descrição</label>
           <textarea class="ax-textarea" id="tmf-desc" placeholder="Detalhe o que precisa ser feito…"></textarea>
@@ -2734,13 +2732,12 @@ function openNewTask(stageId) {
   S.draftChecklist = [];
   S.draftImages = [];
   document.getElementById('tm-eyebrow').textContent = 'Nova tarefa';
-  document.getElementById('tm-title').textContent = 'Criar tarefa';
   document.getElementById('tm-hero').style.display = 'none';
   document.getElementById('tm-tabs').style.display = '';
   setTab('detalhes');
   document.getElementById('tm-delete').style.display = 'none';
 
-  document.getElementById('tmf-titulo').value = '';
+  document.getElementById('tm-title').value = '';
   document.getElementById('tmf-desc').value = '';
   document.getElementById('tmf-due').value = '';
   document.getElementById('tmf-post').value = '';
@@ -2765,7 +2762,7 @@ function openNewTask(stageId) {
   document.getElementById('tm-avatar').style.background = 'color-mix(in oklab,var(--ax-accent) 20%,transparent)';
   document.getElementById('tm-avatar').style.color = 'var(--ax-accent)';
   openOverlay('task-modal');
-  setTimeout(function () { document.getElementById('tmf-titulo').focus(); }, 80);
+  setTimeout(function () { document.getElementById('tm-title').focus(); }, 80);
 }
 
 function openEditTask(id) {
@@ -2778,7 +2775,7 @@ function openEditTask(id) {
 
   /* hero overview */
   document.getElementById('tm-hero').style.display = '';
-  document.getElementById('tm-hero-title').textContent = a.titulo;
+  document.getElementById('tm-title').value = a.titulo;
   document.getElementById('tm-hero-desc').textContent = a.descricao || 'Sem descrição.';
   var st = stageOf(a.stage);
   document.getElementById('tm-hero-stage').className = 'ax-badge ax-badge--soft ax-badge--' + st.tone + ' ax-badge--pill';
@@ -2795,7 +2792,7 @@ function openEditTask(id) {
     '<span class="item">' + ico('clock', 14) + '<span>Criada ' + fmtDate(a.criadoEm) + '</span></span>' +
     (a.dataPostagem ? '<span class="item">' + ico('send', 14) + '<span>Post ' + fmtDate(a.dataPostagem) + '</span></span>' : '');
 
-  document.getElementById('tmf-titulo').value = a.titulo;
+  document.getElementById('tm-title').value = a.titulo;
   document.getElementById('tmf-desc').value = a.descricao || '';
   document.getElementById('tmf-due').value = a.dataVencimento || '';
   document.getElementById('tmf-post').value = a.dataPostagem || '';
@@ -2814,7 +2811,6 @@ function openEditTask(id) {
   if (cat) { tmm.style.background = 'color-mix(in oklab,' + cat.cor + ' 20%,transparent)'; tmm.style.color = cat.cor; }
 
   document.getElementById('tm-eyebrow').textContent = cat ? cat.nome : 'Tarefa';
-  document.getElementById('tm-title').textContent = a.titulo;
   document.getElementById('tm-tabs').style.display = '';
   setTab('detalhes');
   document.getElementById('tm-delete').style.display = '';
@@ -2825,6 +2821,7 @@ function openEditTask(id) {
   renderImagensTMP();
   updateCanaisTab();
   openOverlay('task-modal');
+  setTimeout(function () { var titleInput = document.getElementById('tm-title'); titleInput.focus(); titleInput.select(); }, 80);
 }
 
 function updateCanaisTab() {
@@ -3112,7 +3109,7 @@ function uploadImages(files) {
 }
 
 function saveTask() {
-  var titulo = document.getElementById('tmf-titulo').value.trim();
+  var titulo = document.getElementById('tm-title').value.trim();
   if (!titulo) { toast('Informe um título.', 'error'); return; }
   var data = {
     titulo: titulo,
