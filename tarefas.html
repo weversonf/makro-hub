@@ -2427,6 +2427,7 @@ function renderStagePills() {
   var trigger = document.getElementById('lista-stage-filter');
   var menu = document.getElementById('lista-stage-filter-menu');
   if (!trigger || !menu) return;
+  if (!Array.isArray(S.listStage)) S.listStage = S.listStage && S.listStage !== 'all' ? [S.listStage] : ['all'];
   var allSelected = S.listStage.indexOf('all') !== -1;
   var labels = [];
   if (allSelected) labels.push('Todas as etapas');
@@ -2446,7 +2447,7 @@ function renderStagePills() {
       event.stopPropagation();
       var value = option.getAttribute('data-stage-value');
       if (value === 'all') {
-        setListStage(['all']);
+        resetListStageFilter();
         return;
       }
       var next = S.listStage.indexOf('all') !== -1 ? [] : S.listStage.slice();
@@ -2466,9 +2467,25 @@ function renderCatPills() {
   }
   el.innerHTML = html;
 }
+function resetListStageFilter() {
+  S.listStage = ['all'];
+  /* "Todas as etapas" deve incluir também Concluído no modo cards. */
+  S.showConcluidoKanban = true;
+  renderLista();
+  updateNavBadges();
+  var menu = document.getElementById('lista-stage-filter-menu');
+  var trigger = document.getElementById('lista-stage-filter');
+  if (menu) menu.hidden = true;
+  if (trigger) trigger.setAttribute('aria-expanded', 'false');
+}
 function setListStage(s) {
   var next = Array.isArray(s) ? s.slice() : [s];
-  S.listStage = next.length ? next : ['all'];
+  next = next.filter(function (value, index) { return value && next.indexOf(value) === index; });
+  if (next.indexOf('all') !== -1 || !next.length) {
+    resetListStageFilter();
+    return;
+  }
+  S.listStage = next;
   renderLista();
   updateNavBadges();
 }
