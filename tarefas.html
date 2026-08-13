@@ -648,6 +648,14 @@ h1, h2, h3, h4, p { margin: 0; }
   pointer-events: none;
 }
 .ax-select--sm { height: 34px; font-size: var(--ax-text-xs); }
+.ax-multi-select { position: relative; min-width: 190px; }
+.ax-multi-select__trigger { width: 100%; text-align: left; padding-right: 30px; cursor: pointer; }
+.ax-multi-select__trigger::after { content: '⌄'; position: absolute; right: 12px; top: 50%; transform: translateY(-54%); color: var(--ax-text-subtle); pointer-events: none; }
+.ax-multi-select__menu { position: absolute; z-index: 80; top: calc(100% + 6px); left: 0; right: 0; min-width: 210px; padding: 6px; background: var(--ax-surface); border: 1px solid var(--ax-border); border-radius: var(--ax-radius-md); box-shadow: var(--ax-shadow-lg); }
+.ax-multi-select__menu[hidden] { display: none; }
+.ax-multi-select__option { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 10px; border: 0; border-radius: var(--ax-radius-sm); background: transparent; color: var(--ax-text); font: inherit; font-size: var(--ax-text-xs); text-align: left; cursor: pointer; }
+.ax-multi-select__option:hover, .ax-multi-select__option:focus-visible { background: var(--ax-surface-hover); outline: none; }
+.ax-multi-select__option input { accent-color: var(--ax-primary-500); pointer-events: none; }
 .ax-row { display: grid; gap: 12px; }
 .ax-row--2 { grid-template-columns: 1fr 1fr; }
 .ax-row--3 { grid-template-columns: repeat(3, 1fr); }
@@ -1264,8 +1272,9 @@ h1, h2, h3, h4, p { margin: 0; }
                   <svg class="ax-icon" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--ax-text-subtle);pointer-events:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/></svg>
                   <input type="search" class="ax-input" id="lista-search" placeholder="Buscar por título, descrição ou categoria…" style="padding-left:36px;" aria-label="Buscar tarefas">
                 </div>
-                <div class="ax-select-wrap">
-                  <select class="ax-select ax-select--sm" id="lista-stage-filter" aria-label="Filtrar por estágio"></select>
+                <div class="ax-select-wrap ax-multi-select" id="lista-stage-filter-wrap">
+                  <button type="button" class="ax-select ax-select--sm ax-multi-select__trigger" id="lista-stage-filter" aria-label="Filtrar por estágio" aria-haspopup="listbox" aria-expanded="false">Todas as etapas</button>
+                  <div class="ax-multi-select__menu" id="lista-stage-filter-menu" role="listbox" aria-label="Estágios selecionados" aria-multiselectable="true" hidden></div>
                 </div>
                 <div class="ax-select-wrap">
                   <select class="ax-select ax-select--sm" id="lista-cat-filter" aria-label="Filtrar por categoria"></select>
@@ -1788,7 +1797,7 @@ var S = {
   nextId: 1,
   nextCatId: 1,
   view: 'dash',
-  listStage: 'all',
+  listStage: ['all'],
   listCat: 'all',
   listQ: '',
   listMode: 'table',
@@ -2392,7 +2401,7 @@ function filteredTasks() {
     var a = S.activities[i];
     if (a.categoria === 1) continue; /* Editorial fica só no calendário editorial */
     if (S.listOverdueOnly && !isOverdue(a)) continue; /* Filtro de atrasadas */
-    if (S.listStage !== 'all' && a.stage !== S.listStage) continue;
+    if (S.listStage.indexOf('all') === -1 && S.listStage.indexOf(a.stage) === -1) continue;
     if (S.listCat !== 'all' && a.categoria !== S.listCat) continue;
     if (q) {
       var cat = catOf(a.categoria);
@@ -2415,13 +2424,37 @@ function renderLista() {
   buildListBody();
 }
 function renderStagePills() {
-  var el = document.getElementById('lista-stage-filter');
-  if (!el) return;
-  var html = '<option value="all"' + (S.listStage === 'all' ? ' selected' : '') + '>Todas as etapas (' + S.activities.length + ')</option>';
+  var trigger = document.getElementById('lista-stage-filter');
+  var menu = document.getElementById('lista-stage-filter-menu');
+  if (!trigger || !menu) return;
+  var allSelected = S.listStage.indexOf('all') !== -1;
+  var labels = [];
+  if (allSelected) labels.push('Todas as etapas');
   for (var i = 0; i < STAGES.length; i++) {
-    html += '<option value="' + STAGES[i].id + '"' + (S.listStage === STAGES[i].id ? ' selected' : '') + '>' + esc(STAGES[i].label) + ' (' + countStage(STAGES[i].id) + ')</option>';
+    if (!allSelected && S.listStage.indexOf(STAGES[i].id) !== -1) labels.push(STAGES[i].label);
   }
-  el.innerHTML = html;
+  trigger.textContent = labels.length > 1 ? labels.length + ' etapas selecionadas' : (labels[0] || 'Todas as etapas');
+  trigger.setAttribute('aria-expanded', menu.hidden ? 'false' : 'true');
+  var html = '<button type="button" class="ax-multi-select__option" role="option" aria-selected="' + (allSelected ? 'true' : 'false') + '" data-stage-value="all"><input type="checkbox" tabindex="-1"' + (allSelected ? ' checked' : '') + '><span>Todas as etapas (' + S.activities.length + ')</span></button>';
+  for (var j = 0; j < STAGES.length; j++) {
+    var selected = !allSelected && S.listStage.indexOf(STAGES[j].id) !== -1;
+    html += '<button type="button" class="ax-multi-select__option" role="option" aria-selected="' + (selected ? 'true' : 'false') + '" data-stage-value="' + STAGES[j].id + '"><input type="checkbox" tabindex="-1"' + (selected ? ' checked' : '') + '><span>' + esc(STAGES[j].label) + ' (' + countStage(STAGES[j].id) + ')</span></button>';
+  }
+  menu.innerHTML = html;
+  menu.querySelectorAll('[data-stage-value]').forEach(function (option) {
+    option.addEventListener('click', function (event) {
+      event.stopPropagation();
+      var value = option.getAttribute('data-stage-value');
+      if (value === 'all') {
+        setListStage(['all']);
+        return;
+      }
+      var next = S.listStage.indexOf('all') !== -1 ? [] : S.listStage.slice();
+      var idx = next.indexOf(value);
+      if (idx === -1) next.push(value); else next.splice(idx, 1);
+      setListStage(next.length ? next : ['all']);
+    });
+  });
 }
 function renderCatPills() {
   var el = document.getElementById('lista-cat-filter');
@@ -2433,7 +2466,12 @@ function renderCatPills() {
   }
   el.innerHTML = html;
 }
-function setListStage(s) { S.listStage = s; renderLista(); updateNavBadges(); }
+function setListStage(s) {
+  var next = Array.isArray(s) ? s.slice() : [s];
+  S.listStage = next.length ? next : ['all'];
+  renderLista();
+  updateNavBadges();
+}
 function setListCat(c) { S.listCat = c; renderLista(); updateNavBadges(); }
 function setListMode(m) {
   S.listMode = m;
@@ -2473,9 +2511,9 @@ function buildListBody() {
     html += '</tbody></table></div></section>';
   } else {
     /* modo cards = quadro por estágio */
-    var bcols = (S.listStage === 'all') ? STAGES : STAGES.filter(function (s) { return s.id === S.listStage; });
+    var bcols = (S.listStage.indexOf('all') !== -1) ? STAGES : STAGES.filter(function (s) { return S.listStage.indexOf(s.id) !== -1; });
     /* Oculta Concluído por padrão */
-    if (S.listStage === 'all' && !S.showConcluidoKanban) {
+    if (S.listStage.indexOf('all') !== -1 && !S.showConcluidoKanban) {
       bcols = bcols.filter(function (s) { return s.id !== 'concluido'; });
     }
     var anyCard = false;
@@ -2513,14 +2551,14 @@ function buildListBody() {
     }
 
     /* Botão discreto para mostrar/ocultar Concluído */
-    if (S.listStage === 'all') {
+    if (S.listStage.indexOf('all') !== -1) {
       var doneCount = S.activities.filter(function (a) { return a.categoria !== 1 && a.stage === 'concluido'; }).length;
       html += '<button class="ax-btn ax-btn--ghost ax-btn--sm ax-btn--pill" onclick="S.showConcluidoKanban=!S.showConcluidoKanban;buildListBody()" style="align-self:center;margin-top:8px;font-size:var(--ax-text-xs);color:var(--ax-text-subtle);">' +
         (S.showConcluidoKanban ? 'Ocultar concluídas' : 'Concluídas (' + doneCount + ')') +
         '</button>';
     }
 
-    if (!anyCard && S.listStage === 'all') {
+    if (!anyCard && S.listStage.indexOf('all') !== -1) {
       html += '<div class="ax-card ax-col--12" style="align-self:flex-start;"><div class="ax-empty"><div class="icwrap">' + ico('checklist', 26) + '</div><h3>Nada por aqui</h3><p>Ajuste os filtros ou crie uma nova tarefa.</p></div></div>';
     }
     html += '</div>';
@@ -3827,7 +3865,27 @@ function init() {
     handleHeaderSearch(e.target.value);
   });
   document.getElementById('lista-search').addEventListener('input', function (e) { S.listQ = e.target.value; buildListBody(); });
-  document.getElementById('lista-stage-filter').addEventListener('change', function () { setListStage(this.value); });
+  document.getElementById('lista-stage-filter').addEventListener('click', function (event) {
+    event.stopPropagation();
+    var menu = document.getElementById('lista-stage-filter-menu');
+    if (!menu) return;
+    menu.hidden = !menu.hidden;
+    this.setAttribute('aria-expanded', menu.hidden ? 'false' : 'true');
+  });
+  document.addEventListener('click', function (event) {
+    var wrap = document.getElementById('lista-stage-filter-wrap');
+    var menu = document.getElementById('lista-stage-filter-menu');
+    var trigger = document.getElementById('lista-stage-filter');
+    if (!wrap || !menu || !trigger || wrap.contains(event.target)) return;
+    menu.hidden = true;
+    trigger.setAttribute('aria-expanded', 'false');
+  });
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Escape') return;
+    var menu = document.getElementById('lista-stage-filter-menu');
+    var trigger = document.getElementById('lista-stage-filter');
+    if (menu && trigger) { menu.hidden = true; trigger.setAttribute('aria-expanded', 'false'); }
+  });
   document.getElementById('lista-cat-filter').addEventListener('change', function () { setListCat(Number(this.value) || 'all'); });
   document.getElementById('btn-export').addEventListener('click', exportBackup);
   document.getElementById('btn-import').addEventListener('click', importBackup);
