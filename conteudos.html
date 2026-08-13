@@ -1,0 +1,856 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#16283f" />
+  <meta name="description" content="Makro Content Hub — biblioteca editorial da Makro Engenharia." />
+  <title>Makro Content Hub | Makro Engenharia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* Makro Content Hub · Arquivo Vivo Makro · Single-file UI: Swiss editorial minimalism + wayfinding industrial. */
+    :root{--ink:#172335;--ink-soft:#435167;--muted:#7b8797;--paper:#f7f8fa;--surface:#fff;--line:#e5e9ef;--navy:#16283f;--red:#e5242a;--red-dark:#c92730;--cream:#fbfaf7;--green:#2e7b63;--yellow:#966d14;--shadow:0 10px 28px rgba(23,35,53,.08);--ease:cubic-bezier(.23,1,.32,1)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-width:320px;background:var(--paper);color:var(--ink);font-family:Inter,"Helvetica Neue",Arial,sans-serif}button,input,select{font:inherit}button{border:0;cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid rgba(229,36,42,.23);outline-offset:2px}img{display:block;max-width:100%}
+    .app{min-height:100vh;display:flex}.sidebar{width:248px;flex:0 0 248px;min-height:100vh;display:flex;flex-direction:column;padding:26px 16px 18px;background:var(--navy);color:#fff;position:sticky;top:0;z-index:30}.brand{display:flex;align-items:center;gap:11px;padding:0 10px 28px}.mark{width:31px;height:31px;display:grid;place-items:center;border-radius:9px;overflow:hidden;background:#fff}.mark img{width:22px;height:22px;object-fit:contain}.brand-name{font:700 18px/1 "Space Grotesk",sans-serif;letter-spacing:-.04em}.brand-product{margin-top:5px;color:rgba(255,255,255,.5);font-size:10px}.brand-product b{color:var(--red);margin:0 4px}.side-label{padding:0 11px 10px;color:rgba(255,255,255,.38);font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}.nav{display:grid;gap:4px}.nav button,.pillar button{width:100%;display:flex;align-items:center;gap:11px;padding:10px 11px;color:rgba(255,255,255,.67);background:transparent;border-radius:7px;text-align:left;font-size:12px;transition:.18s}.nav button:hover,.pillar button:hover,.pillar button.sel{color:#fff;background:rgba(255,255,255,.08)}.nav button.active{color:#fff;background:rgba(255,255,255,.11);position:relative}.nav button.active:before{content:"";position:absolute;left:0;top:11px;bottom:11px;width:2px;border-radius:2px;background:var(--red)}.dot-active{width:5px;height:5px;margin-left:auto;border-radius:50%;background:var(--red)}.count{margin-left:auto;color:rgba(255,255,255,.35);font-size:10px}.divider{height:1px;margin:26px 11px 25px;background:rgba(255,255,255,.1)}.pillar{display:grid;gap:2px}.pillar button{padding:9px 11px;font-size:11px}.pillar-dot{width:7px;height:7px;border-radius:50%}.side-foot{margin-top:auto}.rule{height:1px;margin-bottom:17px;background:rgba(255,255,255,.1)}.account{display:flex;align-items:center;gap:9px;padding:0 6px}.avatar{width:28px;height:28px;display:grid;place-items:center;flex:0 0 auto;border-radius:50%;color:var(--navy);background:#e9b4a7;font-size:9px;font-weight:800;letter-spacing:.05em}.account div{display:grid;gap:3px;min-width:0;flex:1}.account strong{overflow:hidden;color:#fff;font-size:10px;text-overflow:ellipsis;white-space:nowrap}.account span{color:rgba(255,255,255,.4);font-size:9px}.help{display:flex;align-items:center;gap:7px;padding:18px 6px 0;color:rgba(255,255,255,.45);background:none;font-size:10px}
+    .main{flex:1;min-width:0}.top{height:66px;display:flex;align-items:center;justify-content:space-between;padding:0 42px;border-bottom:1px solid var(--line);background:rgba(247,248,250,.9)}.top-left,.top-actions{display:flex;align-items:center;gap:16px}.crumb{display:flex;gap:10px;align-items:center;color:var(--muted);font-size:11px}.crumb b{color:var(--ink)}.slash{color:#c3c9d1}.icon,.menu-btn{display:grid;place-items:center;width:31px;height:31px;color:var(--muted);background:transparent;border-radius:6px}.icon:hover,.menu-btn:hover{color:var(--ink);background:#fff}.menu-btn{display:none}
+    .page{max-width:1480px;margin:0 auto;padding:34px 42px 60px}.hero{min-height:278px;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(330px,.85fr);gap:42px;align-items:stretch;overflow:hidden;padding:34px 38px;border:1px solid var(--line);background:var(--cream);position:relative}.hero:before{content:"";position:absolute;top:0;left:0;width:4px;height:90px;background:var(--red)}.hero-copy{position:relative;z-index:1;display:flex;flex-direction:column;justify-content:center}.eyebrow{display:flex;align-items:center;gap:8px;color:var(--red);font-size:10px;font-weight:800;letter-spacing:.16em}.eyebrow i{width:6px;height:6px;border-radius:50%;background:var(--red)}h1{max-width:630px;margin:16px 0 12px;color:var(--ink);font:650 clamp(32px,4vw,58px)/.99 "Space Grotesk",sans-serif;letter-spacing:-.065em}h1 em{color:var(--red);font-style:normal}.hero-copy p{max-width:470px;margin:0;color:var(--ink-soft);font-size:13px;line-height:1.65}.hero-actions{display:flex;align-items:center;gap:19px;margin-top:24px}.primary,.secondary,.copy-btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;border-radius:5px;font-size:11px;font-weight:700;transition:transform .18s var(--ease),background .18s,box-shadow .18s}.primary{padding:12px 15px;color:#fff;background:var(--red);box-shadow:0 6px 14px rgba(229,36,42,.16)}.primary:hover{background:var(--red-dark);transform:translateY(-2px);box-shadow:0 10px 20px rgba(229,36,42,.22)}.hero-note{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:10px}.hero-note b{color:#c49a35}.hero-image{min-height:210px;overflow:hidden;position:relative;background:radial-gradient(circle at 78% 24%,rgba(229,36,42,.52),transparent 30%),linear-gradient(130deg,#152840,#29476b 62%,#e5242a)}.hero-image img{width:100%;height:100%;min-height:210px;object-fit:cover}.hero-image:after,.card-image:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(22,40,63,.04),rgba(22,40,63,.38));pointer-events:none}.hero-caption{position:absolute;right:17px;bottom:14px;left:17px;z-index:2;display:flex;gap:6px;color:rgba(255,255,255,.8);font-size:10px}.hero-caption b{color:#fff}
+    .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin:28px 0 45px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.kpi{min-height:95px;display:grid;grid-template-columns:1fr auto;grid-template-rows:1fr auto;gap:5px 12px;align-items:center;padding:17px 20px;border-right:1px solid var(--line)}.kpi:last-child{border-right:0}.kpi small{align-self:end;color:var(--muted);font-size:10px}.kpi strong{grid-column:1;align-self:start;color:var(--ink);font:650 29px/1 "Space Grotesk",sans-serif;letter-spacing:-.06em}.kpi strong i{color:var(--red);font:700 11px/1 Inter,sans-serif;letter-spacing:.04em;font-style:normal}.trend{grid-column:2;grid-row:1/3;align-self:center;padding:5px 7px;color:var(--green);background:#e8f4ef;font-size:9px;font-weight:700;white-space:nowrap}.trend.warm{color:var(--yellow);background:#fff6d9}.trend.neutral{color:var(--muted);background:#f2f4f7}
+    .section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:20px}.kicker{color:var(--muted);font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase}.kicker span{color:#bdc4cd;padding:0 4px}.section-head h2{margin:8px 0 0;color:var(--ink);font:620 25px/1 "Space Grotesk",sans-serif;letter-spacing:-.045em}.toggle{display:flex;gap:3px;padding:3px;border:1px solid var(--line);background:#fff}.toggle button{display:inline-flex;align-items:center;gap:7px;padding:8px 11px;color:var(--muted);background:transparent;border-radius:3px;font-size:10px;font-weight:700}.toggle button.active{color:var(--ink);background:var(--paper);box-shadow:0 1px 4px rgba(23,35,53,.08)}
+    .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px;border:1px solid var(--line);background:#fff}.search{min-width:240px;flex:1;display:flex;align-items:center;gap:9px;padding:0 11px;color:var(--muted)}.search input{width:100%;min-height:31px;border:0;outline:0;color:var(--ink);background:transparent;font-size:11px}.search input::placeholder{color:#a2aab5}.search button{display:grid;place-items:center;color:var(--muted);background:none}.select{display:flex;align-items:center;gap:6px;padding:0 9px;border-left:1px solid var(--line);color:var(--muted);position:relative}.select select{min-height:31px;max-width:138px;appearance:none;border:0;outline:0;color:var(--ink-soft);background:transparent;padding-right:17px;font-size:10px;font-weight:600}.select svg:last-child{position:absolute;right:8px;pointer-events:none}.clear,.sort{color:var(--muted);background:none;font-size:10px;font-weight:600}.clear{padding:8px 10px}.clear:hover,.sort:hover{color:var(--red)}.layout{display:grid;grid-template-columns:minmax(0,1fr) 316px;gap:20px;margin-top:20px;align-items:start}.list-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;color:var(--muted);font-size:10px}.list-top b{color:var(--ink)}.sort{display:flex;align-items:center;gap:6px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.card{overflow:hidden;border:1px solid var(--line);background:var(--surface);transition:transform .2s var(--ease),border-color .2s,box-shadow .2s;cursor:pointer}.card:hover{border-color:#c4ccd6;transform:translateY(-2px);box-shadow:var(--shadow)}.card.selected{border-color:var(--red);box-shadow:0 0 0 1px var(--red),var(--shadow)}.card-image{height:152px;overflow:hidden;position:relative;background:radial-gradient(circle at 78% 22%,rgba(229,36,42,.48),transparent 28%),linear-gradient(130deg,#152840,#29476b 62%,#e5242a)}.card-image img{width:100%;height:100%;object-fit:cover;transition:transform .55s var(--ease)}.card:hover .card-image img{transform:scale(1.035)}.date,.format{position:absolute;z-index:2;bottom:10px;padding:4px 6px;font-size:9px;font-weight:700}.date{left:10px;color:#fff;background:rgba(22,40,63,.78)}.format{right:10px;color:var(--ink);background:rgba(255,255,255,.88)}.card-body{padding:15px 16px 13px}.meta,.foot,.detail-head,.badges,.caption-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.label,.status{display:inline-flex;align-items:center;gap:5px;padding:4px 6px;font-size:9px;font-weight:700}.status{white-space:nowrap}.status-dot{width:5px;height:5px;border-radius:50%}.code{margin-top:14px;color:var(--muted);font:650 9px "Space Grotesk",sans-serif;letter-spacing:.08em;text-transform:uppercase}.code span{color:#c0c6cf;margin:0 4px}.card h3{margin:7px 0 6px;color:var(--ink);font:630 17px/1.08 "Space Grotesk",sans-serif;letter-spacing:-.035em}.card p{min-height:35px;margin:0;color:var(--ink-soft);font-size:10.5px;line-height:1.55}.foot{margin-top:15px;padding-top:11px;border-top:1px solid var(--line)}.tags{display:flex;gap:6px;overflow:hidden;white-space:nowrap}.tags span{color:var(--muted);font-size:9px}.copy-small{display:grid;place-items:center;width:25px;height:25px;color:var(--muted);background:var(--paper);border-radius:4px}.copy-small:hover{color:#fff;background:var(--red)}
+    .detail{position:sticky;top:20px;overflow:hidden;border:1px solid var(--line);background:#fff;box-shadow:0 4px 18px rgba(23,35,53,.04)}.detail-head{padding:14px 16px;border-bottom:1px solid var(--line)}.detail-kicker{display:block;color:var(--muted);font-size:9px;letter-spacing:.12em;text-transform:uppercase}.detail-code{display:block;margin-top:3px;color:var(--red);font:700 11px "Space Grotesk",sans-serif;letter-spacing:.08em}.detail-img{height:162px;overflow:hidden;position:relative;background:radial-gradient(circle at 78% 22%,rgba(229,36,42,.48),transparent 28%),linear-gradient(130deg,#152840,#29476b 62%,#e5242a)}.detail-img img{width:100%;height:100%;object-fit:cover}.detail-over{position:absolute;right:13px;bottom:12px;left:13px;display:flex;justify-content:space-between;color:#fff;font-size:9px;font-weight:700}.detail-over span:last-child{padding:4px 6px;color:var(--ink);background:#fff}.detail-body{padding:17px}.source{display:inline-flex;align-items:center;gap:5px;color:var(--muted);font-size:9px}.detail h3{margin:15px 0 7px;color:var(--ink);font:640 21px/1.03 "Space Grotesk",sans-serif;letter-spacing:-.045em}.excerpt{margin:0;color:var(--ink-soft);font-size:10.5px;line-height:1.55}.info{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin:18px 0;padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.info div{display:grid;gap:5px}.info span{color:var(--muted);font-size:9px}.info b{display:flex;align-items:center;gap:5px;color:var(--ink);font-size:10px}.caption{padding:12px;background:var(--paper)}.caption-head{color:var(--ink-soft);font-size:9px;font-weight:700}.caption-count{color:var(--muted);font-size:8px;font-weight:500}.caption p{max-height:126px;overflow:auto;margin:11px 0 0;color:var(--ink-soft);font-size:10px;line-height:1.6;white-space:pre-line}.validation{display:flex;gap:9px;margin-top:13px;padding:10px;color:#79601c;background:#fff9e8}.validation b{display:block;color:#745716;font-size:9px}.validation span{display:block;margin-top:4px;font-size:9px;line-height:1.45}.copy-btn{width:100%;margin-top:13px;padding:11px;color:#fff;background:var(--navy)}.copy-btn:hover{background:var(--red);transform:translateY(-1px)}.empty{display:grid;justify-items:center;gap:9px;padding:64px 20px;border:1px dashed #d4dbe4;color:var(--muted);background:#fff;text-align:center}.empty b{color:var(--ink);font-size:13px}.empty p{max-width:300px;margin:0;font-size:10px;line-height:1.5}.secondary{padding:9px 12px;color:var(--ink);background:var(--paper)}
+    .calendar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.week{overflow:hidden;border:1px solid var(--line);background:#fff}.week-head{display:flex;align-items:flex-start;justify-content:space-between;padding:17px 18px;border-bottom:1px solid var(--line);background:var(--cream)}.week-head span:first-child{color:var(--red);font-size:9px;font-weight:800;letter-spacing:.14em}.week-head h3{margin:6px 0 0;color:var(--ink);font:620 19px "Space Grotesk",sans-serif;letter-spacing:-.04em}.progress{color:var(--muted);font:10px "Space Grotesk",sans-serif}.week-item{display:grid;grid-template-columns:65px minmax(0,1fr) auto 16px;gap:12px;align-items:center;width:100%;padding:13px 17px;color:var(--ink);background:#fff;text-align:left;border-bottom:1px solid var(--line)}.week-item:last-child{border-bottom:0}.week-item:hover{background:var(--paper)}.week-date{color:var(--muted);font-size:10px;font-weight:600}.week-main{display:grid;gap:4px;min-width:0}.week-pillar{display:flex;align-items:center;gap:4px;font-size:9px;font-weight:700}.week-main b{overflow:hidden;font:630 12px "Space Grotesk",sans-serif;letter-spacing:-.02em;text-overflow:ellipsis;white-space:nowrap}.week-main span:last-child{color:var(--muted);font-size:9px}.week-status{padding:4px 6px;font-size:8px;font-weight:700;white-space:nowrap}
+    .toast{position:fixed;right:24px;bottom:24px;z-index:50;display:none;max-width:300px;padding:13px 15px;color:#fff;background:var(--navy);box-shadow:var(--shadow);font-size:11px}.toast.show{display:block;animation:toast-in .22s var(--ease)}.toast b{display:block;margin-bottom:3px}.toast span{color:rgba(255,255,255,.68);font-size:10px}@keyframes toast-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .mobile-bottom{display:none}.mobile-overlay{display:none}.category-trigger{width:100%;display:flex;align-items:center;gap:11px;margin-top:9px;padding:9px 11px;color:rgba(255,255,255,.67);background:transparent;border-radius:7px;text-align:left;font-size:11px;transition:.18s}.category-trigger:hover{color:#fff;background:rgba(255,255,255,.08)}.category-trigger .count{margin-left:auto}.completed-toggle{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;color:var(--muted);background:var(--paper);border:1px solid var(--line);font-size:10px;font-weight:700;transition:.18s}.completed-toggle:hover,.completed-toggle[aria-pressed=true]{color:var(--ink);border-color:#c8d0da;background:#fff}.completed-toggle[aria-pressed=true]{box-shadow:inset 0 0 0 1px var(--red)}.modal-shell{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:22px}.modal-shell[hidden]{display:none}.modal-backdrop{position:absolute;inset:0;background:rgba(13,25,40,.52);backdrop-filter:blur(4px)}.category-modal{position:relative;width:min(640px,100%);max-height:min(720px,calc(100vh - 44px));overflow:auto;border:1px solid rgba(255,255,255,.12);background:#101820;color:#fff;box-shadow:0 26px 70px rgba(4,12,20,.32)}.modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:24px 26px 20px;border-bottom:1px solid rgba(255,255,255,.1)}.modal-head .kicker{color:#92a0b1}.modal-head h2{margin:8px 0 5px;color:#fff;font:650 28px/1 "Space Grotesk",sans-serif;letter-spacing:-.05em}.modal-head p{margin:0;color:rgba(255,255,255,.52);font-size:11px;line-height:1.5}.category-list{padding:8px 20px 10px}.category-row{display:grid;grid-template-columns:minmax(0,1fr) 116px 132px;gap:14px;align-items:center;padding:15px 5px;border-bottom:1px solid rgba(255,255,255,.1)}.category-row:last-child{border-bottom:0}.category-name{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700}.category-icon-preview{width:25px;height:25px;display:grid;place-items:center;border-radius:7px;color:#fff;background:var(--category-color);font-size:12px}.category-row small{display:block;margin-top:3px;color:rgba(255,255,255,.42);font-size:9px;font-weight:400}.category-color{display:flex;align-items:center;gap:7px;color:rgba(255,255,255,.6);font-size:10px}.category-color i{width:9px;height:9px;border-radius:50%;background:var(--category-color)}.category-icon-select{width:100%;padding:8px 9px;border:1px solid rgba(255,255,255,.14);border-radius:5px;color:#fff;background:#18232e;font-size:11px}.modal-foot{display:flex;justify-content:flex-end;gap:9px;padding:17px 26px;border-top:1px solid rgba(255,255,255,.1)}.category-modal .secondary{color:#fff;background:#1b2835;border:1px solid rgba(255,255,255,.12)}.category-modal .primary{padding:10px 13px}.category-modal .icon{color:rgba(255,255,255,.65)}.new-category-form{margin:0 20px 10px;padding:14px;border:1px solid rgba(255,255,255,.1);background:#18232e;display:grid;gap:10px}.new-category-form[hidden]{display:none}.new-category-form label{display:grid;gap:5px;color:rgba(255,255,255,.62);font-size:9px;font-weight:700}.new-category-form input,.new-category-form select{width:100%;min-height:34px;padding:8px 9px;border:1px solid rgba(255,255,255,.14);border-radius:5px;color:#fff;background:#101820;font-size:11px}.new-category-form input[type=color]{height:34px;padding:3px}.new-category-actions{display:flex;justify-content:flex-end;gap:8px}.new-category-actions button{padding:8px 10px;border-radius:4px;color:#fff;background:#1b2835;font-size:10px;font-weight:700}.new-category-actions .save-new{background:var(--red)}@media(max-width:600px){.modal-shell{padding:12px}.modal-head{padding:20px 18px 17px}.category-list{padding:5px 13px}.category-row{grid-template-columns:minmax(0,1fr) 104px;gap:9px}.category-color{grid-column:1}.category-icon-select{grid-column:2;grid-row:1 / span 2}.modal-foot{padding:14px 18px}.modal-foot .primary,.modal-foot .secondary{flex:1}}
+    @media(max-width:1160px){.sidebar{width:218px;flex-basis:218px}.page{padding:30px 28px 56px}.top{padding:0 28px}.layout{grid-template-columns:minmax(0,1fr) 285px}.hero{gap:25px;padding:30px}}
+    @media(max-width:980px){.grid{grid-template-columns:1fr}.calendar{grid-template-columns:1fr}.layout{grid-template-columns:minmax(0,1fr) 300px}.card-image{height:175px}}
+    @media(max-width:780px){.sidebar{width:250px;flex-basis:250px;position:fixed;left:0;top:0;bottom:0;transform:translateX(-102%);transition:transform .24s var(--ease);box-shadow:16px 0 36px rgba(23,35,53,.16)}.sidebar.open{transform:translateX(0)}.mobile-overlay{display:block;position:fixed;inset:0;z-index:20;background:rgba(13,25,40,.32)}.menu-btn{display:grid}.top{height:58px;padding:0 17px}.page{padding:20px 16px 86px}.hero{grid-template-columns:1fr;min-height:0;padding:25px 22px;gap:24px}.hero-image{min-height:180px}.hero-image img{min-height:180px}.kpis{grid-template-columns:repeat(2,1fr);margin:20px 0 34px}.kpi:nth-child(2){border-right:0}.kpi:nth-child(-n+2){border-bottom:1px solid var(--line)}.section-head{display:grid;align-items:start}.toggle{width:max-content}.filters{padding:7px}.search{min-width:100%;padding:0 5px 5px;border-bottom:1px solid var(--line)}.select{flex:1;justify-content:center;border:0}.select select{max-width:100px}.clear{flex:0 0 auto}.layout{grid-template-columns:1fr}.detail{position:static}.mobile-bottom{position:fixed;right:0;bottom:0;left:0;z-index:15;display:grid;grid-template-columns:repeat(3,1fr);padding:7px 12px calc(7px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:rgba(255,255,255,.96);box-shadow:0 -5px 20px rgba(23,35,53,.08)}.mobile-bottom button{display:grid;justify-items:center;gap:3px;color:var(--muted);background:transparent;font-size:8px}.mobile-bottom button.active{color:var(--red)}}
+    @media(max-width:480px){.hero-actions{align-items:flex-start;flex-direction:column;gap:12px}.section-head h2{font-size:23px}.card-image{height:150px}.card-body{padding:13px}.week-item{grid-template-columns:53px minmax(0,1fr) 14px;gap:8px}.week-status{display:none}}
+    @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
+  </style>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="brand-refinement">
+
+      :root{--brand-navy:#102b43;--brand-deep:#0b1f31;--brand-red:#e5322b;--paper:#f4f6f8;--surface:#fff;--ink:#152536;--muted:#6d7d8c;--line:#dfe6ec;--line-soft:#ebeff3;--success:#2e8b67;--shadow:0 14px 34px rgba(16,43,67,.08);--shadow-soft:0 5px 18px rgba(16,43,67,.06);--ease:cubic-bezier(.23,1,.32,1)}
+      *{box-sizing:border-box}
+      html{scroll-behavior:smooth}
+      body{margin:0;background:var(--paper);color:var(--ink);font-family:'Montserrat',Arial,sans-serif;font-size:13px;letter-spacing:-.01em;-webkit-font-smoothing:antialiased}
+      button,input,select{font:inherit}
+      button{transition:transform .16s var(--ease),background-color .16s var(--ease),border-color .16s var(--ease),color .16s var(--ease),box-shadow .16s var(--ease)}
+      button:active{transform:scale(.98)}
+      button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid rgba(229,50,43,.22);outline-offset:2px}
+      .sidebar{width:248px;flex-basis:248px;background:var(--brand-deep);border-right:1px solid rgba(255,255,255,.08);color:#fff;box-shadow:8px 0 30px rgba(11,31,49,.08)}
+      .brand{min-height:84px;padding:21px 20px 17px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:12px}
+      .brand .mark{width:142px;height:auto;display:flex;align-items:center;background:transparent;border-radius:0;overflow:visible;flex:none}
+      .brand .mark img{display:block;width:142px;height:auto;max-height:34px;object-fit:contain;object-position:left center;filter:none}
+      .brand>div:nth-child(2){display:none}
+      .brand .icon{margin-left:auto;color:rgba(255,255,255,.62)}
+      .side-section{padding:21px 14px 0}
+      .side-label{padding:0 10px 9px;color:rgba(255,255,255,.46);font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700}
+      .nav-item,.pillar button,.category-trigger,.help{border:0;border-radius:8px;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600}
+      .nav-item:hover,.pillar button:hover,.category-trigger:hover,.help:hover{background:rgba(255,255,255,.08);color:#fff}
+      .nav-item.active{background:#fff;color:var(--brand-navy);box-shadow:0 8px 22px rgba(0,0,0,.14)}
+      .nav-item .count,.pillar .count,.category-trigger .count{color:inherit;opacity:.68;font-size:10px}
+      .pillar button.sel{background:rgba(229,50,43,.16);color:#fff}
+      .pillar-dot{width:8px;height:8px;border-radius:50%;box-shadow:0 0 0 3px rgba(255,255,255,.06)}
+      .category-trigger{width:calc(100% - 20px);margin:14px 10px 0;padding:10px 11px;border:1px solid rgba(255,255,255,.14);text-align:left}
+      .category-trigger span{color:var(--brand-red)}
+      .help{width:calc(100% - 20px);margin:16px 10px 0;padding:10px;text-align:left}
+      .profile{margin:20px 14px 14px;padding:13px 10px;border-top:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.72)}
+      .profile .avatar{background:var(--brand-red);color:#fff}
+      .top{height:70px;padding:0 38px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.94);backdrop-filter:blur(16px)}
+      .breadcrumbs{font-size:11px;color:var(--muted);letter-spacing:.02em}.breadcrumbs b{color:var(--ink)}
+      .top .icon{color:var(--brand-navy);border-color:var(--line)}.top .icon:hover{color:var(--brand-red);border-color:rgba(229,50,43,.4)}
+      .page{max-width:1480px;padding:36px 42px 72px}
+      .hero{min-height:304px;grid-template-columns:minmax(0,1.05fr) minmax(330px,.95fr);gap:30px;padding:34px;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--brand-red);border-radius:14px;box-shadow:var(--shadow-soft)}
+      .hero-copy{align-self:center;max-width:650px}.eyebrow,.kicker{color:var(--brand-red);font-size:10px;letter-spacing:.13em;font-weight:800;text-transform:uppercase}.eyebrow i{background:var(--brand-red)}
+      .hero h1{max-width:660px;margin:15px 0 15px;color:var(--brand-navy);font-size:clamp(38px,4vw,60px);line-height:.98;letter-spacing:-.075em;font-weight:800}.hero h1 em{color:var(--brand-red);font-style:normal}
+      .hero p{max-width:480px;margin:0;color:var(--muted);font-size:14px;line-height:1.65}
+      .hero-actions{margin-top:26px;gap:17px}.primary{border:0;border-radius:7px;background:var(--brand-red);color:#fff;font-weight:800;box-shadow:0 8px 18px rgba(229,50,43,.18)}.primary:hover{background:#c92722;box-shadow:0 11px 22px rgba(229,50,43,.25)}
+      .hero-note{color:var(--muted);font-size:11px}.hero-note b{color:var(--brand-red)}
+      .hero-image{min-height:236px;border-radius:9px;background:var(--brand-navy);overflow:hidden;box-shadow:0 10px 24px rgba(16,43,67,.13)}.hero-image img{height:100%;min-height:236px;object-fit:cover;object-position:center}.hero-image:after{background:linear-gradient(180deg,transparent 36%,rgba(11,31,49,.8))}.hero-caption{padding:18px 18px 16px;font-size:11px;letter-spacing:.01em}.hero-caption b{color:#fff}
+      .kpis{grid-template-columns:repeat(4,minmax(0,1fr));margin:20px 0 48px;gap:1px;border:1px solid var(--line);background:var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow-soft)}
+      .kpi{min-height:96px;padding:19px 20px;background:#fff;border:0}.kpi small{color:var(--muted);font-size:10px;letter-spacing:.04em}.kpi strong{display:block;margin:7px 0 4px;color:var(--brand-navy);font-size:28px;line-height:1;font-weight:800;letter-spacing:-.06em}.kpi strong i{color:var(--brand-red);font-size:11px;font-style:normal;letter-spacing:.08em}.trend{color:var(--success);font-size:10px}.trend.warm{color:var(--brand-red)}.trend.neutral{color:var(--muted)}
+      .section-head{margin-bottom:17px;align-items:end}.section-head h2{margin:8px 0 0;color:var(--brand-navy);font-size:30px;line-height:1.05;letter-spacing:-.06em;font-weight:800}.toggle{border:1px solid var(--line);border-radius:8px;background:#fff;padding:3px;box-shadow:var(--shadow-soft)}.toggle button{border:0;border-radius:6px;background:transparent;color:var(--muted);font-size:11px;font-weight:700}.toggle button.active{background:var(--brand-navy);color:#fff;box-shadow:0 4px 11px rgba(16,43,67,.18)}
+      .filters{min-height:54px;padding:7px 9px;gap:3px;border:1px solid var(--line);border-radius:10px;background:#fff;box-shadow:var(--shadow-soft)}.search{min-width:280px;flex:1 1 320px;border-right:1px solid var(--line)}.search input{color:var(--ink);font-size:12px}.search input::placeholder{color:#9aa7b3}.search span{color:var(--brand-red)}.select{min-height:36px;padding:0 10px;border-right:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:700}.select select{color:var(--ink);font-weight:700}.select span{color:var(--brand-red)}.completed-toggle,.clear{border-radius:6px;font-size:10px;font-weight:800}.completed-toggle{border:1px solid var(--line);color:var(--muted);background:#fff}.completed-toggle:hover,.completed-toggle[aria-pressed=true]{color:var(--brand-red);border-color:rgba(229,50,43,.36);background:#fff5f4}.clear{border:0;background:var(--brand-navy);color:#fff}.clear:hover{background:var(--brand-red)}
+      .list-top{margin:17px 0 11px;color:var(--muted);font-size:11px}.list-top b{color:var(--ink)}.sort{color:var(--muted);font-size:10px}.sort:hover{color:var(--brand-red)}
+      .layout{grid-template-columns:minmax(0,1fr) 360px;gap:24px;align-items:start}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.card{min-width:0;border:1px solid var(--line);border-radius:12px;background:#fff;box-shadow:var(--shadow-soft);overflow:hidden;transition:transform .2s var(--ease),box-shadow .2s var(--ease),border-color .2s var(--ease)}.card:hover{transform:translateY(-3px);border-color:#c7d2dc;box-shadow:0 18px 38px rgba(16,43,67,.13)}.card.selected{border-color:var(--brand-red);box-shadow:0 0 0 2px rgba(229,50,43,.12),var(--shadow)}.card-image{height:174px;background:#dce5eb}.card-image img{height:100%;object-fit:cover;transition:transform .35s var(--ease)}.card:hover .card-image img{transform:scale(1.035)}.card-body{padding:17px 18px 18px}.card-meta{margin-bottom:13px}.card-title{min-height:48px;color:var(--brand-navy);font-size:17px;line-height:1.15;letter-spacing:-.045em;font-weight:800}.card-excerpt{min-height:38px;margin-top:9px;color:var(--muted);font-size:11px;line-height:1.55}.card-tags{margin-top:14px;padding-top:12px;border-top:1px solid var(--line-soft);color:#8a98a5;font-size:10px}.card-actions{display:flex;justify-content:space-between;align-items:center;margin-top:12px}.card-actions button{color:var(--muted)}.card-actions button:hover{color:var(--brand-red)}
+      .detail{position:sticky;top:88px;border:1px solid var(--line);border-top:4px solid var(--brand-red);border-radius:12px;background:#fff;box-shadow:var(--shadow);overflow:hidden}.detail-head{padding:17px 19px 12px;border-bottom:1px solid var(--line-soft)}.detail-body{padding:17px 19px}.detail h3{color:var(--brand-navy);font-size:23px;line-height:1.07;letter-spacing:-.06em}.detail .caption{max-height:190px;border:1px solid var(--line);border-radius:7px;background:#f8fafb;color:#435466;font-size:11px;line-height:1.65}.detail .copy-btn{width:100%;border-radius:6px;background:var(--brand-navy);color:#fff;font-weight:800}.detail .copy-btn:hover{background:var(--brand-red)}
+      .calendar{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.week{border:1px solid var(--line);border-radius:12px;background:#fff;box-shadow:var(--shadow-soft);overflow:hidden}.week-head{padding:17px 18px;background:var(--brand-navy);color:#fff}.week-head span{color:rgba(255,255,255,.58);font-size:9px;letter-spacing:.12em}.week-head h3{margin:7px 0 0;font-size:20px;letter-spacing:-.045em}.week-item{width:100%;grid-template-columns:64px minmax(0,1fr) 16px;gap:14px;padding:14px 17px;border:0;border-top:1px solid var(--line-soft);background:#fff;text-align:left}.week-item:hover{background:#fff7f6}.week-date{color:var(--brand-red);font-size:11px;font-weight:800}.week-main b{display:block;margin:4px 0;color:var(--brand-navy);font-size:12px}.week-main span:last-child{color:var(--muted);font-size:10px}.week-status{justify-self:end;padding:4px 6px;border-radius:4px;font-size:9px;font-weight:800}
+      .toast{right:24px;bottom:24px;max-width:360px;border:1px solid rgba(255,255,255,.12);border-left:4px solid var(--brand-red);border-radius:8px;background:var(--brand-navy);box-shadow:0 18px 40px rgba(11,31,49,.24);color:#fff}.toast b{font-size:12px}.toast span{color:rgba(255,255,255,.68);font-size:10px;line-height:1.45}
+      .empty{min-height:260px;border:1px dashed #c7d3de;border-radius:12px;background:#fff}.empty b{color:var(--brand-red)}
+      .mobile-bottom{border-top:1px solid var(--line);background:rgba(255,255,255,.96)}.mobile-bottom button.active{color:var(--brand-red)}
+      @media(max-width:1180px){.page{padding:30px 28px 60px}.layout{grid-template-columns:minmax(0,1fr) 320px}.grid{grid-template-columns:1fr}.hero{gap:22px}}
+      @media(max-width:980px){.page{padding:26px 22px 58px}.layout{grid-template-columns:1fr}.detail{position:static}.calendar{grid-template-columns:1fr}.hero{grid-template-columns:1fr}.hero-image{min-height:215px}.hero-image img{min-height:215px}.kpis{grid-template-columns:repeat(2,1fr)}}
+      @media(max-width:780px){.top{padding:0 20px}.page{padding:22px 16px 86px}.hero{padding:24px 20px;border-left-width:4px}.hero h1{font-size:39px}.kpis{margin-bottom:35px}.filters{align-items:stretch}.search{min-width:100%;border-right:0;border-bottom:1px solid var(--line)}.select{flex:1;border-right:0}.completed-toggle,.clear{flex:1}.grid{grid-template-columns:1fr}.detail{margin-top:2px}.brand .mark,.brand .mark img{width:132px}}
+      @media(max-width:520px){.kpi{min-height:88px;padding:15px}.kpi small{font-size:9px}.kpi strong{font-size:24px}.hero h1{font-size:34px}.hero p{font-size:12px}.section-head h2{font-size:25px}.toggle{width:100%;margin-top:14px}.toggle button{flex:1}.filters{gap:3px}.select{min-width:0;padding:0 5px;font-size:10px}.select select{max-width:90px;font-size:10px}.card-image{height:160px}}
+
+</style>
+
+    <style id="calendar-start-refinement">
+      @media (min-width:781px){
+        .app{display:block;min-height:100vh}
+        .sidebar{position:fixed;inset:0 auto 0 0;z-index:30;height:100vh;overflow-y:auto;overflow-x:hidden}
+        .main{min-height:100vh;margin-left:248px}
+        .top{position:sticky;top:0;z-index:20}
+      }
+      #calendarView{padding-top:4px}
+      #calendarView[hidden],#kanbanView[hidden],#filters[hidden]{display:none!important}
+      .calendar{margin-top:6px}
+      .calendar .week{min-height:180px}
+      .section-head{padding-top:4px}
+      @media(max-width:780px){.main{margin-left:0}.sidebar{height:100vh;overflow-y:auto}.section-head{padding-top:0}}
+    </style>
+<style>
+      #calendarView{display:block!important;width:100%}.calendar-shell{display:block;width:100%;background:#fff;border:1px solid #dce2e8;border-radius:20px;box-shadow:0 12px 28px rgba(20,45,68,.07);overflow:hidden}
+      .calendar-toolbar{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:24px 26px 20px;border-bottom:1px solid #e4e8ed;background:#fbfcfd}
+      .calendar-kicker{font-size:10px;font-weight:800;letter-spacing:.16em;color:#c92730}
+      .calendar-toolbar h3{margin:7px 0 3px;font-size:25px;letter-spacing:-.03em;color:#102a43}
+      .calendar-toolbar h3 small{font-size:15px;font-weight:600;color:#7c8794;margin-left:4px}
+      .calendar-toolbar p{margin:0;color:#7c8794;font-size:12px}
+      .calendar-nav{display:flex;align-items:center;gap:8px}
+      .calendar-nav-btn,.calendar-today{height:36px;border:1px solid #dce2e8;border-radius:9px;background:#fff;color:#16344e;font-weight:800;transition:all .18s ease}
+      .calendar-nav-btn{width:36px;font-size:18px}
+      .calendar-today{padding:0 14px;font-size:12px}
+      .calendar-nav-btn:hover,.calendar-today:hover{border-color:#c92730;color:#c92730;transform:translateY(-1px)}
+      .calendar-scroll{overflow-x:auto}
+      .calendar-weekdays,.calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(118px,1fr));min-width:826px}
+      .calendar-weekdays{background:#f3f6f8;border-bottom:1px solid #dce2e8}
+      .calendar-weekdays span{padding:12px 14px 10px;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#7c8794}
+      .calendar-grid{grid-auto-rows:minmax(132px,auto);background:#dfe5ea;gap:1px}
+      .calendar-day{min-height:132px;padding:10px;background:#fff;vertical-align:top}
+      .calendar-day.outside{background:#f8fafb;color:#a4adb6}
+      .calendar-day.today{box-shadow:inset 0 3px 0 #c92730}
+      .calendar-day-number{display:flex;align-items:center;gap:6px;color:#516172;font-size:12px;font-weight:800;margin-bottom:8px}
+      .calendar-day.outside .calendar-day-number{color:#aab3bc}
+      .calendar-day.today .calendar-day-number{color:#c92730}
+      .calendar-day-number span{font-size:9px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:#c92730}
+      .calendar-events{display:grid;gap:6px}
+      .calendar-event{display:grid;grid-template-columns:6px minmax(0,1fr);position:relative;gap:7px;width:100%;padding:7px 7px 7px 6px;border:1px solid #e8edf1;border-radius:8px;background:#fff;text-align:left;color:#17324b;box-shadow:0 2px 5px rgba(16,42,67,.04);transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+      .calendar-event:hover{transform:translateY(-1px);border-color:#b9c6d1;box-shadow:0 5px 12px rgba(16,42,67,.1)}
+      .calendar-event-dot{width:6px;height:6px;border-radius:50%;margin-top:4px}
+      .calendar-event-copy{display:grid;min-width:0;gap:3px}
+      .calendar-event-copy b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.25}
+      .calendar-event-copy em{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-style:normal;color:#89939e;font-size:9px}
+      .calendar-event-flag{display:inline-flex;width:max-content;padding:2px 4px;border-left:2px solid #c92730;color:#c92730;font-size:8px;font-style:normal;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+      .calendar-event i{grid-column:2;font-size:8px;font-style:normal;color:#89939e;line-height:1}
+      .calendar-legend{display:flex;gap:20px;flex-wrap:wrap;padding:16px 26px;color:#7c8794;font-size:11px;background:#fbfcfd;border-top:1px solid #e4e8ed}
+      .calendar-legend span{display:inline-flex;align-items:center;gap:7px}
+      .legend-dot{width:7px;height:7px;border-radius:50%}.legend-dot.red{background:#c92730}.legend-dot.blue{background:#285b8f}.legend-dot.green{background:#2e7b63}.legend-dot.ochre{background:#996a2d}.legend-dot.commemorative{background:#c92730;box-shadow:0 0 0 2px #f9d7da}
+      @media(max-width:780px){.calendar-toolbar{align-items:flex-start;flex-direction:column;padding:20px}.calendar-nav{align-self:stretch;justify-content:flex-end}.calendar-weekdays,.calendar-grid{min-width:740px}.calendar-day{min-height:118px;padding:8px}.calendar-legend{padding:14px 20px;gap:12px}.calendar-event-copy b{font-size:10px}}
+    </style>
+  <style>
+      #singleView{width:100%}
+      .single-content{max-width:920px;margin:0 auto}
+      .single-back{display:inline-flex;align-items:center;gap:8px;margin:2px 0 18px;padding:9px 13px;border:1px solid #dce2e8;border-radius:9px;background:#fff;color:#17324b;font-size:12px;font-weight:800;transition:all .18s ease}
+      .single-back:hover{border-color:#c92730;color:#c92730;transform:translateX(-2px)}
+      .single-card{border:1px solid #dce2e8;border-top:4px solid #c92730;border-radius:16px;background:#fff;box-shadow:0 16px 36px rgba(20,45,68,.08);overflow:hidden}
+      .single-card .detail{position:static;border:0;border-radius:0;box-shadow:none}
+      .single-card .detail-img{max-height:360px}
+      .single-card .detail-img img{max-height:360px;object-fit:cover}
+      @media(max-width:780px){.single-content{margin:0}.single-card .detail-img,.single-card .detail-img img{max-height:250px}.single-back{margin-bottom:12px}}
+    </style>
+  <style id="kanban-refinement">
+      /* Makro Content Hub · Kanban editorial: colunas por status, leitura rápida e hierarquia técnica. */
+      .kanban-board{display:grid;grid-template-columns:repeat(3,minmax(190px,1fr));gap:12px;min-width:590px;align-items:start}
+      .kanban-column{min-width:0;overflow:hidden;border:1px solid var(--line);border-top:3px solid var(--kanban-color);border-radius:4px;background:#f4f6f8}
+      .kanban-column-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:14px 14px 12px;border-bottom:1px solid var(--line);background:#fff}
+      .kanban-column-kicker{display:block;color:var(--kanban-color);font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+      .kanban-column-head h3{margin:5px 0 0;color:var(--ink);font:650 15px/1 "Space Grotesk",sans-serif;letter-spacing:-.03em}
+      .kanban-column-head b{display:grid;place-items:center;min-width:27px;height:27px;color:var(--kanban-color);background:var(--kanban-bg);font:700 11px/1 "Space Grotesk",sans-serif}
+      .kanban-column-body{display:grid;gap:9px;min-height:170px;padding:10px}
+      .kanban-card{display:block;min-width:0;padding:12px;border:1px solid var(--line);background:#fff;box-shadow:0 2px 5px rgba(23,35,53,.04);text-align:left;cursor:pointer;transition:transform .18s var(--ease),border-color .18s,box-shadow .18s}
+      .kanban-card:hover{border-color:#c4ccd6;transform:translateY(-2px);box-shadow:var(--shadow)}
+      .kanban-card.selected{border-color:var(--red);box-shadow:0 0 0 1px var(--red),var(--shadow)}
+      .kanban-card-top,.kanban-card-foot{display:flex;align-items:center;justify-content:space-between;gap:8px}
+      .kanban-card-top .label{max-width:68%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .kanban-date{color:var(--muted);font-size:9px;font-weight:700;white-space:nowrap}
+      .kanban-code{margin-top:11px;color:var(--muted);font:650 9px "Space Grotesk",sans-serif;letter-spacing:.08em;text-transform:uppercase}
+      .kanban-code span{color:#c0c6cf;margin:0 4px}
+      .kanban-commemorative{display:inline-flex;margin-left:7px;padding:3px 5px;border:1px solid #f0b8bd;color:#c92730;background:#fff7f7;font:800 8px/1 "Space Grotesk",sans-serif;letter-spacing:.04em;text-transform:uppercase;vertical-align:middle}
+      .kanban-card h4{margin:7px 0 6px;color:var(--ink);font:630 15px/1.1 "Space Grotesk",sans-serif;letter-spacing:-.035em}
+      .kanban-card p{display:-webkit-box;min-height:34px;margin:0;overflow:hidden;color:var(--ink-soft);font-size:10px;line-height:1.5;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+      .kanban-card-foot{margin-top:11px;padding-top:9px;border-top:1px solid var(--line);color:var(--muted);font-size:9px}
+      .kanban-empty{display:grid;place-items:center;min-height:145px;padding:16px;border:1px dashed #d4dbe4;color:#a2aab5;background:rgba(255,255,255,.55);font-size:10px;text-align:center}
+      @media(max-width:1180px){.kanban-board{overflow-x:auto}}
+      @media(max-width:980px){.kanban-board{min-width:0;grid-template-columns:repeat(3,minmax(180px,1fr))}}
+      @media(max-width:780px){.kanban-board{grid-template-columns:1fr;gap:10px}.kanban-column-body{min-height:90px}.kanban-empty{min-height:72px}}
+    </style>
+  </head>
+<body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="mark"><img src="https://makroengenharia.com.br/wp-content/uploads/2023/03/logo-1.png" alt="Makro Engenharia" /></div><div><div class="brand-name">Makro</div><div class="brand-product">Content Hub <b>·</b> v1.0</div></div><button class="icon" id="closeMenu" aria-label="Fechar menu">×</button></div>
+      <div class="side-label">Workspace</div>
+      <nav class="nav"><button class="active" id="navKanban"><span>▦</span> Kanban <i class="dot-active"></i></button><button id="navCalendar"><span>◫</span> Calendário</button></nav>
+      <div class="divider"></div><div class="side-label">Pilares</div><div class="pillar" id="pillarNav"></div><button class="category-trigger" id="categoryTrigger"><span>✳</span> Categorias <i class="count" id="categoryCount">04</i></button>
+      <div class="side-foot"><div class="rule"></div><div class="account"><div class="avatar">MC</div><div><strong>Marketing & Comunicação</strong><span>Makro Engenharia</span></div><span>•••</span></div><button class="help" id="sideHelp">? &nbsp; Central de ajuda</button></div>
+    </aside>
+    <button class="mobile-overlay" id="overlay" aria-label="Fechar menu"></button>
+    <main class="main">
+      <header class="top"><div class="top-left"><button class="menu-btn" id="openMenu" aria-label="Abrir menu">☰</button><div class="crumb"><span>Workspace</span><span class="slash">/</span><b id="breadcrumb">Kanban</b></div></div><div class="top-actions"><button class="icon" id="topHelp" aria-label="Abrir ajuda">?</button><div class="avatar">MC</div></div></header>
+      <div class="page">
+        <section class="section-head" id="library"><div><div class="kicker">Quadro editorial <span>·</span> <b id="itemCount">09</b> itens</div><h2 id="sectionTitle">Tudo que pode virar pauta.</h2></div><div class="toggle"><button class="active" id="viewKanban">▦ &nbsp; Kanban</button><button id="viewCalendar">◫ &nbsp; Calendário</button></div></section>
+        <section class="filters" id="filters"><div class="search"><span>⌕</span><input id="query" type="search" placeholder="Buscar por tema, palavra ou tag..." aria-label="Buscar conteúdo"><button id="clearSearch" aria-label="Limpar busca">×</button></div><label class="select">◈ <select id="pillarFilter"><option>Todos</option><option>Segurança</option><option>Gente & Cultura</option><option>Operação</option><option>Inovação</option></select><span>⌄</span></label><label class="select"># <select id="formatFilter"><option>Todos</option><option>Carrossel</option><option>Reels</option><option>Post</option><option>Artigo</option></select><span>⌄</span></label><label class="select"><select id="statusFilter"><option>Todos</option><option>Rascunho</option><option>Em revisão</option><option>Aprovado</option></select><span>⌄</span></label><button class="completed-toggle" id="completedToggle" aria-pressed="false">◌ &nbsp; Exibir concluídas</button><button class="clear" id="clearFilters">Limpar</button></section>
+        <div id="kanbanView"><div class="layout"><div><div class="list-top"><span>Mostrando <b id="showing">09</b> conteúdos</span><button class="sort" id="sortButton">Mais recentes ⌄</button></div><div class="kanban-board" id="kanbanBoard"></div></div><aside class="detail" id="detail"></aside></div></div>
+        <div id="calendarView" class="calendar" hidden></div>
+        <div id="singleView" hidden></div>
+      </div>
+    </main>
+  </div>
+  <div class="mobile-bottom"><button class="active" id="mobileKanban">▦<span>Kanban</span></button><button id="mobileNewContent">＋<span>Nova pauta</span></button><button id="mobileCalendar">◫<span>Calendário</span></button></div>
+  <div class="toast" id="toast"><b id="toastTitle"></b><span id="toastBody"></span></div><div class="modal-shell" id="categoryModal" hidden><button class="modal-backdrop" id="categoryBackdrop" aria-label="Fechar categorias"></button><section class="category-modal" role="dialog" aria-modal="true" aria-labelledby="categoryTitle"><header class="modal-head"><div><div class="kicker">Organização do acervo</div><h2 id="categoryTitle">Categorias</h2><p>Escolha o ícone que representa cada pilar no painel.</p></div><button class="icon" id="closeCategoryModal" aria-label="Fechar categorias">×</button></header><div class="category-list" id="categoryList"></div><div class="new-category-form" id="newCategoryForm" hidden><label>Nome da categoria<input id="newCategoryName" type="text" placeholder="Ex.: Projetos especiais" maxlength="32"></label><label>Ícone<select id="newCategoryIcon"><option>◉</option><option>●</option><option>↗</option><option>⌁</option><option>✦</option><option>◈</option><option>✳</option><option>◆</option></select></label><label>Cor<input id="newCategoryColor" type="color" value="#7c5cff"></label><div class="new-category-actions"><button id="cancelNewCategory" type="button">Cancelar</button><button class="save-new" id="saveNewCategory" type="button">Adicionar categoria</button></div></div><footer class="modal-foot"><button class="secondary" id="cancelCategoryModal">Fechar</button><button class="primary" id="newCategoryButton">＋ Nova categoria</button></footer></section></div>
+  <script>
+    // Makro Content Hub · Arquivo Vivo Makro · Interações: busca, filtros, calendário, preview e cópia.
+    const A='/manus-storage/';
+    const imgs={hero:A+'makro-hero-industrial_29a5fb51.jpg',safety:A+'makro-safety-field_c8cb39e6.jpg',people:A+'makro-people-culture_64273cff.jpg',wind:A+'makro-wind-energy_7274e0bd.jpg'};
+                                const items = [
+      {
+        id: 'mk-01',
+        code: 'MK / 01',
+        title: 'Rigging de alta precisão em parques eólicos',
+        eyebrow: 'Agosto · Semana 01',
+        excerpt: 'Quando a tonelagem e o raio de operação exigem tolerância zero no plano de içamento.',
+        pillar: 'Segurança',
+        format: 'Carrossel',
+        channel: 'Instagram',
+        status: 'Em revisão',
+        date: '17 ago 2026',
+        week: 'Agosto 01',
+        image: imgs.hero,
+        caption: "Quando o raio de operação e a tonelagem exigem tolerância zero, o plano de rigging deixa de ser um documento formal e passa a ser a garantia da integridade estrutural em campo.\n\nEm içamentos complexos de componentes eólicos, a distribuição milimétrica de carga entre os moitões principais e auxiliares, a verificação topográfica rigorosa do solo e o monitoramento constante da velocidade máxima de rajada de vento são variáveis que não admitem improviso.\n\nNa Makro Engenharia, cada movimento é simulado e executado por equipes certificadas, transformando risco em exatidão.\n\n#Makro #EngenhariaDeRigging #GuindastesDeGrandePorte #SegurançaOperacional #EnergiaEolica",
+        tags: ['rigging', 'segurança', 'eólica', 'engenharia'],
+        source: 'Diretoria de Operações & HSE',
+        validation: 'Validar parâmetros de carga e memorial de cálculo com o engenheiro responsável antes da publicação.'
+      },
+      {
+        id: 'mk-02',
+        code: 'MK / 02',
+        title: 'A responsabilidade compartilhada na cabine do guindaste',
+        eyebrow: 'Agosto · Semana 01',
+        excerpt: 'O operador no centro da conversa sobre preparo, comunicação por rádio e gestão de risco.',
+        pillar: 'Segurança',
+        format: 'Reels',
+        channel: 'LinkedIn',
+        status: 'Rascunho',
+        date: '19 ago 2026',
+        week: 'Agosto 01',
+        image: imgs.safety,
+        caption: "Em cada operação de içamento crítico, três elementos sobem simultaneamente: a carga, o operador e a responsabilidade coletiva.\n\nMais do que dominar joysticks e tabelas de carga, o operador de guindastes de grande porte atua como o último guardião da segurança no canteiro. A comunicação clara por rádio com o sinaleiro e a leitura antecipada de pontos cegos definem o sucesso de uma manobra.\n\nComo sua empresa prepara as equipes para manter o foco sob pressão?\n\n#Makro #SegurançaDoTrabalho #OperadorDeGuindaste #CulturaDeSegurança #FatorHumano",
+        tags: ['operador', 'segurança', 'rigging', 'rh'],
+        source: 'Gerência de HSE & Operações',
+        validation: 'Revisar terminologia de sinalização de campo e diretrizes de HSE.'
+      },
+      {
+        id: 'mk-03',
+        code: 'MK / 03',
+        title: 'Geotecnia e patolamento: a base de qualquer grande içamento',
+        eyebrow: 'Agosto · Semana 01',
+        excerpt: 'O que antecede a movimentação: estudo de solo, raio de giro e distribuição de pressão nas sapatas.',
+        pillar: 'Operação',
+        format: 'Carrossel',
+        channel: 'Instagram',
+        status: 'Rascunho',
+        date: '21 ago 2026',
+        week: 'Agosto 01',
+        image: imgs.wind,
+        caption: "Antes de qualquer lança se erguer, o solo fala. A estabilidade de um guindaste de 500 toneladas depende diretamente da geotecnia do terreno e do dimensionamento correto das sapatas e dormentes.\n\nSe a capacidade de suporte do solo for inferior à pressão exercida pelos cilindros, o risco de recalque compromete toda a operação. Engenharia de movimento exige rigor geotécnico absoluto.\n\nConsulte nossos especialistas para o planejamento logístico do seu próximo grande projeto.\n\n#Makro #EngenhariaDeMovimento #Geotecnia #LogisticaPesada #Guindastes",
+        tags: ['geotecnia', 'patolamento', 'engenharia', 'operações'],
+        source: 'Diretoria Técnica & Engenharia',
+        validation: 'Checar conformidade com normas de fundação temporária e tabelas de patolamento.'
+      },
+      {
+        id: 'mk-04',
+        code: 'MK / 04',
+        title: 'A sinergia entre engenharia e desenvolvimento humano',
+        eyebrow: 'Agosto · Semana 02',
+        excerpt: 'Uma equipe alinhada antes de entrar no canteiro: competência técnica, integração e confiança mútua.',
+        pillar: 'Gente & Cultura',
+        format: 'Post',
+        channel: 'Instagram',
+        status: 'Rascunho',
+        date: '24 ago 2026',
+        week: 'Agosto 02',
+        image: imgs.people,
+        caption: "Grandes estruturas não se movem sozinhas. Por trás de cada guindaste posicionado e de cada plano de rigging aprovado existe uma equipe multidisciplinar movida por rigor técnico e confiança mútua.\n\nNa Makro Engenharia, valorizamos o desenvolvimento contínuo de nossos profissionais, unindo certificações internacionais, treinamentos práticos de HSE e valorização do fator humano.\n\nConheça nossas vagas e oportunidades de carreira em engenharia pesada.\n\n#Makro #GenteECultura #EngenhariaPesada #RecursosHumanos #CulturaOrganizacional",
+        tags: ['gente', 'cultura', 'rh', 'equipe'],
+        source: 'Diretoria de Gente & Cultura',
+        validation: 'Garantir alinhamento com políticas de employer branding da Makro.'
+      },
+      {
+        id: 'mk-05',
+        code: 'MK / 05',
+        title: 'A logística de transporte e montagem de aerogeradores',
+        eyebrow: 'Agosto · Semana 02',
+        excerpt: 'Superando desafios logísticos na instalação de componentes eólicos de última geração.',
+        pillar: 'Inovação',
+        format: 'Reels',
+        channel: 'LinkedIn',
+        status: 'Em revisão',
+        date: '26 ago 2026',
+        week: 'Agosto 02',
+        image: imgs.wind,
+        caption: "O transporte e o içamento de torres eólicas e nacelles de última geração exigem soluções de engenharia que desafiam os limites da logística rodoviária e de canteiro.\n\nCom frotas modernas e planejamento integrado, a Makro Engenharia viabiliza a transição energética brasileira com eficiência, pontualidade e segurança inegociável.\n\nComo sua empresa avalia os gargalos logísticos em parques de energia renovável?\n\n#Makro #EnergiaRenovavel #Eolica #LogisticaEspecializada #InovacaoEmEngenharia",
+        tags: ['inovação', 'eólica', 'logística', 'sustentabilidade'],
+        source: 'Gerência de Operações Eólicas',
+        validation: 'Validar dados de capacidade dos guindastes telescópicos e treliçados.'
+      },
+      {
+        id: 'mk-06',
+        code: 'MK / 06',
+        title: 'Soberania industrial e infraestrutura: Independência do Brasil',
+        eyebrow: 'Setembro · Data comemorativa',
+        excerpt: 'O papel da engenharia pesada na construção da infraestrutura nacional e no desenvolvimento soberano.',
+        pillar: 'Gente & Cultura',
+        format: 'Post',
+        channel: 'LinkedIn',
+        status: 'Rascunho',
+        date: '07 set 2026',
+        week: 'Setembro 01',
+        isCommemorative: true,
+        commemorativeLabel: 'Independência do Brasil',
+        image: imgs.hero,
+        caption: "Construir um país soberano exige mais do que ambição: exige infraestrutura robusta, pontes erguidas, parques industriais energizados e a capacidade de erguer o que antes parecia intransponível.\n\nNeste 7 de Setembro, a Makro Engenharia reforça seu orgulho em fazer parte da história do desenvolvimento nacional, movimentando as grandes obras que estruturam o Brasil.\n\n#Makro #IndependenciaDoBrasil #EngenhariaNacional #Infraestrutura #SoberaniaIndustrial",
+        tags: ['institucional', 'brasil', 'engenharia', 'patriotismo'],
+        source: 'Diretoria Executiva & Marketing',
+        validation: 'Validar tom institucional e alinhamento visual com a data.'
+      },
+      {
+        id: 'mk-07',
+        code: 'MK / 07',
+        title: 'O Diálogo Diário de Segurança como ferramenta de gestão',
+        eyebrow: 'Setembro · Semana 02',
+        excerpt: 'Como o DDS transforma a percepção de risco coletiva antes do início de cada jornada.',
+        pillar: 'Segurança',
+        format: 'Carrossel',
+        channel: 'Instagram',
+        status: 'Rascunho',
+        date: '09 set 2026',
+        week: 'Setembro 02',
+        image: imgs.safety,
+        caption: "O Diálogo Diário de Segurança (DDS) não é uma formalidade burocrática; é o momento em que a equipe para, alinha os cenários do dia e valida a percepção de risco antes de qualquer movimentação de carga.\n\nEm ambientes industriais complexos, a atenção ao detalhe salva vidas. Zero acidente é uma conquista diária construída com diálogo aberto e disciplina operacional.\n\n#Makro #HSE #SegurançaDoTrabalho #ZeroAcidente #CulturaIndustrial",
+        tags: ['hse', 'segurança', 'dds', 'cultura'],
+        source: 'Coordenação Corporativa de HSE',
+        validation: 'Revisar diretrizes de segurança industrial e normas regulamentadoras.'
+      },
+      {
+        id: 'mk-08',
+        code: 'MK / 08',
+        title: 'Precisão e domínio técnico: O Dia do Operador de Guindastes',
+        eyebrow: 'Setembro · Data comemorativa',
+        excerpt: 'Homenagem aos profissionais que transformam planos de rigging complexos em realidade milimétrica.',
+        pillar: 'Operação',
+        format: 'Carrossel',
+        channel: 'Instagram',
+        status: 'Rascunho',
+        date: '18 set 2026',
+        week: 'Setembro 03',
+        isCommemorative: true,
+        commemorativeLabel: 'Dia do Operador',
+        image: imgs.safety,
+        caption: "Por trás de cada lança erguida e de cada carga milimetricamente posicionada existe a sensibilidade, o foco e a técnica incomparável de um operador de guindastes de grande porte.\n\nNo Dia do Operador, celebramos os profissionais cuja competência transforma toneladas de aço e complexidade logística em operações seguras e bem-sucedidas. Obrigado por moverem o Brasil com excelência.\n\n#Makro #DiaDoOperador #EngenhariaDeRigging #Guindastes #OperadorDeGuindaste",
+        tags: ['operador', 'homenagem', 'rigging', 'equipe'],
+        source: 'Gerência de Operações & RH',
+        validation: 'Incluir fotos reais de operadores da frota Makro (com autorização).'
+      },
+      {
+        id: 'mk-09',
+        code: 'MK / 09',
+        title: '49 anos de movimento e engenharia de excelência',
+        eyebrow: 'Outubro · Semana 01',
+        excerpt: 'Uma trajetória construída por pessoas, operações críticas e relações de longo prazo com o mercado B2B.',
+        pillar: 'Gente & Cultura',
+        format: 'Artigo',
+        channel: 'LinkedIn',
+        status: 'Aprovado',
+        date: '05 out 2026',
+        week: 'Outubro 01',
+        image: imgs.people,
+        caption: "Quase cinco décadas de história não se sustentam apenas com equipamentos robustos; sustentam-se com a solidez de compromissos cumpridos, parcerias duradouras e respeito absoluto à engenharia nacional.\n\nA Makro Engenharia celebra sua trajetória agradecendo a cada cliente, colaborador e parceiro que confiou em nossa capacidade de mover o impossível.\n\nLeia o artigo completo em nosso portal corporativo.\n\n#Makro #Historia #EngenhariaNacional #Solidez #B2B",
+        tags: ['história', 'corporativo', 'gente', 'mercado'],
+        source: 'Diretoria Executiva & Marketing',
+        validation: 'Aprovado pela Diretoria para veiculação no LinkedIn corporativo.'
+      },
+      {
+        id: 'mk-10',
+        code: 'MK / 10',
+        title: 'Planejamento de rotas e escolta para cargas superdimensionadas',
+        eyebrow: 'Outubro · Semana 02',
+        excerpt: 'Superando desafios rodoviários com comboios dedicados e engenharia de transportes especiais.',
+        pillar: 'Operação',
+        format: 'Post',
+        channel: 'Instagram',
+        status: 'Rascunho',
+        date: '07 out 2026',
+        week: 'Outubro 02',
+        image: imgs.hero,
+        caption: "Quando a carga excede os gabaritos convencionais, o transporte rodoviário transforma-se em uma operação cirúrgica de engenharia. Estudo de raio de curva, remoção temporária de interferências e escolta técnica especializada são etapas fundamentais.\n\nNa Makro Engenharia, o transporte superdimensionado é planejado do ponto de origem até a fundação final.\n\n#Makro #TransporteEspecial #CargasPesadas #LogisticaIndustrial #EngenhariaRodoviaria",
+        tags: ['transporte', 'logística', 'operações', 'cargas'],
+        source: 'Gerência de Transportes Especiais',
+        validation: 'Checar autorizações de órgãos rodoviários e dimensionamento dos conjuntos.'
+      },
+      {
+        id: 'mk-11',
+        code: 'MK / 11',
+        title: 'Monitoramento meteorológico em tempo real nas operações eólicas',
+        eyebrow: 'Outubro · Semana 03',
+        excerpt: 'Como anemômetros e sensores de rajada protegem equipes e ativos em alturas elevadas.',
+        pillar: 'Inovação',
+        format: 'Carrossel',
+        channel: 'Instagram',
+        status: 'Rascunho',
+        date: '09 out 2026',
+        week: 'Outubro 03',
+        image: imgs.wind,
+        caption: "O vento que gera energia limpa também representa o maior desafio operacional na montagem de aerogeradores. Rajadas súbitas acima do limite de tolerância exigem paralisação imediata dos içamentos.\n\nUtilizando estações meteorológicas móveis e telemetria avançada em tempo real, a Makro Engenharia garante decisões seguras baseadas em dados precisos.\n\n#Makro #Inovacao #Meteorologia #SegurancaEolica #EngenhariaDeMovimento",
+        tags: ['inovação', 'eólica', 'tecnologia', 'segurança'],
+        source: 'Gerência de Inovação & Tecnologia',
+        validation: 'Validar especificações dos sensores meteorológicos e limites de rajada.'
+      },
+      {
+        id: "mk-12",
+        code: "MK / 12",
+        title: "Patolamento em terrenos com capacidade variável",
+        eyebrow: "Agosto · Semana 02",
+        excerpt: "A estabilidade do conjunto depende da leitura do solo, da pressão nas sapatas e da distribuição correta das reações.",
+        pillar: "Operação",
+        format: "Carrossel",
+        channel: "Instagram",
+        status: "Rascunho",
+        date: "28 ago 2026",
+        week: "Agosto 02",
+        image: imgs.wind,
+        caption: "A capacidade nominal de um guindaste só se transforma em capacidade operacional quando o terreno suporta as reações previstas no plano.\n\nEm áreas com aterro, solo heterogêneo ou variação de umidade, o patolamento exige investigação, dimensionamento de placas e conferência das pressões transmitidas ao solo. Uma pequena diferença de apoio pode alterar a estabilidade do conjunto durante a movimentação.\n\nNa Makro Engenharia, a preparação da base faz parte do içamento — não é uma etapa posterior à mobilização.\n\n#Makro #Patolamento #Geotecnia #EngenhariaDeMovimento #OperacaoSegura",
+        tags: ["geotecnia", "patolamento", "guindastes", "operacao"],
+        source: "Diretoria Técnica & Engenharia",
+        validation: "Validar a representação das placas, dormentes e pressões de apoio com a engenharia responsável."
+      },
+      {
+        id: "mk-13",
+        code: "MK / 13",
+        title: "Plano de içamento: da simulação à execução",
+        eyebrow: "Agosto · Semana 03",
+        excerpt: "A qualidade do plano aparece quando cada premissa é confirmada antes de a carga deixar o solo.",
+        pillar: "Segurança",
+        format: "Post",
+        channel: "LinkedIn",
+        status: "Rascunho",
+        date: "31 ago 2026",
+        week: "Agosto 03",
+        image: imgs.hero,
+        caption: "Um plano de içamento não termina no desenho da trajetória. Ele precisa sobreviver à transição entre a simulação e as condições reais do campo.\n\nPeso, centro de gravidade, raio de operação, configuração da lança, interferências, sequência de tensionamento e comunicação entre as funções críticas devem ser verificados antes do primeiro movimento.\n\nA execução segura nasce de premissas conhecidas, responsabilidades claras e critérios objetivos para interromper a operação quando o cenário se desvia do planejado.\n\n#Makro #PlanoDeRigging #SegurancaOperacional #EngenhariaIndustrial #HSE",
+        tags: ["rigging", "planejamento", "hse", "seguranca"],
+        source: "Diretoria de Operações & HSE",
+        validation: "Revisar o fluxo de aprovação do plano e inserir a matriz de responsabilidades da operação."
+      },
+      {
+        id: "mk-14",
+        code: "MK / 14",
+        title: "Comunicação operacional e zona de exclusão",
+        eyebrow: "Setembro · Semana 01",
+        excerpt: "Uma manobra segura depende de uma linguagem comum e de limites físicos respeitados por todos.",
+        pillar: "Segurança",
+        format: "Reels",
+        channel: "Instagram",
+        status: "Rascunho",
+        date: "02 set 2026",
+        week: "Setembro 01",
+        image: imgs.safety,
+        caption: "Durante um içamento, a zona de exclusão não é apenas uma faixa demarcada no piso. É um controle de exposição que precisa ser compreendido, sinalizado e respeitado durante toda a trajetória da carga.\n\nSinaleiro, operador, rigger e equipe de apoio devem compartilhar os mesmos comandos, pontos de parada e critérios de emergência. Quando a comunicação falha, a carga continua se movendo enquanto a percepção de risco se fragmenta.\n\nPor isso, a Makro trata comunicação operacional como barreira de segurança — com briefing, rádio, sinais padronizados e autoridade para interromper.\n\n#Makro #ZonaDeExclusao #ComunicacaoOperacional #HSE #SegurancaDoTrabalho",
+        tags: ["comunicacao", "zona de exclusao", "hse", "rigging"],
+        source: "Coordenação Corporativa de HSE",
+        validation: "Validar os sinais e comandos apresentados com o procedimento operacional vigente."
+      },
+      {
+        id: "mk-15",
+        code: "MK / 15",
+        title: "Manutenção de guindastes: confiabilidade antes da mobilização",
+        eyebrow: "Setembro · Semana 01",
+        excerpt: "Disponibilidade de equipamento começa muito antes da chegada ao canteiro.",
+        pillar: "Inovação",
+        format: "Post",
+        channel: "LinkedIn",
+        status: "Rascunho",
+        date: "04 set 2026",
+        week: "Setembro 01",
+        image: imgs.hero,
+        caption: "Em uma operação crítica, a manutenção não pode ser tratada como resposta a uma falha. Ela é parte do planejamento de disponibilidade, segurança e produtividade da frota.\n\nInspeções, registros de horas, análise de componentes, testes funcionais e rastreabilidade de intervenções reduzem a incerteza antes da mobilização. O objetivo não é apenas manter o equipamento ligado, mas garantir que ele opere dentro das condições previstas no projeto.\n\nConfiabilidade operacional é a soma de disciplina técnica, dados históricos e decisão preventiva.\n\n#Makro #ManutencaoIndustrial #Confiabilidade #FrotaPesada #Engenharia",
+        tags: ["manutencao", "confiabilidade", "frota", "inovacao"],
+        source: "Gerência de Equipamentos & Manutenção",
+        validation: "Confirmar os indicadores de manutenção e evitar dados de desempenho sem fonte interna aprovada."
+      },
+      {
+        id: "mk-16",
+        code: "MK / 16",
+        title: "Inspeção de acessórios de içamento e rastreabilidade",
+        eyebrow: "Setembro · Semana 02",
+        excerpt: "Cintas, manilhas e cabos precisam apresentar condição, identificação e aplicação compatíveis com a carga.",
+        pillar: "Segurança",
+        format: "Carrossel",
+        channel: "Instagram",
+        status: "Rascunho",
+        date: "11 set 2026",
+        week: "Setembro 02",
+        image: imgs.safety,
+        caption: "Acessório de içamento sem identificação confiável é uma variável aberta no plano. Antes da conexão, é necessário verificar capacidade, integridade, desgaste, deformações, certificação e compatibilidade com o método de amarração.\n\nA rastreabilidade permite saber qual componente está sendo utilizado, em qual condição e para qual aplicação. Ela transforma uma inspeção visual em uma barreira documentada contra o uso inadequado.\n\nNa engenharia de movimento, o detalhe que não foi conferido também entra no cálculo do risco.\n\n#Makro #AcessoriosDeIçamento #Rastreabilidade #SegurancaOperacional #Rigging",
+        tags: ["acessorios", "inspecao", "rastreabilidade", "hse"],
+        source: "Coordenação Corporativa de HSE",
+        validation: "Usar imagens de acessórios reais e conferir os critérios de inspeção adotados pela Makro."
+      },
+      {
+        id: "mk-17",
+        code: "MK / 17",
+        title: "Janela operacional e meteorologia: decisão baseada em dados",
+        eyebrow: "Setembro · Semana 03",
+        excerpt: "Vento, chuva e visibilidade alteram as premissas do içamento e precisam entrar na decisão de campo.",
+        pillar: "Inovação",
+        format: "Artigo",
+        channel: "LinkedIn",
+        status: "Rascunho",
+        date: "14 set 2026",
+        week: "Setembro 03",
+        image: imgs.wind,
+        caption: "A janela operacional de um içamento não é definida apenas pelo relógio do projeto. Ela depende das condições ambientais que interferem na estabilidade da carga, na visibilidade e na capacidade de resposta da equipe.\n\nMedições de vento, previsão de rajadas, chuva, iluminação e características do componente devem ser confrontadas com os limites definidos no plano e nos manuais dos equipamentos. Quando a condição real deixa de atender às premissas, a decisão segura é reavaliar ou interromper.\n\nDados meteorológicos só geram valor quando estão conectados a critérios claros de decisão.\n\n#Makro #MeteorologiaOperacional #Içamento #Inovacao #SegurancaEolica",
+        tags: ["meteorologia", "janela operacional", "dados", "eolica"],
+        source: "Gerência de Inovação & Tecnologia",
+        validation: "Validar limites meteorológicos com engenharia e HSE antes de publicar o artigo."
+      },
+      {
+        id: "mk-18",
+        code: "MK / 18",
+        title: "Competência crítica: matriz de treinamento para operações especiais",
+        eyebrow: "Setembro · Semana 03",
+        excerpt: "Capacitação precisa refletir a criticidade da atividade, a função exercida e o ambiente operacional.",
+        pillar: "Gente & Cultura",
+        format: "Post",
+        channel: "LinkedIn",
+        status: "Rascunho",
+        date: "16 set 2026",
+        week: "Setembro 03",
+        image: imgs.people,
+        caption: "Em operações especiais, treinamento não é um evento isolado. É uma matriz contínua de competências que relaciona função, equipamento, risco, procedimento e evidência de proficiência.\n\nOperadores, riggers, sinaleiros, supervisores e equipes de apoio precisam treinar não apenas a tarefa principal, mas também comunicação, resposta a desvios e critérios de parada. A competência aparece quando o profissional reconhece uma condição insegura antes que ela se torne um evento.\n\nDesenvolver pessoas é elevar a previsibilidade da operação.\n\n#Makro #GenteECultura #TreinamentoIndustrial #Competencia #HSE",
+        tags: ["treinamento", "competencia", "gente", "hse"],
+        source: "Diretoria de Gente & Cultura",
+        validation: "Alinhar a pauta à matriz corporativa de competências e às certificações aplicáveis."
+      },
+      {
+        id: "mk-19",
+        code: "MK / 19",
+        title: "Cargas assimétricas e leitura do centro de gravidade",
+        eyebrow: "Setembro · Semana 04",
+        excerpt: "A geometria da carga define a distribuição de esforços, a amarração e o comportamento durante a elevação.",
+        pillar: "Operação",
+        format: "Carrossel",
+        channel: "Instagram",
+        status: "Rascunho",
+        date: "21 set 2026",
+        week: "Setembro 04",
+        image: imgs.wind,
+        caption: "Nem toda carga se comporta como um bloco equilibrado. Em componentes assimétricos, a posição do centro de gravidade determina a reação dos pontos de pega, o ângulo dos cabos e a tendência de rotação no início do içamento.\n\nA leitura correta da geometria precisa estar refletida no plano de rigging, na escolha dos acessórios e na sequência de tensionamento. O primeiro levantamento controlado é uma verificação de engenharia, não uma etapa para improviso.\n\nPrecisão começa antes de a carga perder o contato com o solo.\n\n#Makro #CentroDeGravidade #Rigging #CargasAssimetrica #EngenhariaDeMovimento",
+        tags: ["carga", "centro de gravidade", "rigging", "operacao"],
+        source: "Diretoria Técnica & Engenharia",
+        validation: "Inserir exemplo visual validado pela engenharia, sem expor dados de cliente ou projeto."
+      },
+      {
+        id: "mk-20",
+        code: "MK / 20",
+        title: "Sinaleiro e rigger: linguagem comum para manobras seguras",
+        eyebrow: "Setembro · Semana 04",
+        excerpt: "A comunicação entre quem orienta e quem prepara a carga precisa ser objetiva antes do primeiro comando.",
+        pillar: "Segurança",
+        format: "Reels",
+        channel: "Instagram",
+        status: "Rascunho",
+        date: "23 set 2026",
+        week: "Setembro 04",
+        image: imgs.safety,
+        caption: "O sinaleiro orienta o movimento. O rigger prepara a carga. O operador conduz o equipamento. A manobra só é segura quando essas funções trabalham com a mesma leitura do plano e dos limites da operação.\n\nAntes do comando, a equipe precisa confirmar ponto de pega, trajetória, zona de exclusão, sinais, rádio e critério de parada. Uma linguagem comum reduz ambiguidades no momento em que a visibilidade e a distância aumentam a complexidade.\n\nCoordenação operacional é uma barreira técnica, não apenas uma habilidade comportamental.\n\n#Makro #Sinaleiro #Rigger #Comunicacao #SegurancaOperacional",
+        tags: ["sinaleiro", "rigger", "comunicacao", "seguranca"],
+        source: "Gerência de Operações & HSE",
+        validation: "Confirmar nomenclatura dos sinais e procedimentos internos antes da gravação."
+      },
+      {
+        id: "mk-21",
+        code: "MK / 21",
+        title: "HSE integrado ao planejamento de mobilização",
+        eyebrow: "Setembro · Semana 04",
+        excerpt: "Segurança precisa entrar no plano antes de equipamentos, pessoas e cargas chegarem ao site.",
+        pillar: "Segurança",
+        format: "Artigo",
+        channel: "LinkedIn",
+        status: "Rascunho",
+        date: "25 set 2026",
+        week: "Setembro 04",
+        image: imgs.hero,
+        caption: "Mobilizar uma operação pesada envolve mais do que transportar equipamentos. Envolve analisar acessos, interferências, circulação, áreas de apoio, permissões, interfaces e resposta a emergências antes do início da atividade.\n\nQuando HSE participa desde o planejamento, os controles deixam de ser genéricos e passam a responder aos riscos reais do local. A equipe consegue antecipar conflitos, definir responsabilidades e estabelecer barreiras verificáveis para cada etapa.\n\nSegurança integrada é capacidade de planejar melhor, não uma camada adicionada no fim.\n\n#Makro #HSE #Mobilizacao #PlanejamentoIndustrial #GestaoDeRiscos",
+        tags: ["hse", "mobilizacao", "planejamento", "risco"],
+        source: "Coordenação Corporativa de HSE",
+        validation: "Validar o conteúdo com HSE e retirar qualquer referência a procedimento não publicado."
+      },
+      {
+        id: "mk-22",
+        code: "MK / 22",
+        title: "Gestão de interfaces em obras de grande porte",
+        eyebrow: "Setembro · Semana 05",
+        excerpt: "A operação pode estar tecnicamente pronta e ainda assim falhar se as interfaces não estiverem coordenadas.",
+        pillar: "Operação",
+        format: "Post",
+        channel: "LinkedIn",
+        status: "Rascunho",
+        date: "28 set 2026",
+        week: "Setembro 05",
+        image: imgs.hero,
+        caption: "Grandes operações raramente dependem de uma única equipe. Engenharia, cliente, transporte, montagem, energia, segurança e operação do site precisam compartilhar a mesma sequência de trabalho.\n\nA gestão de interfaces torna visíveis as dependências: quem libera a área, quem confirma a condição do equipamento, quem controla o acesso e qual informação precisa estar disponível antes do próximo passo.\n\nQuando as interfaces são tratadas como parte do plano, a execução ganha previsibilidade e reduz retrabalho.\n\n#Makro #GestaoDeInterfaces #OperacaoIndustrial #Engenharia #Planejamento",
+        tags: ["interfaces", "planejamento", "operacao", "engenharia"],
+        source: "Diretoria de Operações",
+        validation: "Validar o exemplo de interfaces com a área de projetos antes da publicação."
+      },
+      {
+        id: "mk-23",
+        code: "MK / 23",
+        title: "Dados de campo que melhoram o próximo plano de rigging",
+        eyebrow: "Setembro · Semana 05",
+        excerpt: "Cada operação produz evidências que podem tornar o próximo planejamento mais preciso.",
+        pillar: "Inovação",
+        format: "Carrossel",
+        channel: "Instagram",
+        status: "Rascunho",
+        date: "30 set 2026",
+        week: "Setembro 05",
+        image: imgs.wind,
+        caption: "O plano de rigging melhora quando a experiência de campo deixa de depender apenas da memória da equipe. Tempos de execução, condições ambientais, ajustes realizados, pontos de interferência e desvios observados formam uma base de aprendizado para os próximos projetos.\n\nRegistrar dados não significa burocratizar a operação. Significa preservar evidências que ajudam a comparar premissas, revisar métodos e tomar decisões com menos incerteza.\n\nInovação aplicada é transformar experiência operacional em padrão reutilizável.\n\n#Makro #DadosDeCampo #Rigging #InovacaoIndustrial #MelhoriaContinua",
+        tags: ["dados", "rigging", "melhoria continua", "inovacao"],
+        source: "Gerência de Inovação & Tecnologia",
+        validation: "Confirmar quais indicadores de campo podem ser divulgados publicamente."
+      },
+      {
+        id: "mk-24",
+        code: "MK / 24",
+        title: "Parada industrial: engenharia de içamento sob restrição de tempo",
+        eyebrow: "Outubro · Semana 01",
+        excerpt: "Em uma parada de planta, velocidade só é desempenho quando não compromete a segurança da sequência.",
+        pillar: "Operação",
+        format: "Reels",
+        channel: "Instagram",
+        status: "Rascunho",
+        date: "02 out 2026",
+        week: "Outubro 01",
+        image: imgs.hero,
+        caption: "Paradas industriais comprimem cronogramas, concentram equipes e aumentam o número de interfaces em uma mesma janela. Nesse contexto, acelerar sem método pode criar mais tempo perdido do que o prazo pretendia evitar.\n\nA engenharia de içamento precisa organizar sequência, acessos, disponibilidade de equipamentos, permissões, áreas isoladas e critérios de prontidão. Cada minuto ganho deve vir de uma decisão preparada — não da retirada de uma barreira de segurança.\n\nEficiência em uma parada começa na qualidade do planejamento.\n\n#Makro #ParadaIndustrial #Içamento #PlanejamentoOperacional #HSE",
+        tags: ["parada industrial", "içamento", "cronograma", "hse"],
+        source: "Diretoria de Operações & HSE",
+        validation: "Alinhar o roteiro com a área de paradas e não divulgar prazos de clientes."
+      },
+      {
+        id: "mk-25",
+        code: "MK / 25",
+        title: "Telemetria e manutenção preditiva de equipamentos",
+        eyebrow: "Outubro · Semana 02",
+        excerpt: "Monitorar comportamento e condição ajuda a antecipar decisões antes da indisponibilidade.",
+        pillar: "Inovação",
+        format: "Artigo",
+        channel: "LinkedIn",
+        status: "Rascunho",
+        date: "12 out 2026",
+        week: "Outubro 02",
+        image: imgs.wind,
+        caption: "Telemetria não substitui a inspeção técnica, mas amplia a qualidade da decisão. Horas de operação, temperatura, pressão, alertas e comportamento do equipamento ajudam a identificar tendências antes que elas interrompam uma mobilização.\n\nCom dados confiáveis, a manutenção pode priorizar intervenção, planejar recursos e reduzir a probabilidade de descobrir uma condição crítica somente no canteiro. A tecnologia faz sentido quando está conectada ao processo de engenharia e à rotina de campo.\n\nManutenção preditiva é transformar sinal em decisão antes da falha.\n\n#Makro #Telemetria #ManutencaoPreditiva #Tecnologia #FrotaPesada",
+        tags: ["telemetria", "manutencao", "tecnologia", "frota"],
+        source: "Gerência de Inovação & Tecnologia",
+        validation: "Validar os dados e recursos de telemetria efetivamente disponíveis na frota."
+      },
+      {
+        id: "mk-26",
+        code: "MK / 26",
+        title: "Fadiga, atenção e tomada de decisão em operações críticas",
+        eyebrow: "Outubro · Semana 02",
+        excerpt: "Fator humano também é variável operacional e precisa ser tratado no planejamento da jornada.",
+        pillar: "Gente & Cultura",
+        format: "Carrossel",
+        channel: "Instagram",
+        status: "Rascunho",
+        date: "14 out 2026",
+        week: "Outubro 02",
+        image: imgs.people,
+        caption: "Em uma operação crítica, atenção não é um recurso infinito. Jornada, pausas, condições ambientais, pressão de prazo e complexidade da tarefa interferem na capacidade de perceber desvios e decidir com precisão.\n\nTratar fadiga como variável de HSE significa planejar equipes, alternância, comunicação e autoridade para interromper quando a condição humana deixa de ser compatível com o risco da atividade.\n\nCuidar das pessoas também é proteger a qualidade técnica da decisão.\n\n#Makro #FatorHumano #Fadiga #HSE #GenteECultura",
+        tags: ["fator humano", "fadiga", "hse", "gente"],
+        source: "Diretoria de Gente & Cultura & HSE",
+        validation: "Revisar o conteúdo com RH e HSE para manter abordagem educativa e não diagnóstica."
+      },
+      {
+        id: "mk-27",
+        code: "MK / 27",
+        title: "Controle de mudanças: quando o plano precisa ser revalidado",
+        eyebrow: "Outubro · Semana 02",
+        excerpt: "Alterar equipamento, rota, carga ou condição de solo pode invalidar premissas que pareciam estáveis.",
+        pillar: "Segurança",
+        format: "Post",
+        channel: "LinkedIn",
+        status: "Rascunho",
+        date: "16 out 2026",
+        week: "Outubro 02",
+        image: imgs.safety,
+        caption: "Um plano aprovado é válido para as condições que foram analisadas. Se a carga muda, o guindaste é substituído, a rota sofre interferência ou o solo apresenta outra condição, a operação precisa parar para revalidar as premissas.\n\nControle de mudanças evita que a equipe execute um documento correto para um cenário que já não existe. A revisão deve considerar capacidade, raio, acessórios, trajetória, interfaces e barreiras de segurança.\n\nEm campo, reconhecer a mudança no momento certo é uma competência de engenharia.\n\n#Makro #ControleDeMudancas #PlanoDeRigging #Seguranca #HSE",
+        tags: ["mudanca", "rigging", "seguranca", "planejamento"],
+        source: "Diretoria de Operações & HSE",
+        validation: "Revisar o fluxo formal de gestão de mudanças antes da publicação."
+      },
+      {
+        id: "mk-28",
+        code: "MK / 28",
+        title: "Escolha do guindaste: capacidade não é o único critério",
+        eyebrow: "Outubro · Semana 03",
+        excerpt: "A melhor configuração combina capacidade, geometria, acesso, solo, raio e método de montagem.",
+        pillar: "Operação",
+        format: "Carrossel",
+        channel: "Instagram",
+        status: "Rascunho",
+        date: "19 out 2026",
+        week: "Outubro 03",
+        image: imgs.hero,
+        caption: "Escolher um guindaste apenas pela capacidade máxima é reduzir uma decisão de engenharia a um único número. A configuração adequada depende da carga, do raio, da altura, da geometria da lança, do acesso, do solo e da sequência de montagem.\n\nA solução mais eficiente é aquela que atende às premissas do projeto com margem operacional, logística viável e controle dos riscos de implantação. Dimensionar bem evita mobilização inadequada, retrabalho e exposição desnecessária.\n\nCapacidade é ponto de partida. Compatibilidade com o cenário é o critério decisivo.\n\n#Makro #Guindastes #Dimensionamento #EngenhariaDeMovimento #Operacao",
+        tags: ["guindaste", "dimensionamento", "operacao", "engenharia"],
+        source: "Diretoria Técnica & Engenharia",
+        validation: "Evitar citar modelos ou capacidades sem validação da área de equipamentos."
+      },
+      {
+        id: "mk-29",
+        code: "MK / 29",
+        title: "Rastreabilidade documental em operações complexas",
+        eyebrow: "Outubro · Semana 03",
+        excerpt: "Documentos organizados sustentam decisões, liberações e evidências durante toda a execução.",
+        pillar: "Segurança",
+        format: "Artigo",
+        channel: "LinkedIn",
+        status: "Rascunho",
+        date: "21 out 2026",
+        week: "Outubro 03",
+        image: imgs.safety,
+        caption: "Em operações complexas, documento não é arquivo parado. Plano de rigging, certificados, inspeções, permissões, checklists e registros de briefing formam a trilha de evidências que sustenta a execução.\n\nA rastreabilidade ajuda a confirmar qual informação foi aprovada, quem liberou cada etapa e qual condição estava vigente no momento da decisão. Isso reduz versões conflitantes e melhora a resposta quando surge um desvio.\n\nControle documental é uma barreira operacional quando está conectado ao campo.\n\n#Makro #Rastreabilidade #GestaoDocumental #HSE #EngenhariaIndustrial",
+        tags: ["documentacao", "rastreabilidade", "hse", "controle"],
+        source: "Sistema de Gestão Integrada",
+        validation: "Confirmar os nomes dos documentos e a política interna de controle de registros."
+      },
+      {
+        id: "mk-30",
+        code: "MK / 30",
+        title: "Eficiência energética na logística pesada",
+        eyebrow: "Outubro · Semana 03",
+        excerpt: "Planejar rota, equipamento e sequência também é reduzir deslocamentos, esperas e consumo desnecessário.",
+        pillar: "Inovação",
+        format: "Post",
+        channel: "LinkedIn",
+        status: "Rascunho",
+        date: "23 out 2026",
+        week: "Outubro 03",
+        image: imgs.wind,
+        caption: "Eficiência energética em logística pesada começa no planejamento. Rota adequada, combinação correta de equipamentos, redução de esperas, consolidação de mobilizações e sequência de montagem bem definida evitam consumo associado a deslocamentos e operações improdutivas.\n\nO resultado não vem de uma única ação isolada. Ele depende de decisões técnicas que equilibram prazo, capacidade, acesso, segurança e uso racional dos recursos.\n\nNa engenharia de movimento, eficiência é fazer o trabalho necessário com menos desperdício e mais previsibilidade.\n\n#Makro #EficienciaEnergetica #LogisticaPesada #Inovacao #Engenharia",
+        tags: ["eficiencia", "energia", "logistica", "sustentabilidade"],
+        source: "Gerência de Operações & Sustentabilidade",
+        validation: "Validar qualquer afirmação de redução de consumo com dados internos auditáveis."
+      },
+      {
+        id: "mk-31",
+        code: "MK / 31",
+        title: "Aprendizado pós-operação: transformar evidência em padrão",
+        eyebrow: "Outubro · Semana 04",
+        excerpt: "A etapa final de uma operação também prepara a qualidade da próxima.",
+        pillar: "Gente & Cultura",
+        format: "Post",
+        channel: "Instagram",
+        status: "Rascunho",
+        date: "26 out 2026",
+        week: "Outubro 04",
+        image: imgs.people,
+        caption: "Encerrar uma operação não significa apenas retirar o equipamento do local. É preciso consolidar o que foi observado, quais premissas se confirmaram, onde houve ajuste e que conhecimento deve ser incorporado ao próximo planejamento.\n\nConversas pós-operação, registros de desvios e análise de causas transformam experiência individual em aprendizado coletivo. Assim, a equipe não repete a mesma solução por hábito: ela evolui o padrão com base em evidência.\n\nExcelência operacional é aprender antes de repetir.\n\n#Makro #MelhoriaContinua #GenteECultura #AprendizadoOperacional #Engenharia",
+        tags: ["aprendizado", "melhoria continua", "gente", "operacao"],
+        source: "Diretoria de Gente & Cultura & Operações",
+        validation: "Usar apenas aprendizados generalizados, sem expor informações de clientes ou projetos."
+      },
+      {
+        id: "mk-32",
+        code: "MK / 32",
+        title: "Caminhos críticos na montagem de componentes eólicos",
+        eyebrow: "Outubro · Semana 04",
+        excerpt: "A sequência de montagem precisa respeitar dependências técnicas, acessos e limites de vento.",
+        pillar: "Operação",
+        format: "Reels",
+        channel: "Instagram",
+        status: "Rascunho",
+        date: "28 out 2026",
+        week: "Outubro 04",
+        image: imgs.wind,
+        caption: "Na montagem de um aerogerador, cada etapa abre ou restringe a seguinte. Transporte, pré-montagem, posicionamento, içamento e conexão precisam respeitar caminhos críticos, disponibilidade de área e janela meteorológica.\n\nUma sequência aparentemente mais rápida pode aumentar interferências, exigir reposicionamento de equipamentos ou expor a equipe a condições fora das premissas. Por isso, o planejamento combina cronograma, engenharia de rigging e leitura real do canteiro.\n\nO ganho de produtividade nasce de uma sequência tecnicamente possível.\n\n#Makro #EnergiaEolica #Montagem #CaminhoCritico #Operacao",
+        tags: ["eolica", "montagem", "cronograma", "rigging"],
+        source: "Gerência de Operações Eólicas",
+        validation: "Validar a sequência ilustrada com a engenharia e a operação eólica."
+      },
+      {
+        id: "mk-33",
+        code: "MK / 33",
+        title: "Inovação aplicada: tecnologia que simplifica decisões de campo",
+        eyebrow: "Outubro · Semana 04",
+        excerpt: "Tecnologia só é inovação quando melhora a qualidade, a velocidade ou a segurança da decisão.",
+        pillar: "Inovação",
+        format: "Carrossel",
+        channel: "LinkedIn",
+        status: "Rascunho",
+        date: "30 out 2026",
+        week: "Outubro 04",
+        image: imgs.hero,
+        caption: "Inovação aplicada não é acumular ferramentas. É usar tecnologia para reduzir incerteza onde a decisão de campo exige precisão.\n\nModelos de planejamento, telemetria, registros digitais, monitoramento ambiental e comunicação integrada podem tornar premissas mais visíveis e respostas mais rápidas. Mas a tecnologia precisa estar conectada ao procedimento, à competência da equipe e ao critério de decisão.\n\nO avanço real acontece quando o recurso digital melhora a operação que existe — e não quando apenas adiciona complexidade.\n\n#Makro #InovacaoAplicada #TecnologiaIndustrial #Engenharia #TransformacaoDigital",
+        tags: ["inovacao", "tecnologia", "dados", "engenharia"],
+        source: "Gerência de Inovação & Tecnologia",
+        validation: "Confirmar quais soluções digitais podem ser mencionadas e evitar promessas não comprovadas."
+      }
+    ];
+
+    const savedItemStatuses=JSON.parse(localStorage.getItem('makro-item-statuses')||'{}');items.forEach(item=>{if(savedItemStatuses[item.id])item.status=savedItemStatuses[item.id]});
+    const categoryIconOptions=['◉','●','↗','⌁','✦','◈','✳','◆'];const meta={Segurança:['#c92730','#fce9ea','◉'], 'Gente & Cultura':['#996a2d','#faf1e3','●'],Operação:['#285b8f','#eaf2f9','↗'],Inovação:['#2e7b63','#e7f4ef','⌁']};const savedCategoryIcons=JSON.parse(localStorage.getItem('makro-category-icons')||'{}');Object.keys(meta).forEach(p=>{if(savedCategoryIcons[p])meta[p][2]=savedCategoryIcons[p]});const savedCategoryDefs=JSON.parse(localStorage.getItem('makro-category-definitions')||'{}');Object.entries(savedCategoryDefs).forEach(([p,d])=>{if(!meta[p]&&d?.color)meta[p]=[d.color,d.bg||`${d.color}22`,d.icon||'◉']});
+    const statusMeta={'Rascunho':['#6e7787','#f2f4f7'],'Em revisão':['#966d14','#fff6d9'],'Aprovado':['#277555','#e7f4ef']};
+    let selected='mk-01', mode='kanban', sortNewest=true, toastTimer, showCompleted=localStorage.getItem('makro-show-completed')==='true', calendarMonth=new Date(2026,7,1);
+    const $=id=>document.getElementById(id);
+    const esc=s=>String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+    const dateShort=s=>s.split(' ').slice(0,2).join(' ');
+    const fallback={hero:'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1200&q=80',safety:'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=900&q=80',people:'https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=900&q=80',wind:'https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=1200&q=80'};
+    function imageTag(url){const f=url.includes('safety')?fallback.safety:url.includes('people')?fallback.people:url.includes('wind')?fallback.wind:fallback.hero;return `<img src="${url}" alt="" onerror="this.onerror=null;this.src='${f}'">`}
+    function card(item){const m=meta[item.pillar],st=statusMeta[item.status];return `<article class="card ${selected===item.id?'selected':''}" onclick="selectItem('${item.id}')"><div class="card-image">${imageTag(item.image)}<span class="date">${dateShort(item.date)}</span><span class="format">${item.format}</span></div><div class="card-body"><div class="meta"><span class="label" style="color:${m[0]};background:${m[1]}">${m[2]} ${esc(item.pillar)}</span><span class="status" style="color:${st[0]};background:${st[1]}"><i class="status-dot" style="background:${st[0]}"></i>${item.status}</span></div><div class="code">${item.code} <span>·</span> ${item.channel}</div><h3>${esc(item.title)}</h3><p>${esc(item.excerpt)}</p><div class="foot"><div class="tags">${item.tags.slice(0,2).map(t=>`<span>#${t}</span>`).join('')}</div><button class="copy-small" aria-label="Copiar legenda" onclick="event.stopPropagation();copyItem('${item.id}')">□</button></div></div></article>`}
+    function detail(item){const m=meta[item.pillar],st=statusMeta[item.status];return `<div class="detail-head"><div><span class="detail-kicker">Prévia do conteúdo</span><span class="detail-code">${item.code}</span></div><button class="icon" aria-label="Alterar status" onclick="cycleStatus('${item.id}')">↻</button></div><div class="detail-img">${imageTag(item.image)}<div class="detail-over"><span>${item.format}</span><span>${item.channel}</span></div></div><div class="detail-body"><div class="badges"><span class="status" style="color:${st[0]};background:${st[1]}"><i class="status-dot" style="background:${st[0]}"></i>${item.status}</span><span class="source">▧ ${esc(item.source)}</span></div><h3>${esc(item.title)}</h3><p class="excerpt">${esc(item.excerpt)}</p><div class="info"><div><span>Pilar</span><b style="color:${m[0]}">${m[2]} ${esc(item.pillar)}</b></div><div><span>Publicação</span><b>◫ ${item.date}</b></div></div><div class="caption"><div class="caption-head"><span>Legenda sugerida</span><span class="caption-count">${item.caption.length} caracteres</span></div><p>${esc(item.caption)}</p></div><div class="validation"><span>✓</span><div><b>Antes de publicar</b><span>${esc(item.validation)}</span></div></div><button class="copy-btn" onclick="copyItem('${item.id}')">▣ &nbsp; Copiar legenda</button><button class="secondary" style="width:100%;margin-top:8px" onclick="cycleStatus('${item.id}')">↻ &nbsp; Alterar status: ${item.status}</button></div>`}
+    const isCompleted=x=>x.status==='Aprovado';function visibleItems(){return showCompleted?items:items.filter(x=>!isCompleted(x))}function availableItems(){return visibleItems()}function current(){const q=$('query').value.trim().toLowerCase(),p=$('pillarFilter').value,f=$('formatFilter').value,s=$('statusFilter').value;const list=availableItems().filter(x=>(!q||[x.title,x.excerpt,x.pillar,x.format,x.channel,x.source,...x.tags].join(' ').toLowerCase().includes(q))&&(p==='Todos'||x.pillar===p)&&(f==='Todos'||x.format===f)&&(s==='Todos'||x.status===s));return list.sort((a,b)=>sortNewest?items.indexOf(b)-items.indexOf(a):items.indexOf(a)-items.indexOf(b))}
+    function kanbanCard(item){const m=meta[item.pillar],st=statusMeta[item.status];return `<article class="kanban-card ${selected===item.id?'selected':''}" role="button" tabindex="0" onclick="selectItem('${item.id}')" onkeydown="if(event.key==='Enter'||event.key===' ')selectItem('${item.id}')"><div class="kanban-card-top"><span class="label" style="color:${m[0]};background:${m[1]}">${m[2]} ${esc(item.pillar)}</span><span class="kanban-date">${dateShort(item.date)}</span></div><div class="kanban-code">${item.code} <span>·</span> ${item.channel}</div><h4>${esc(item.title)}</h4><p>${esc(item.excerpt)}</p><div class="kanban-card-foot"><span>${item.format}</span><button class="copy-small" aria-label="Copiar legenda" onclick="event.stopPropagation();copyItem('${item.id}')">□</button></div></article>`}
+    function render(){const list=current(),available=availableItems();if(!available.some(x=>x.id===selected))selected=(available[0]||items[0]).id;const columns=[['Rascunho','#6e7787','#f2f4f7'],['Em revisão','#966d14','#fff6d9'],['Aprovado','#277555','#e7f4ef']];$('kanbanBoard').innerHTML=columns.map(([status,color,bg])=>{const columnItems=list.filter(item=>item.status===status);return `<section class="kanban-column" style="--kanban-color:${color};--kanban-bg:${bg}"><header class="kanban-column-head"><div><span class="kanban-column-kicker">Status</span><h3>${status}</h3></div><b>${String(columnItems.length).padStart(2,'0')}</b></header><div class="kanban-column-body">${columnItems.length?columnItems.map(kanbanCard).join(''):'<div class="kanban-empty">Nenhuma pauta nesta etapa.</div>'}</div></section>`}).join('');$('showing').textContent=String(list.length).padStart(2,'0');$('itemCount').textContent=String(list.length).padStart(2,'0');$('completedToggle').textContent=showCompleted?'✓  Ocultar concluídas':'◌  Exibir concluídas';$('completedToggle').setAttribute('aria-pressed',String(showCompleted));const item=available.find(x=>x.id===selected)||available[0]||items[0];$('detail').innerHTML=item?detail(item):'<div class="empty"><b>Sem conteúdo disponível</b><p>Use os filtros ou exiba as pautas concluídas para continuar.</p></div>'}
+    function selectItem(id){selected=id;render();if(innerWidth<780)$('detail').scrollIntoView({behavior:'smooth',block:'start'})}
+    function resetFilters(){$('query').value='';$('pillarFilter').value='Todos';$('formatFilter').value='Todos';$('statusFilter').value='Todos';sortNewest=true;updateSortLabel();render()}
+    function copyItem(id){const item=items.find(x=>x.id===id);if(!item)return;const done=()=>notify('Legenda copiada','Agora você pode levar o texto para a pauta.');if(navigator.clipboard?.writeText){navigator.clipboard.writeText(item.caption).then(done).catch(()=>{window.prompt('Copie a legenda abaixo:',item.caption);done()})}else{window.prompt('Copie a legenda abaixo:',item.caption);done()}}
+    function notify(title,body){$('toastTitle').textContent=title;$('toastBody').textContent=body;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),3200)}
+    const statusFlow=['Rascunho','Em revisão','Aprovado'];function persistItemStatuses(){localStorage.setItem('makro-item-statuses',JSON.stringify(Object.fromEntries(items.map(item=>[item.id,item.status]))))}function cycleStatus(id){const item=items.find(x=>x.id===id);if(!item)return;item.status=statusFlow[(statusFlow.indexOf(item.status)+1)%statusFlow.length];persistItemStatuses();if(mode==='single'){renderSingleView(item)}else{render();if(mode==='calendar')renderCalendar()}notify('Status atualizado',`${item.code} agora está em ${item.status}.`)}function updateSortLabel(){$('sortButton').textContent=sortNewest?'Mais recentes ⌄':'Mais antigos ⌃'}function closeSideMenu(){if(innerWidth<781){$('sidebar').classList.remove('open');$('overlay').hidden=true}}function setPillar(p){$('pillarFilter').value=p;setMode('kanban');renderPillars();render();closeSideMenu();notify(p,`Filtro aplicado para o pilar ${p}.`)}function openHelp(){notify('Central de ajuda','Use a busca, os filtros e o calendário para localizar pautas. Clique em um cartão para abrir a prévia.')}function openNewContent(){const title=window.prompt('Título da nova pauta:');if(!title?.trim())return;const id=`mk-${Date.now()}`;items.unshift({id,code:`MK / ${String(items.length+1).padStart(2,'0')}`,title:title.trim(),eyebrow:'Nova pauta',excerpt:'Pauta adicionada pelo time de Marketing & Comunicação.',pillar:'Segurança',format:'Post',channel:'Instagram',status:'Rascunho',date:'12 ago 2026',week:'Semana 06',image:imgs.hero,caption:`${title.trim()}\n\nDesenvolver texto, dados e informações com as áreas responsáveis.\n\n#Makro #Engenharia`,tags:['nova-pauta'],source:'Pauta adicionada pelo time',validation:'Completar briefing e validar com a área responsável.'});selected=id;setMode('kanban');render();notify('Nova pauta adicionada','O rascunho já está disponível no Kanban.')}function saveCategoryDefinitions(){localStorage.setItem('makro-category-definitions',JSON.stringify(Object.fromEntries(Object.keys(meta).map(key=>[key,{color:meta[key][0],bg:meta[key][1],icon:meta[key][2]}]))))}function updateCategoryCount(){const total=Object.keys(meta).length;const count=$('categoryCount');const kpi=$('kpiPillars');if(count)count.textContent=String(total).padStart(2,'0');if(kpi)kpi.textContent=String(total).padStart(2,'0')}function renderPillars(){ $('pillarNav').innerHTML=Object.keys(meta).map(p=>`<button class="${$('pillarFilter')?.value===p?'sel':''}" data-pillar="${esc(p)}"><i class="pillar-dot" style="background:${meta[p][0]}"></i>${meta[p][2]} ${esc(p)}<span class="count">${items.filter(x=>x.pillar===p).length}</span></button>`).join('')}function renderPillarOptions(){const current=$('pillarFilter').value;$('pillarFilter').innerHTML=['Todos',...Object.keys(meta)].map(p=>`<option>${esc(p)}</option>`).join('');$('pillarFilter').value=Object.keys(meta).includes(current)?current:'Todos'}function openNewCategory(){const form=$('newCategoryForm');form.hidden=!form.hidden;$('newCategoryButton').textContent=form.hidden?'＋ Nova categoria':'Fechar formulário';if(!form.hidden)$('newCategoryName').focus()}function closeNewCategory(){ $('newCategoryForm').hidden=true;$('newCategoryButton').textContent='＋ Nova categoria';$('newCategoryName').value=''}function saveNewCategory(){const name=$('newCategoryName').value.trim(),icon=$('newCategoryIcon').value,color=$('newCategoryColor').value;if(!name){notify('Nome obrigatório','Digite um nome para criar a categoria.');return}if(meta[name]){notify('Categoria existente','Escolha outro nome para a nova categoria.');return}meta[name]=[color,`${color}22`,icon];saveCategoryDefinitions();renderPillarOptions();renderPillars();renderCategories();closeNewCategory();notify('Categoria criada',`${name} foi adicionada aos pilares e filtros.`)}
+    function setMode(next){mode=next;$('kanbanView').hidden=next!=='kanban';$('calendarView').hidden=next!=='calendar';$('singleView').hidden=next!=='single';$('filters').hidden=next!=='kanban';$('viewKanban').classList.toggle('active',next==='kanban');$('viewCalendar').classList.toggle('active',next==='calendar'||next==='single');$('navKanban').classList.toggle('active',next==='kanban');$('navCalendar').classList.toggle('active',next==='calendar'||next==='single');$('breadcrumb').textContent=next==='calendar'?'Calendário editorial':next==='single'?'Pauta selecionada':'Kanban';$('sectionTitle').textContent=next==='calendar'?'Planeje o movimento.':next==='single'?'Conteúdo em detalhe.':'Quadro editorial de pautas.';if(next==='kanban')render();if(next==='calendar')renderCalendar();if(next==='single')renderSingleView(items.find(x=>x.id===selected))}
+    function calendarDateKey(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+    function itemDateKey(value){const months={jan:0,fev:1,mar:2,abr:3,mai:4,jun:5,jul:6,ago:7,set:8,out:9,nov:10,dez:11};const match=String(value).trim().toLowerCase().match(/(\d{1,2})\s+([a-zç]{3})\s+(\d{4})/);if(!match)return '';const month=months[match[2]];return month===undefined?'':calendarDateKey(new Date(Number(match[3]),month,Number(match[1])))}
+    
+    
+    function changeMonth(delta) {
+      calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + delta, 1);
+      renderCalendar();
+    }
+
+    function changeCalendarMonth(delta) {
+      changeMonth(delta);
+    }
+
+    function goToToday() {
+      calendarMonth = new Date(2026, 7, 1); // Volta para Agosto de 2026 (início do planejamento)
+      renderCalendar();
+    }
+
+    function renderCalendar(){const year=calendarMonth.getFullYear(),month=calendarMonth.getMonth(),monthNames=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'],dayNames=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],first=new Date(year,month,1),start=new Date(year,month,1-first.getDay()),days=Array.from({length:42},(_,i)=>new Date(start.getFullYear(),start.getMonth(),start.getDate()+i)),groups={};availableItems().forEach(item=>(groups[itemDateKey(item.date)]??=[]).push(item));$('calendarView').innerHTML=`<section class="calendar-shell"><div class="calendar-toolbar"><div><span class="calendar-kicker">CALENDÁRIO EDITORIAL</span><h3>${monthNames[month]} <small>${year}</small></h3><p>${availableItems().length} pautas visíveis no acervo</p></div><div class="calendar-nav"><button class="calendar-nav-btn" onclick="changeCalendarMonth(-1)" aria-label="Mês anterior">←</button><button class="calendar-today" onclick="calendarMonth=new Date(2026,7,1);renderCalendar()">Hoje</button><button class="calendar-nav-btn" onclick="changeCalendarMonth(1)" aria-label="Próximo mês">→</button></div></div><div class="calendar-scroll"><div class="calendar-weekdays">${dayNames.map(day=>`<span>${day}</span>`).join('')}</div><div class="calendar-grid">${days.map(day=>{const key=calendarDateKey(day),outside=day.getMonth()!==month,list=groups[key]||[];return `<div class="calendar-day ${outside?'outside':''} ${key===calendarDateKey(new Date())?'today':''}"><div class="calendar-day-number">${day.getDate()}${key===calendarDateKey(new Date())?'<span>hoje</span>':''}</div><div class="calendar-events">${list.map(item=>{const m=meta[item.pillar],st=statusMeta[item.status];return `<button class="calendar-event ${item.isCommemorative?'commemorative':''}" onclick="selectFromCalendar('${item.id}')" title="${esc(item.title)}"><span class="calendar-event-dot" style="background:${m[0]}"></span><span class="calendar-event-copy"><b>${esc(item.title)}</b><em>${item.format} · ${item.channel}</em>${item.isCommemorative?`<strong class="calendar-event-flag">${esc(item.commemorativeLabel||'Data comemorativa')}</strong>`:''}</span><i style="color:${st[0]}">${item.status==='Em revisão'?'Revisão':item.status}</i></button>`}).join('')}</div></div>`}).join('')}</div></div><div class="calendar-legend"><span><i class="legend-dot red"></i>Segurança</span><span><i class="legend-dot blue"></i>Operação</span><span><i class="legend-dot green"></i>Inovação</span><span><i class="legend-dot ochre"></i>Gente & Cultura</span><span><i class="legend-dot commemorative"></i>Data comemorativa</span></div></section>`}
+    function renderSingleView(item){if(!item){closeSingleView();return}$('singleView').innerHTML=`<section class="single-content"><button class="single-back" onclick="closeSingleView()" aria-label="Voltar ao calendário">← &nbsp; Voltar ao calendário</button><div class="single-card">${detail(item)}</div></section>`}
+    function openSingleView(id){const item=items.find(x=>x.id===id);if(!item)return;selected=id;mode='single';$('kanbanView').hidden=true;$('calendarView').hidden=true;$('singleView').hidden=false;$('filters').hidden=true;$('viewKanban').classList.remove('active');$('viewCalendar').classList.add('active');$('navKanban').classList.remove('active');$('navCalendar').classList.add('active');$('breadcrumb').textContent='Pauta selecionada';$('sectionTitle').textContent='Conteúdo em detalhe.';renderSingleView(item);closeSideMenu();window.scrollTo({top:0,behavior:'smooth'})}
+    function closeSingleView(){setMode('calendar');window.scrollTo({top:0,behavior:'smooth'})}
+    function renderCategories(){ $('categoryList').innerHTML=Object.entries(meta).map(([p,m])=>`<div class="category-row"><div class="category-name" style="--category-color:${m[0]}"><span class="category-icon-preview">${m[2]}</span><div>${esc(p)}<small>${items.filter(x=>x.pillar===p).length} conteúdos no acervo</small></div></div><div class="category-color"><i style="background:${m[0]}"></i>${m[0]}</div><select class="category-icon-select" data-category="${esc(p)}" aria-label="Escolher ícone de ${esc(p)}">${categoryIconOptions.map(icon=>`<option value="${icon}" ${icon===m[2]?'selected':''}>${icon} ${icon===m[2]?'Atual':'Ícone'}</option>`).join('')}</select></div>`).join('');updateCategoryCount()}function openCategories(){$('categoryModal').hidden=false;document.body.style.overflow='hidden';renderCategories()}function closeCategories(){$('categoryModal').hidden=true;document.body.style.overflow=''}function saveCategoryIcon(p,icon){if(!meta[p])return;meta[p][2]=icon;localStorage.setItem('makro-category-icons',JSON.stringify(Object.fromEntries(Object.keys(meta).map(key=>[key,meta[key][2]]))));saveCategoryDefinitions();renderCategories();renderPillars();render();notify('Ícone atualizado',`${p} agora usa ${icon} no painel.`)}function toggleCompleted(){showCompleted=!showCompleted;localStorage.setItem('makro-show-completed',String(showCompleted));render();if(mode==='calendar')renderCalendar();notify(showCompleted?'Concluídas visíveis':'Concluídas ocultas',showCompleted?'O histórico aprovado voltou para o Kanban.':'O Kanban mostra apenas demandas em andamento.')}function selectFromCalendar(id){openSingleView(id)}
+    $('query').addEventListener('input',render);$('pillarFilter').addEventListener('change',()=>{renderPillars();render()});$('formatFilter').addEventListener('change',render);$('statusFilter').addEventListener('change',event=>{if(event.target.value==='Aprovado'&&!showCompleted)toggleCompleted();else render()});$('clearSearch').onclick=()=>{$('query').value='';render()};$('clearFilters').onclick=resetFilters;$('completedToggle').onclick=toggleCompleted;$('sortButton').onclick=()=>{sortNewest=!sortNewest;updateSortLabel();render()};$('viewKanban').onclick=()=>setMode('kanban');$('viewCalendar').onclick=()=>setMode('calendar');$('navKanban').onclick=()=>{setMode('kanban');closeSideMenu()};$('navCalendar').onclick=()=>{setMode('calendar');closeSideMenu()};$('mobileKanban').onclick=()=>{setMode('kanban');closeSideMenu()};$('mobileCalendar').onclick=()=>{setMode('calendar');closeSideMenu()};$('mobileNewContent').onclick=openNewContent;$('openMenu').onclick=()=>{$('sidebar').classList.add('open');$('overlay').hidden=false};$('closeMenu').onclick=()=>{$('sidebar').classList.remove('open');$('overlay').hidden=true};$('overlay').onclick=()=>{$('sidebar').classList.remove('open');$('overlay').hidden=true};$('categoryTrigger').onclick=openCategories;$('closeCategoryModal').onclick=closeCategories;$('cancelCategoryModal').onclick=closeCategories;$('categoryBackdrop').onclick=closeCategories;$('newCategoryButton').onclick=openNewCategory;$('cancelNewCategory').onclick=closeNewCategory;$('saveNewCategory').onclick=saveNewCategory;$('categoryList').addEventListener('change',event=>{if(event.target.matches('.category-icon-select'))saveCategoryIcon(event.target.dataset.category,event.target.value)});$('pillarNav').addEventListener('click',event=>{const button=event.target.closest('[data-pillar]');if(button)setPillar(button.dataset.pillar)});$('sideHelp').onclick=openHelp;$('topHelp').onclick=openHelp;document.addEventListener('keydown',event=>{if(event.key==='Escape'){if(!$('categoryModal').hidden)closeCategories();else closeSideMenu()}});
+    renderPillarOptions();renderPillars();renderCategories();updateCategoryCount();updateSortLabel();$('overlay').hidden=true;setMode('calendar');render();
+  </script>
+</body>
+</html>
