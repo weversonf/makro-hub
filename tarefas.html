@@ -1515,7 +1515,7 @@ h1, h2, h3, h4, p { margin: 0; }
         <div class="ax-hero__title-row">
           <h2 class="ax-hero__title" id="tm-hero-title"></h2>
           <span class="ax-badge ax-badge--soft ax-badge--pill" id="tm-hero-stage"></span>
-          <span class="ax-badge ax-badge--soft ax-badge--pill" id="tm-hero-prio" style="cursor:pointer;" onclick="togglePrioDropdown(event)" title="Clique para alterar prioridade">Baixa</span>
+          <span class="ax-badge ax-badge--soft ax-badge--pill" id="tm-hero-prio" role="button" tabindex="0" aria-haspopup="listbox" aria-expanded="false" style="cursor:pointer;user-select:none;" onclick="togglePrioDropdown(event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();togglePrioDropdown(event);}" title="Clique para alterar prioridade">Baixa</span>
         </div>
         <p class="ax-hero__desc" id="tm-hero-desc"></p>
         <div class="ax-hero__meta" id="tm-hero-meta"></div>
@@ -2834,31 +2834,66 @@ function updateCanaisTab() {
 function updatePrioBadge() {
   var pr = PRIOS[S._heroPrio] || PRIOS.baixa;
   var el = document.getElementById('tm-hero-prio');
+  if (!el) return;
   el.className = 'ax-badge ax-badge--soft ax-badge--pill';
   el.style.setProperty('--_b500', pr.color);
   el.style.cursor = 'pointer';
+  el.style.userSelect = 'none';
   el.textContent = pr.label;
+  el.setAttribute('data-prio', S._heroPrio || 'baixa');
+  el.setAttribute('aria-label', 'Prioridade atual: ' + pr.label + '. Clique para alterar.');
+  if (!document.getElementById('prio-drop')) el.setAttribute('aria-expanded', 'false');
+}
+
+function closePrioDropdown() {
+  var drop = document.getElementById('prio-drop');
+  var trigger = document.getElementById('tm-hero-prio');
+  if (drop) drop.remove();
+  if (trigger) trigger.setAttribute('aria-expanded', 'false');
 }
 
 function togglePrioDropdown(e) {
-  e.stopPropagation();
+  if (e) { e.preventDefault(); e.stopPropagation(); }
   var el = document.getElementById('tm-hero-prio');
-  /* Remove existing dropdown */
+  if (!el) return;
   var existing = document.getElementById('prio-drop');
-  if (existing) { existing.remove(); return; }
+  if (existing) { closePrioDropdown(); return; }
 
-  var keys = Object.keys(PRIOS);
-  var html = '<div id="prio-drop" style="position:absolute;top:100%;left:0;z-index:10;background:var(--ax-surface-solid);border:1px solid var(--ax-border);border-radius:var(--ax-radius-md);box-shadow:var(--ax-shadow-lg);padding:4px;min-width:100px;margin-top:4px;">';
-  for (var i = 0; i < keys.length; i++) {
-    var p = PRIOS[keys[i]];
-    html += '<button onclick="event.stopPropagation();setHeroPrio(\'' + keys[i] + '\');document.getElementById(\'prio-drop\').remove();" style="display:block;width:100%;text-align:left;padding:6px 10px;border:0;background:' + (keys[i] === S._heroPrio ? 'var(--ax-surface-subtle)' : 'transparent') + ';color:var(--ax-text);font-size:var(--ax-text-xs);font-family:inherit;cursor:pointer;border-radius:var(--ax-radius-sm);">' + p.label + '</button>';
+  var options = ['baixa', 'media', 'alta'];
+  var drop = document.createElement('div');
+  drop.id = 'prio-drop';
+  drop.setAttribute('role', 'listbox');
+  drop.setAttribute('aria-label', 'Selecionar prioridade');
+  drop.style.cssText = 'position:absolute;top:calc(100% + 6px);left:0;z-index:100;background:var(--ax-surface-solid);border:1px solid var(--ax-border);border-radius:var(--ax-radius-md);box-shadow:var(--ax-shadow-lg);padding:4px;min-width:120px;';
+
+  for (var i = 0; i < options.length; i++) {
+    (function (key) {
+      var p = PRIOS[key];
+      var option = document.createElement('button');
+      option.type = 'button';
+      option.setAttribute('role', 'option');
+      option.setAttribute('aria-selected', key === S._heroPrio ? 'true' : 'false');
+      option.textContent = p.label;
+      option.style.cssText = 'display:block;width:100%;text-align:left;padding:7px 10px;border:0;background:' + (key === S._heroPrio ? 'var(--ax-surface-subtle)' : 'transparent') + ';color:' + p.color + ';font-size:var(--ax-text-xs);font-weight:600;font-family:inherit;cursor:pointer;border-radius:var(--ax-radius-sm);';
+      option.addEventListener('mouseenter', function () { option.style.background = 'var(--ax-surface-subtle)'; });
+      option.addEventListener('mouseleave', function () { option.style.background = key === S._heroPrio ? 'var(--ax-surface-subtle)' : 'transparent'; });
+      option.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        setHeroPrio(key);
+        closePrioDropdown();
+      });
+      drop.appendChild(option);
+    })(options[i]);
   }
-  html += '</div>';
+
   el.style.position = 'relative';
-  el.insertAdjacentHTML('afterend', html);
+  el.insertAdjacentElement('afterend', drop);
+  el.setAttribute('aria-expanded', 'true');
 }
 
 function setHeroPrio(p) {
+  if (['baixa', 'media', 'alta'].indexOf(p) === -1) return;
   S._heroPrio = p;
   updatePrioBadge();
 }
@@ -3853,12 +3888,10 @@ function init() {
   document.querySelectorAll('.ax-overlay').forEach(function (ov) {
     ov.addEventListener('click', function (e) { if (e.target === ov) ov.classList.remove('open'); });
   });
-  /* Event delegation para fechar dropdown de prioridade */
+  /* Fechar o dropdown de prioridade ao clicar fora. */
   document.addEventListener('click', function(e) {
     var drop = document.getElementById('prio-drop');
-    if (drop && !e.target.closest('#tm-hero-prio') && !e.target.closest('#prio-drop')) {
-      drop.remove();
-    }
+    if (drop && !e.target.closest('#tm-hero-prio') && !e.target.closest('#prio-drop')) closePrioDropdown();
   });
 
   document.getElementById('cfg-theme-light').addEventListener('click', function () { applyTheme('light', true); });
@@ -3868,6 +3901,7 @@ function init() {
   document.addEventListener('keydown', function (e) {
     /* Esc fecha modals */
     if (e.key === 'Escape') {
+      if (document.getElementById('prio-drop')) { closePrioDropdown(); e.preventDefault(); return; }
       var taskModal = document.getElementById('task-modal');
       var catModal = document.getElementById('cat-modal');
       var confirmModal = document.getElementById('confirm-modal');
