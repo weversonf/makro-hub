@@ -120,45 +120,32 @@
   }
 
   window.createEditorialFromDemand = function (id) {
-    var source = typeof getTask === 'function' ? getTask(id) : null;
-    if (!source || !isDemand(source)) return;
-    if (source.roteiroEditorialId) {
-      if (typeof changeView === 'function') changeView('editorial');
-      setTimeout(function () { if (typeof openEditTask === 'function') openEditTask(source.roteiroEditorialId); }, 120);
-      return;
-    }
-    var create = function () {
-      var copy = clone(source);
-      copy.id = S.nextId++;
-      delete copy._fbId;
-      copy.tipo = 'editorial';
-      copy.categoria = 1;
-      copy.titulo = source.titulo;
-      copy.descricao = source.descricao || '';
-      copy.dataPostagem = source.dataPostagem || source.dataVencimento || null;
-      copy.dataVencimento = source.dataVencimento || null;
-      copy.stage = 'afazer';
-      copy.progress = 0;
-      copy.concluidoEm = null;
-      copy.statusAprovacao = 'rascunho';
-      copy.formato = copy.formato || 'Post';
-      copy.recorrencia = 'nenhuma';
-      copy.origemDemandaId = source.id;
-      delete copy.roteiroEditorialId;
-      addHistory(copy, 'Criado a partir da demanda #' + source.id);
-      source.roteiroEditorialId = copy.id;
-      addHistory(source, 'Roteiro editorial criado');
-      S.activities.push(copy);
-      if (typeof _firebaseReady !== 'undefined' && _firebaseReady && typeof fb !== 'undefined') {
-        fb.addDoc(userPath('activities'), copy).then(function (doc) { copy._fbId = doc.id; }).catch(function () {});
-        if (source._fbId) fb.updateDoc(userDoc('activities', source._fbId), { roteiroEditorialId: source.roteiroEditorialId, historico: source.historico }).catch(function () {});
+    var activity = typeof getTask === 'function' ? getTask(id) : null;
+    if (!activity || !isDemand(activity)) return;
+    var convert = function () {
+      activity.tipo = 'editorial';
+      activity.categoria = 1;
+      activity.dataPostagem = activity.dataPostagem || activity.dataVencimento || null;
+      activity.stage = 'afazer';
+      activity.progress = 0;
+      activity.concluidoEm = null;
+      activity.statusAprovacao = activity.statusAprovacao || 'rascunho';
+      activity.formato = activity.formato || 'Post';
+      activity.recorrencia = 'nenhuma';
+      delete activity.roteiroEditorialId;
+      delete activity.origemDemandaId;
+      addHistory(activity, 'Convertida em roteiro editorial');
+      if (typeof _firebaseReady !== 'undefined' && _firebaseReady && typeof fb !== 'undefined' && activity._fbId) {
+        var payload = {};
+        Object.keys(activity).forEach(function (key) { if (key !== '_fbId') payload[key] = activity[key]; });
+        fb.updateDoc(userDoc('activities', activity._fbId), payload).catch(function () {});
       }
       persistAndRender();
-      if (typeof toast === 'function') toast('Roteiro editorial criado');
+      if (typeof toast === 'function') toast('Atividade convertida em roteiro editorial');
       if (typeof changeView === 'function') changeView('editorial');
-      setTimeout(function () { if (typeof openEditTask === 'function') openEditTask(copy.id); }, 120);
+      setTimeout(function () { if (typeof openEditTask === 'function') openEditTask(activity.id); }, 120);
     };
-    if (typeof showConfirm === 'function') showConfirm('Criar roteiro editorial?', 'A demanda será mantida e um novo conteúdo será criado no Calendário Editorial.', create); else create();
+    if (typeof showConfirm === 'function') showConfirm('Converter em roteiro?', 'A atividade será transformada em conteúdo editorial e deixará de aparecer em Tarefas.', convert); else convert();
   };
 
   window.duplicateActivity = function (id) {
@@ -301,7 +288,7 @@
     button.type = 'button';
     button.className = 'ax-btn ax-btn--secondary upgrade-duplicate';
     if (isDemand(activity)) {
-      button.textContent = activity.roteiroEditorialId ? 'Abrir roteiro editorial' : 'Criar roteiro editorial';
+      button.textContent = activity.roteiroEditorialId ? 'Abrir roteiro editorial' : 'Converter em Roteiro';
       button.onclick = function () { createEditorialFromDemand(activity.id); };
     } else if (activity.origemDemandaId) {
       button.textContent = 'Abrir demanda de origem';
