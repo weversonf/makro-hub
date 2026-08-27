@@ -541,7 +541,12 @@ function updatePageHead() {
 
 function countStage(id) {
   var n = 0;
-  for (var i = 0; i < S.activities.length; i++) if (S.activities[i].stage === id) n++;
+  for (var i = 0; i < S.activities.length; i++) {
+    var activity = S.activities[i];
+    if (activity.stage !== id) continue;
+    if (typeof isEditorialActivity === 'function' && isEditorialActivity(activity)) continue;
+    n++;
+  }
   return n;
 }
 function countCat(id) {
@@ -585,7 +590,7 @@ function renderDashboard() {
              stat(ICONS.chart, 'var(--ax-viz-violet)', rate + '%', 'Taxa de conclusão', atrasadas ? '<a href="javascript:void(0)" onclick="S.listOverdueOnly=true;changeView(\'lista\')" style="color:var(--ax-danger-500);text-decoration:underline;">' + atrasadas + ' atrasadas</a>' : 'tudo em dia ✓');
 
   /* throughput - por tipo de demanda (categoria) */
-  var nonEdCats = S.categories.filter(function (c) { return c.id !== 1; });
+  var nonEdCats = S.categories.filter(function (c) { return c.id !== 1 && String(c.nome || '').trim().toLowerCase() !== 'editorial'; });
   var maxCat = 1;
   for (var ct = 0; ct < nonEdCats.length; ct++) {
     var cid = nonEdCats[ct].id;
@@ -764,7 +769,8 @@ function renderStagePills() {
   }
   trigger.textContent = labels.length > 1 ? labels.length + ' etapas selecionadas' : (labels[0] || 'Todas as etapas');
   trigger.setAttribute('aria-expanded', menu.hidden ? 'false' : 'true');
-  var html = '<button type="button" class="ax-multi-select__option" role="option" aria-selected="' + (allSelected ? 'true' : 'false') + '" data-stage-value="all"><input type="checkbox" tabindex="-1"' + (allSelected ? ' checked' : '') + '><span>Todas as etapas (' + S.activities.length + ')</span></button>';
+  var demandCount = S.activities.filter(function (activity) { return typeof isEditorialActivity !== 'function' || !isEditorialActivity(activity); }).length;
+  var html = '<button type="button" class="ax-multi-select__option" role="option" aria-selected="' + (allSelected ? 'true' : 'false') + '" data-stage-value="all"><input type="checkbox" tabindex="-1"' + (allSelected ? ' checked' : '') + '><span>Todas as etapas (' + demandCount + ')</span></button>';
   for (var j = 0; j < STAGES.length; j++) {
     var selected = !allSelected && S.listStage.indexOf(STAGES[j].id) !== -1;
     html += '<button type="button" class="ax-multi-select__option" role="option" aria-selected="' + (selected ? 'true' : 'false') + '" data-stage-value="' + STAGES[j].id + '"><input type="checkbox" tabindex="-1"' + (selected ? ' checked' : '') + '><span>' + esc(STAGES[j].label) + ' (' + countStage(STAGES[j].id) + ')</span></button>';
@@ -809,7 +815,8 @@ function renderCatPills() {
   if (!el) return;
   var html = '<option value="all"' + (S.listCat === 'all' ? ' selected' : '') + '>Todas as categorias</option>';
   for (var i = 0; i < S.categories.length; i++) {
-    if (S.categories[i].id === 1) continue; /* Editorial não aparece em Tarefas */
+    var categoryName = String(S.categories[i].nome || '').trim().toLowerCase();
+    if (S.categories[i].id === 1 || categoryName === 'editorial') continue; /* Editorial não aparece em Tarefas */
     html += '<option value="' + S.categories[i].id + '"' + (S.listCat === S.categories[i].id ? ' selected' : '') + '>' + esc(S.categories[i].nome) + '</option>';
   }
   el.innerHTML = html;

@@ -12,7 +12,10 @@
   var originalRenderAll = window.renderAll;
 
   window.isEditorialActivity = function (activity) {
-    return !!activity && (activity.tipo === 'editorial' || (!activity.tipo && Number(activity.categoria) === 1));
+    if (!activity) return false;
+    var category = window.S && Array.isArray(S.categories) ? S.categories.filter(function (item) { return Number(item.id) === Number(activity.categoria); })[0] : null;
+    var categoryName = category && String(category.nome || '').trim().toLowerCase();
+    return activity.tipo === 'editorial' || categoryName === 'editorial' || (!activity.tipo && Number(activity.categoria) === 1);
   };
 
   function today() { return typeof todayISO === 'function' ? todayISO() : new Date().toISOString().slice(0, 10); }
