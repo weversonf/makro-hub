@@ -1001,9 +1001,9 @@ function showConfirm(title, msg, cb) {
   document.getElementById('confirm-ok').style.display = '';
   _confirmCallback = cb;
   document.getElementById('confirm-ok').onclick = function() {
+    var callback = _confirmCallback;
     closeConfirm();
-    if (_confirmCallback) _confirmCallback();
-    _confirmCallback = null;
+    if (callback) callback();
   };
   openOverlay('confirm-modal');
 }
