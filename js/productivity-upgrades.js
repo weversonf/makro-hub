@@ -119,6 +119,48 @@
     }
   }
 
+  window.createEditorialFromDemand = function (id) {
+    var source = typeof getTask === 'function' ? getTask(id) : null;
+    if (!source || !isDemand(source)) return;
+    if (source.roteiroEditorialId) {
+      if (typeof changeView === 'function') changeView('editorial');
+      setTimeout(function () { if (typeof openEditTask === 'function') openEditTask(source.roteiroEditorialId); }, 120);
+      return;
+    }
+    var create = function () {
+      var copy = clone(source);
+      copy.id = S.nextId++;
+      delete copy._fbId;
+      copy.tipo = 'editorial';
+      copy.categoria = 1;
+      copy.titulo = source.titulo;
+      copy.descricao = source.descricao || '';
+      copy.dataPostagem = source.dataPostagem || source.dataVencimento || null;
+      copy.dataVencimento = source.dataVencimento || null;
+      copy.stage = 'afazer';
+      copy.progress = 0;
+      copy.concluidoEm = null;
+      copy.statusAprovacao = 'rascunho';
+      copy.formato = copy.formato || 'Post';
+      copy.recorrencia = 'nenhuma';
+      copy.origemDemandaId = source.id;
+      delete copy.roteiroEditorialId;
+      addHistory(copy, 'Criado a partir da demanda #' + source.id);
+      source.roteiroEditorialId = copy.id;
+      addHistory(source, 'Roteiro editorial criado');
+      S.activities.push(copy);
+      if (typeof _firebaseReady !== 'undefined' && _firebaseReady && typeof fb !== 'undefined') {
+        fb.addDoc(userPath('activities'), copy).then(function (doc) { copy._fbId = doc.id; }).catch(function () {});
+        if (source._fbId) fb.updateDoc(userDoc('activities', source._fbId), { roteiroEditorialId: source.roteiroEditorialId, historico: source.historico }).catch(function () {});
+      }
+      persistAndRender();
+      if (typeof toast === 'function') toast('Roteiro editorial criado');
+      if (typeof changeView === 'function') changeView('editorial');
+      setTimeout(function () { if (typeof openEditTask === 'function') openEditTask(copy.id); }, 120);
+    };
+    if (typeof showConfirm === 'function') showConfirm('Criar roteiro editorial?', 'A demanda será mantida e um novo conteúdo será criado no Calendário Editorial.', create); else create();
+  };
+
   window.duplicateActivity = function (id) {
     var source = typeof getTask === 'function' ? getTask(id) : null;
     if (!source) return;
@@ -201,6 +243,8 @@
     var result = originalOpenNewTask.apply(this, arguments);
     var duplicate = document.getElementById('upgrade-duplicate-btn');
     if (duplicate) duplicate.remove();
+    var relation = document.getElementById('upgrade-editorial-btn');
+    if (relation) relation.remove();
     var history = document.getElementById('upgrade-history');
     if (history) history.remove();
     setTimeout(function () { setEditorialFields({ tipo: editorial ? 'editorial' : 'demanda', categoria: editorial ? 1 : 2 }); }, 0);
@@ -208,7 +252,7 @@
   };
   window.openEditTask = function (id) {
     var result = originalOpenEditTask.apply(this, arguments);
-    setTimeout(function () { var edited = typeof getTask === 'function' ? getTask(id) : null; setEditorialFields(edited); injectDuplicateButton(id); injectHistoryPanel(edited); }, 0);
+    setTimeout(function () { var edited = typeof getTask === 'function' ? getTask(id) : null; setEditorialFields(edited); injectDuplicateButton(id); injectRelationButton(edited); injectHistoryPanel(edited); }, 0);
     return result;
   };
   window.saveTask = function () {
@@ -247,6 +291,23 @@
     panel.style.cssText = 'margin-top:14px;padding:12px;border:1px solid var(--ax-border);border-radius:var(--ax-radius-md);font-size:var(--ax-text-xs);color:var(--ax-text-muted);';
     panel.innerHTML = '<strong style="color:var(--ax-text-strong);">Histórico recente</strong><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">' + activity.historico.slice(-5).reverse().map(function (item) { return '<span class="ax-badge ax-badge--neutral ax-badge--sm">' + escapeHtml(item.data) + ' · ' + escapeHtml(item.acao) + '</span>'; }).join('') + '</div>';
     details.appendChild(panel);
+  }
+
+  function injectRelationButton(activity) {
+    var foot = document.querySelector('#task-modal .ax-modal__foot');
+    if (!foot || document.getElementById('upgrade-editorial-btn') || !activity) return;
+    var button = document.createElement('button');
+    button.id = 'upgrade-editorial-btn';
+    button.type = 'button';
+    button.className = 'ax-btn ax-btn--secondary upgrade-duplicate';
+    if (isDemand(activity)) {
+      button.textContent = activity.roteiroEditorialId ? 'Abrir roteiro editorial' : 'Criar roteiro editorial';
+      button.onclick = function () { createEditorialFromDemand(activity.id); };
+    } else if (activity.origemDemandaId) {
+      button.textContent = 'Abrir demanda de origem';
+      button.onclick = function () { closeTaskModal(); if (typeof changeView === 'function') changeView('lista'); setTimeout(function () { if (typeof openEditTask === 'function') openEditTask(activity.origemDemandaId); }, 120); };
+    } else return;
+    foot.insertBefore(button, foot.firstChild);
   }
 
   function injectDuplicateButton(id) {
