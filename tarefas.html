@@ -1347,7 +1347,7 @@ h1, h2, h3, h4, p { margin: 0; }
           <aside class="ax-card ax-col--3" role="region" aria-label="Navegação do calendário">
             <div class="ax-card__body" style="display:flex;flex-direction:column;gap:var(--ax-space-5);">
               
-              <button type="button" class="ax-btn ax-btn--primary ax-btn--block" onclick="openNewTask('afazer')">
+              <button type="button" class="ax-btn ax-btn--primary ax-btn--block" onclick="openNewTask('afazer', true)">
                 <svg class="ax-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>
                 <span class="ax-btn__label">Nova tarefa editorial</span>
               </button>
@@ -1830,6 +1830,15 @@ function firebaseSync() {
       S._initDone = true;
       if (S.categories.length === 0) {
         initDefaultCategories().then(function () { loadComplete(); });
+      } else if (!S.categories.some(function (category) { return Number(category.id) === 1; })) {
+        fb.addDoc(userPath('categories'), DEFAULT_CATS[0]).then(function (doc) {
+          S.categories.push(Object.assign({}, DEFAULT_CATS[0], { _fbId: doc.id }));
+          S.nextCatId = Math.max(S.nextCatId, 2);
+          loadComplete();
+        }).catch(function (error) {
+          console.error('Não foi possível criar a categoria Editorial:', error);
+          loadComplete();
+        });
       } else {
         loadComplete();
       }
@@ -1887,7 +1896,11 @@ function loadLocalFallbackSilent() {
     }
   } catch(e) {}
   /* seed mínimo */
-  S.categories = [{ id:2, nome:'Administrativo',cor:'#F59E0B' }, { id:3, nome:'Design',cor:'#8B5CF6' }];
+  S.categories = [
+    { id:1, nome:'Editorial', cor:'#3B82F6' },
+    { id:2, nome:'Administrativo', cor:'#F59E0B' },
+    { id:3, nome:'Design', cor:'#8B5CF6' }
+  ];
   S.activities = [];
   S.nextId = 1; S.nextCatId = 10;
 }
@@ -2175,8 +2188,9 @@ function updatePageHead() {
   var m = VIEW_META[S.view] || { title: '', crumb: [], subtitle: '' };
   document.getElementById('ph-title').textContent = m.title;
 
-  var total = S.activities.length;
-  var done = countStage('concluido');
+  var activeActivities = S.activities.filter(function (a) { return a.categoria !== 1; });
+  var total = activeActivities.length;
+  var done = activeActivities.filter(function (a) { return a.stage === 'concluido'; }).length;
   var pend = total - done;
   var rate = total ? Math.round(done / total * 100) : 0;
   var sub = document.getElementById('ph-subtitle');
@@ -2208,7 +2222,7 @@ function updatePageHead() {
   } else if (S.view === 'categorias') {
     actions.innerHTML = '<button class="ax-btn ax-btn--primary" onclick="openCategoryModal()"><svg class="ax-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg><span class="ax-btn__label">Nova categoria</span></button>';
   } else if (S.view === 'editorial') {
-    actions.innerHTML = '<button class="ax-btn ax-btn--primary" onclick="openNewTask(\'afazer\')"><svg class="ax-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg><span class="ax-btn__label">Nova tarefa editorial</span></button>';
+    actions.innerHTML = '<button class="ax-btn ax-btn--primary" onclick="openNewTask(\'afazer\', true)"><svg class="ax-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg><span class="ax-btn__label">Nova tarefa editorial</span></button>';
   } else {
     actions.innerHTML = '';
   }
@@ -2691,6 +2705,7 @@ function handleDrop(e, colId) {
     else if (a.progress === 100) { a.progress = 99; a.concluidoEm = null; }
     else if (a.concluidoEm) a.concluidoEm = null;
     if (a._fbId) fb.updateDoc(userDoc('activities', a._fbId), { stage: a.stage, progress: a.progress, concluidoEm: a.concluidoEm || null }).catch(function () {});
+    persistLocalState();
     renderLista();
     toast('Movida para "' + stageOf(colId).label + '"');
   }
@@ -2766,6 +2781,10 @@ function saveCategory() {
   var cor = document.getElementById('cm-cor').value;
   if (!nome) { toast('Informe um nome.', 'error'); return; }
   var id = Number(document.getElementById('cm-id').value);
+  if (id === 1) {
+    toast('A categoria Editorial é reservada e não pode ser alterada.', 'error');
+    return;
+  }
   if (id) {
     var c = S.categories.filter(function (x) { return x.id === id; })[0];
     if (c) { c.nome = nome; c.cor = cor; if (c._fbId) fb.updateDoc(userDoc('categories', c._fbId), { nome: nome, cor: cor }).catch(function () {}); }
@@ -2774,17 +2793,23 @@ function saveCategory() {
     fb.addDoc(userPath('categories'), newCat).then(function (d) { newCat._fbId = d.id; }).catch(function () {});
     S.categories.push(newCat);
   }
+  persistLocalState();
   closeOverlay('cat-modal');
   renderCategorias(); renderAllFilters();
   toast('Categoria salva');
 }
 function deleteCategory(id) {
+  if (id === 1) {
+    toast('A categoria Editorial é reservada e não pode ser excluída.', 'error');
+    return;
+  }
   var c = S.categories.filter(function (x) { return x.id === id; })[0];
   if (!c) return;
   showConfirm('Excluir categoria?', 'A categoria "' + c.nome + '" será removida. As tarefas associadas ficarão sem categoria.', function() {
     if (c._fbId) fb.deleteDoc(userDoc('categories', c._fbId)).catch(function () {});
     S.categories = S.categories.filter(function (x) { return x.id !== id; });
     S.activities.forEach(function (a) { if (a.categoria === id) a.categoria = null; });
+    persistLocalState();
     renderCategorias(); renderAllFilters();
     toast('Categoria excluída');
   });
@@ -2801,7 +2826,7 @@ function closeOverlay(id) {
   document.getElementById(id).classList.remove('open');
 }
 
-function openNewTask(stageId) {
+function openNewTask(stageId, editorial) {
   S.editId = null;
   S.draftChecklist = [];
   S.draftImages = [];
@@ -2825,8 +2850,15 @@ function openNewTask(stageId) {
 
   var catSel = document.getElementById('tmf-cat');
   catSel.innerHTML = '<option value="">Sem categoria</option>';
-  for (var i = 0; i < S.categories.length; i++) { if (S.categories[i].id === 1) continue; catSel.innerHTML += '<option value="' + S.categories[i].id + '">' + esc(S.categories[i].nome) + '</option>'; }
-  if (S.categories.length > 0) catSel.value = S.categories[0].id === 1 && S.categories.length > 1 ? S.categories[1].id : S.categories[0].id;
+  var firstRegularCategory = null;
+  for (var i = 0; i < S.categories.length; i++) {
+    var category = S.categories[i];
+    if (category.id === 1 && !editorial) continue;
+    catSel.innerHTML += '<option value="' + category.id + '">' + esc(category.nome) + '</option>';
+    if (!firstRegularCategory && category.id !== 1) firstRegularCategory = category.id;
+  }
+  if (editorial && S.categories.some(function (category) { return category.id === 1; })) catSel.value = '1';
+  else if (firstRegularCategory !== null) catSel.value = String(firstRegularCategory);
 
   var stSel = document.getElementById('tmf-stage');
   stSel.innerHTML = '';
@@ -3214,6 +3246,8 @@ function saveTask() {
   };
   if (data.stage === 'concluido') data.progress = 100;
   if (data.progress >= 100 && data.stage !== 'concluido') data.stage = 'concluido';
+  if (data.stage !== 'concluido' && data.progress >= 100) data.progress = 99;
+  data.prioridade = PRIOS[data.prioridade] ? data.prioridade : 'baixa';
 
   if (S.editId) {
     var a = getTask(S.editId);
@@ -3236,6 +3270,7 @@ function saveTask() {
     S.activities.push(data);
     toast('Tarefa criada');
   }
+  persistLocalState();
   closeOverlay('task-modal');
   if (S.view === 'lista') renderLista();
   else renderDashboard();
@@ -3376,6 +3411,20 @@ function replaceFirebaseCollection(path, items) {
       });
     }));
   });
+}
+
+function persistLocalState() {
+  if (!S._localFallback) return;
+  try {
+    saveLocalBackup({
+      activities: S.activities,
+      categories: S.categories,
+      nextId: S.nextId,
+      nextCatId: S.nextCatId
+    });
+  } catch (e) {
+    console.error('Erro ao persistir dados locais:', e);
+  }
 }
 
 function persistImportedBackup(data) {
@@ -3522,7 +3571,7 @@ function renderCalendario() {
 
         cellHTML += '<button type="button" class="ax-cal-cell' + (isToday ? ' ax-cal-cell--today' : '') + '" onclick="calOpenDay(\'' + dDate + '\')">' +
           '<span class="ax-cal-cell__n ax-num' + (isToday ? ' ax-cal-cell__n--today' : '') + '">' + day + '</span>' +
-          renderCalEventsVireo(evts, 3) +
+          renderCalEventsVireo(evts, 3, dDate) +
           '</button>';
         day++;
       }
@@ -3533,7 +3582,7 @@ function renderCalendario() {
   updateNavBadges();
 }
 
-function renderCalEventsVireo(arr, limit) {
+function renderCalEventsVireo(arr, limit, dateStr) {
   if (!arr || !arr.length) return '';
   var out = '';
   var max = limit || 99;
@@ -3546,7 +3595,7 @@ function renderCalEventsVireo(arr, limit) {
       esc(ev.titulo) + '</span>';
   }
   if (arr.length > max) {
-    out += '<span class="ax-cal-more" onclick="event.stopPropagation();calOpenDay(\'' + dDate + '\')">+' + (arr.length - max) + ' mais</span>';
+    out += '<span class="ax-cal-more" onclick="event.stopPropagation();calOpenDay(\'' + dateStr + '\')">+' + (arr.length - max) + ' mais</span>';
   }
   return out;
 }
@@ -3592,7 +3641,7 @@ function calOpenDay(dateStr) {
 }
 
 function openNewTaskAtDate(dateStr) {
-  openNewTask('afazer');
+  openNewTask('afazer', true);
   document.getElementById('tmf-post').value = dateStr;
 }
 
@@ -3686,8 +3735,8 @@ function renderAll() {
   updateNavBadges();
 }
 function updateNavBadges() {
-  var total = S.activities.length;
-  var nonEd = S.activities.filter(function (a) { return a.categoria !== 1; }).length;
+  var total = S.activities.filter(function (a) { return a.categoria !== 1; }).length;
+  var nonEd = total;
   var pend = nonEd - S.activities.filter(function (a) { return a.categoria !== 1 && a.stage === 'concluido'; }).length;
   document.getElementById('nav-badge-dash').textContent = total;
   document.getElementById('nav-badge-lista').textContent = nonEd;
@@ -3865,9 +3914,10 @@ function loadLocalFallback() {
     ];
     S.nextId = 20; S.nextCatId = 10;
   }
-  /* save on unload */
+  /* Persistência imediata + redundância no unload. */
+  persistLocalState();
   window.addEventListener('beforeunload', function() {
-    localStorage.setItem(LS_KEY, JSON.stringify({ activities:S.activities, categories:S.categories, nextId:S.nextId, nextCatId:S.nextCatId }));
+    persistLocalState();
   });
   /* replace LS save behavior */
   var origToast = toast;
@@ -3895,7 +3945,7 @@ function init() {
     try { localStorage.setItem('ax:collapsed', D.hasAttribute('data-ax-collapsed') ? '1' : '0'); } catch (e) {}
   });
 
-  document.getElementById('btn-fab').addEventListener('click', function () { openNewTask(); });
+  document.getElementById('btn-fab').addEventListener('click', function () { openNewTask('afazer', S.view === 'editorial'); });
   document.getElementById('header-search').addEventListener('input', function (e) {
     handleHeaderSearch(e.target.value);
   });
