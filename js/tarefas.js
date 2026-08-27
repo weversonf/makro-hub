@@ -885,7 +885,12 @@ function buildListBody() {
       var bcards = S.activities.filter(function (a) { return a.stage === bcol.id; });
       bcards = applyKanbanFilters(bcards);
       if (bcards.length) anyCard = true;
-      var btotal = 0; bcards.forEach(function (a) { btotal += a.progress; });
+      var btotal = 0;
+      bcards.forEach(function (a) {
+        var progress = Number(a.progress);
+        if (!isFinite(progress)) progress = 0;
+        btotal += Math.max(0, Math.min(100, progress));
+      });
       var bavg = bcards.length ? Math.round(btotal / bcards.length) : 0;
       html += '<section class="ax-pl-col' + (dragOverCol === bcol.id ? ' ax-pl-col--over' : '') + '" id="kc_' + bcol.id + '" role="region" aria-label="' + esc(bcol.label) + '" ' +
         'ondragover="event.preventDefault();dragOverCol=\'' + bcol.id + '\';this.classList.add(\'ax-pl-col--over\')" ' +
