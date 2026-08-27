@@ -499,7 +499,7 @@ function updatePageHead() {
   var m = VIEW_META[S.view] || { title: '', crumb: [], subtitle: '' };
   document.getElementById('ph-title').textContent = m.title;
 
-  var activeActivities = S.activities.filter(function (a) { return a.categoria !== 1; });
+  var activeActivities = S.activities.filter(function (a) { return typeof isEditorialActivity === 'function' ? !isEditorialActivity(a) : a.categoria !== 1; });
   var total = activeActivities.length;
   var done = activeActivities.filter(function (a) { return a.stage === 'concluido'; }).length;
   var pend = total - done;
@@ -508,7 +508,7 @@ function updatePageHead() {
   if (S.view === 'dash') {
     sub.innerHTML = '<span class="ax-num">' + total + '</span> tarefas · <span class="ax-num">' + (total - done) + '</span> pendentes · <span class="ax-num">' + rate + '%</span> concluídas.';
   } else if (S.view === 'lista') {
-    var nonEd = S.activities.filter(function (a) { return a.categoria !== 1; });
+    var nonEd = S.activities.filter(function (a) { return typeof isEditorialActivity === 'function' ? !isEditorialActivity(a) : a.categoria !== 1; });
     var f = filteredTasks().length;
     if (S.listOverdueOnly) {
       sub.innerHTML = '<span class="ax-num" style="color:var(--ax-danger-500)">' + f + '</span> tarefas atrasadas · <button class="ax-btn ax-btn--link ax-btn--sm" onclick="S.listOverdueOnly=false;renderAll();" style="font-size:var(--ax-text-xs);">limpar filtro</button>';
@@ -561,7 +561,7 @@ function clone(a) { return JSON.parse(JSON.stringify(a)); }
 function renderDashboard() {
   var el = document.getElementById('dash-content');
   /* Exclui Editorial de todas as métricas do dashboard */
-  var dashActs = S.activities.filter(function (a) { return a.categoria !== 1; });
+  var dashActs = S.activities.filter(function (a) { return typeof isEditorialActivity === 'function' ? !isEditorialActivity(a) : a.categoria !== 1; });
   var total = dashActs.length;
   var done = dashActs.filter(function (a) { return a.stage === 'concluido'; }).length;
   var exec = dashActs.filter(function (a) { return a.stage === 'execucao'; }).length;
@@ -721,12 +721,14 @@ function progColor(p) {
 /* LISTA                                                        */
 /* ============================================================ */
 function filteredTasks() {
-  var q = S.listQ.toLowerCase().trim();
+  var q = (S.listQ === '__semana__' || S.listQ === '__alta__' ? '' : (S.listQ || '')).toLowerCase();
   var out = [];
   for (var i = 0; i < S.activities.length; i++) {
     var a = S.activities[i];
-    if (a.categoria === 1) continue; /* Editorial fica só no calendário editorial */
+    if ((typeof isEditorialActivity === 'function' ? isEditorialActivity(a) : a.categoria === 1)) continue; /* Editorial fica só no calendário editorial */
     if (S.listOverdueOnly && !isOverdue(a)) continue; /* Filtro de atrasadas */
+    if (S.listQ === '__semana__' && (!a.dataVencimento || diffDays(todayISO(), a.dataVencimento) < 0 || diffDays(todayISO(), a.dataVencimento) > 7)) continue;
+    if (S.listQ === '__alta__' && a.prioridade !== 'alta' && a.prioridade !== 'urgente') continue;
     if (S.listStage.indexOf('all') === -1 && S.listStage.indexOf(a.stage) === -1) continue;
     if (S.listCat !== 'all' && a.categoria !== S.listCat) continue;
     if (q) {
@@ -1553,7 +1555,16 @@ function saveTask() {
     progress: parseInt(document.getElementById('tmf-progress-label').textContent, 10) || 0,
     idCheck: S.draftChecklist,
     imagens: S.draftImages,
-    canais: getSelectedCanais()
+    canais: getSelectedCanais(),
+    tipo: Number(document.getElementById('tmf-cat').value) === 1 ? 'editorial' : 'demanda',
+    campanha: document.getElementById('tmf-campanha') ? document.getElementById('tmf-campanha').value.trim() : '',
+    formato: document.getElementById('tmf-formato') ? document.getElementById('tmf-formato').value.trim() : '',
+    cta: document.getElementById('tmf-cta') ? document.getElementById('tmf-cta').value.trim() : '',
+    link: document.getElementById('tmf-link') ? document.getElementById('tmf-link').value.trim() : '',
+    responsavel: document.getElementById('tmf-responsavel') ? document.getElementById('tmf-responsavel').value.trim() : '',
+    statusAprovacao: document.getElementById('tmf-aprovacao') ? document.getElementById('tmf-aprovacao').value : null,
+    recorrencia: document.getElementById('tmf-recurrence') ? document.getElementById('tmf-recurrence').value : 'nenhuma',
+    historico: S.editId && getTask(S.editId) ? clone(getTask(S.editId).historico || []) : [{ data: todayISO(), acao: 'Criada' }]
   };
   if (data.stage === 'concluido') data.progress = 100;
   if (data.progress >= 100 && data.stage !== 'concluido') data.stage = 'concluido';
@@ -1815,9 +1826,9 @@ function renderAll() {
   updateNavBadges();
 }
 function updateNavBadges() {
-  var total = S.activities.filter(function (a) { return a.categoria !== 1; }).length;
+  var total = S.activities.filter(function (a) { return typeof isEditorialActivity === 'function' ? !isEditorialActivity(a) : a.categoria !== 1; }).length;
   var nonEd = total;
-  var pend = nonEd - S.activities.filter(function (a) { return a.categoria !== 1 && a.stage === 'concluido'; }).length;
+  var pend = nonEd - S.activities.filter(function (a) { return (typeof isEditorialActivity === 'function' ? !isEditorialActivity(a) : a.categoria !== 1) && a.stage === 'concluido'; }).length;
   document.getElementById('nav-badge-dash').textContent = total;
   document.getElementById('nav-badge-lista').textContent = nonEd;
   document.getElementById('nav-badge-editorial').textContent = countCat(1);

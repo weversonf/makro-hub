@@ -17,7 +17,7 @@ function renderCalendario() {
   document.getElementById('cal-month-title').textContent = label;
   document.getElementById('mini-month-label').textContent = label;
 
-  var tasks = S.activities.filter(function (a) { return a.categoria === 1; });
+  var tasks = S.activities.filter(function (a) { return typeof isEditorialActivity === 'function' ? isEditorialActivity(a) : a.categoria === 1; });
   var dayMap = {};
   for (var i = 0; i < tasks.length; i++) {
     var key = tasks[i].dataPostagem || tasks[i].dataVencimento;
@@ -110,7 +110,7 @@ function renderCalEventsVireo(arr, limit, dateStr) {
 }
 
 function calOpenDay(dateStr) {
-  var tasks = S.activities.filter(function (a) { return a.categoria === 1; });
+  var tasks = S.activities.filter(function (a) { return typeof isEditorialActivity === 'function' ? isEditorialActivity(a) : a.categoria === 1; });
   var dayTasks = tasks.filter(function (a) {
     var key = a.dataPostagem || a.dataVencimento;
     return key && key === dateStr;
