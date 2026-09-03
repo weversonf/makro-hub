@@ -620,10 +620,14 @@ body {
 /* Responsive Mobile */
 @media (max-width: 992px) {
   .hr-sidebar {
-    transform: translateX(-100%);
-    width: 280px !important;
+    left: auto !important;
+    right: 0 !important;
+    transform: translateX(100%) !important;
+    width: 290px !important;
     z-index: 60 !important;
-    box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+    box-shadow: -10px 0 40px rgba(0, 0, 0, 0.6) !important;
+    border-left: 1px solid var(--color-border) !important;
+    border-right: 0 !important;
     transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
   }
   .hr-sidebar.open {
@@ -643,17 +647,15 @@ body {
     display: none !important;
   }
   .hr-topbar {
-    left: 0 !important;
-    height: 56px !important;
-    padding: 0 16px !important;
+    display: none !important;
   }
   .hr-main-shell {
     margin-left: 0 !important;
-    padding-top: 56px !important;
-    padding-bottom: 84px !important;
+    padding-top: max(12px, env(safe-area-inset-top, 12px)) !important;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
   }
   .hr-container {
-    padding: 14px !important;
+    padding: 12px sm:16px !important;
   }
 }
 

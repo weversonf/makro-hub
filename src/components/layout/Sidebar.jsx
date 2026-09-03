@@ -13,8 +13,22 @@ export default function Sidebar() {
     setCollapsed,
     isEditorialActivity,
     mobileDrawerOpen,
-    setMobileDrawerOpen
+    setMobileDrawerOpen,
+    theme,
+    setTheme
   } = useHub();
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    if (next === 'dark') {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('hr-theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('hr-theme', 'light');
+    }
+  };
   const navRef = useRef(null);
   const [indicatorStyle, setIndicatorStyle] = useState({ top: 0, height: 48, opacity: 0 });
 
@@ -112,16 +126,28 @@ export default function Sidebar() {
             <i className="ph ph-sidebar-simple text-lg" />
           </button>
 
-          {/* Botão fechar no Mobile */}
-          <button
-            type="button"
-            className="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center text-[var(--color-sidebar-muted)] hover:text-white hover:bg-white/10 transition-colors"
-            onClick={() => setMobileDrawerOpen(false)}
-            title="Fechar Menu"
-            aria-label="Close menu"
-          >
-            <i className="ph ph-x text-lg" />
-          </button>
+          {/* Ações no Mobile Drawer (Lado Direito): Alternar Tema + Fechar */}
+          <div className="lg:hidden flex items-center gap-1.5">
+            <button
+              type="button"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--color-sidebar-muted)] hover:text-white hover:bg-white/10 transition-colors"
+              onClick={toggleTheme}
+              title={theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}
+              aria-label="Alternar tema"
+            >
+              <i className={`ph ${theme === 'dark' ? 'ph-sun' : 'ph-moon'} text-lg`} />
+            </button>
+
+            <button
+              type="button"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--color-sidebar-muted)] hover:text-white hover:bg-white/10 transition-colors"
+              onClick={() => setMobileDrawerOpen(false)}
+              title="Fechar Menu"
+              aria-label="Close menu"
+            >
+              <i className="ph ph-x text-lg" />
+            </button>
+          </div>
         </div>
 
       {/* Navigation Links */}

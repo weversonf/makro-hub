@@ -58,7 +58,7 @@ export default function Header() {
   const urgentCount = activities.filter((a) => a.stage !== 'concluido' && (a.prioridade === 'alta' || a.prioridade === 'urgente')).length;
 
   return (
-    <header className="hr-topbar" id="topbar">
+    <header className="hr-topbar hidden lg:flex" id="topbar">
       {/* Left: Page Title & Mobile Toggle (apenas mobile) */}
       <div className="flex items-center gap-2.5">
         <button
