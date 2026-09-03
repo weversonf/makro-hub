@@ -206,12 +206,29 @@ export function HubProvider({ children }) {
     };
   }, [user]);
 
+  const [authError, setAuthError] = useState(null);
+  const [loggingIn, setLoggingIn] = useState(false);
+
   // Auth Actions
   const signInWithGoogle = async () => {
     try {
+      setLoggingIn(true);
+      setAuthError(null);
       await auth.signInWithPopup(googleProvider);
     } catch (e) {
-      showToast(`Erro no login: ${e.message}`, 'error');
+      console.error('[Auth Error]', e);
+      let msg = e.message;
+      if (e.code === 'auth/unauthorized-domain') {
+        msg = `O domínio "${window.location.hostname}" precisa ser adicionado aos "Domínios Autorizados" no Firebase Console.`;
+      } else if (e.code === 'auth/popup-blocked') {
+        msg = 'O pop-up de login foi bloqueado pelo seu navegador. Por favor, permita pop-ups para fazer login.';
+      } else if (e.code === 'auth/popup-closed-by-user') {
+        msg = 'A janela do Google foi fechada antes de concluir o login.';
+      }
+      setAuthError(msg);
+      showToast(msg, 'error');
+    } finally {
+      setLoggingIn(false);
     }
   };
 
@@ -608,7 +625,9 @@ export function HubProvider({ children }) {
         exportBackup,
         importBackup,
         isEditorialActivity: (a) => isEditorialActivity(a, categories),
-        rescheduleUnpublishedEditorial
+        rescheduleUnpublishedEditorial,
+        authError,
+        loggingIn
       }}
     >
       {children}
