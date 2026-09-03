@@ -10,7 +10,7 @@ import {
   Cell,
   ReferenceLine
 } from 'recharts';
-import { Download, Search, AlertCircle } from 'lucide-react';
+import { Download, Search, AlertCircle, Filter, RotateCcw, X } from 'lucide-react';
 
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw68DmuS_sDfZ2ozpG5bX3JQITYO2_nFdXwe9lPFD7rPE0wfxpSjV6uvxmsp0fOyHH1/exec';
 const COLORS = { critica: '#EF4136', aperfeicoamento: '#FDB913', qualidade: '#56C174', excelencia: '#00A650' };
@@ -236,6 +236,43 @@ export default function NpsView() {
     };
   }, []);
 
+  // Listas de Opções Únicas para os Filtros
+  const uniqueMonths = useMemo(() => {
+    const years = ['Ano 26', 'Ano 25', 'Ano 24', 'Todos'];
+    const months = Array.from(new Set(data.map((d) => d.mes.replace(' - N/A', '')))).filter(Boolean);
+    return [...years, ...sortMonthsChronologically(months).reverse()];
+  }, [data]);
+
+  const uniqueEmpresas = useMemo(() => {
+    const list = Array.from(new Set(data.map((d) => d.empresa))).filter(Boolean).sort();
+    return ['Todas', ...list];
+  }, [data]);
+
+  const uniqueUnidades = useMemo(() => {
+    const list = Array.from(new Set(data.map((d) => d.unidade))).filter(Boolean).sort();
+    return ['Todas', ...list];
+  }, [data]);
+
+  const uniqueEstrategicos = useMemo(() => {
+    return ['Todos', 'Wind', 'Petroreconcavo', 'Vale', 'ArcelorMittal', 'Outros'];
+  }, []);
+
+  const uniqueClientes = useMemo(() => {
+    const list = Array.from(new Set(data.map((d) => d.cliente))).filter(Boolean).sort();
+    return ['Todos', ...list];
+  }, [data]);
+
+  const uniqueContratos = useMemo(() => {
+    const list = Array.from(new Set(data.map((d) => d.contratoExibicao))).filter(Boolean).sort();
+    return ['Todos', ...list];
+  }, [data]);
+
+  const handleResetFilters = () => {
+    setFilters({ mes: 'Ano 26', unidade: 'Todas', estrategico: 'Todos', empresa: 'MKE', cliente: 'Todos', contrato: 'Todos', verNA: false });
+    setSelectedMonthInChart(null);
+    setSearchText('');
+  };
+
   const stats = useMemo(() => {
     const filtered = data.filter((d) => {
       const isNA = d.mes.includes(' - N/A');
@@ -378,6 +415,152 @@ export default function NpsView() {
         >
           <Download size={15} /> Exportar CSV NPS
         </button>
+      </div>
+
+      {/* Barra de Filtros Completa do NPS */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-[var(--color-border)]">
+          <div className="flex items-center gap-2">
+            <span className="w-8 h-8 rounded-lg bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center font-bold text-sm">
+              <Filter size={16} />
+            </span>
+            <div>
+              <h3 className="text-sm font-bold text-[var(--color-heading)]">Filtros de Pesquisa NPS</h3>
+              <p className="text-[11px] text-[var(--color-muted)]">Refine por período, empresa, unidade, cliente ou contrato</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* Toggle Ver N/A */}
+            <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-[var(--color-heading)] select-none">
+              <input
+                type="checkbox"
+                checked={filters.verNA}
+                onChange={(e) => setFilters((prev) => ({ ...prev, verNA: e.target.checked }))}
+                className="w-4 h-4 rounded text-[var(--color-primary)] accent-[var(--color-primary)] cursor-pointer"
+              />
+              <span>Incluir N/A</span>
+            </label>
+
+            {/* Reset Filters */}
+            <button
+              type="button"
+              className="text-xs text-[var(--color-primary)] hover:underline font-semibold flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-[var(--color-surface-subtle)] transition"
+              onClick={handleResetFilters}
+              title="Restaurar filtros padrão"
+            >
+              <RotateCcw size={13} />
+              <span>Limpar Filtros</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Grid de Seletores */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {/* 1. Mês / Ano */}
+          <div>
+            <label className="text-[11px] font-bold text-[var(--color-muted)] block mb-1">Período / Ano</label>
+            <select
+              className="w-full text-xs h-9 px-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-subtle)] text-[var(--color-heading)] font-semibold outline-none focus:border-[var(--color-primary)]"
+              value={filters.mes}
+              onChange={(e) => {
+                setSelectedMonthInChart(null);
+                setFilters((prev) => ({ ...prev, mes: e.target.value }));
+              }}
+            >
+              {uniqueMonths.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* 2. Empresa */}
+          <div>
+            <label className="text-[11px] font-bold text-[var(--color-muted)] block mb-1">Empresa</label>
+            <select
+              className="w-full text-xs h-9 px-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-subtle)] text-[var(--color-heading)] font-semibold outline-none focus:border-[var(--color-primary)]"
+              value={filters.empresa}
+              onChange={(e) => setFilters((prev) => ({ ...prev, empresa: e.target.value }))}
+            >
+              {uniqueEmpresas.map((emp) => (
+                <option key={emp} value={emp}>{emp}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* 3. Unidade */}
+          <div>
+            <label className="text-[11px] font-bold text-[var(--color-muted)] block mb-1">Unidade</label>
+            <select
+              className="w-full text-xs h-9 px-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-subtle)] text-[var(--color-heading)] font-semibold outline-none focus:border-[var(--color-primary)]"
+              value={filters.unidade}
+              onChange={(e) => setFilters((prev) => ({ ...prev, unidade: e.target.value }))}
+            >
+              {uniqueUnidades.map((u) => (
+                <option key={u} value={u}>{u}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* 4. Estratégico */}
+          <div>
+            <label className="text-[11px] font-bold text-[var(--color-muted)] block mb-1">Estratégico</label>
+            <select
+              className="w-full text-xs h-9 px-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-subtle)] text-[var(--color-heading)] font-semibold outline-none focus:border-[var(--color-primary)]"
+              value={filters.estrategico}
+              onChange={(e) => setFilters((prev) => ({ ...prev, estrategico: e.target.value }))}
+            >
+              {uniqueEstrategicos.map((est) => (
+                <option key={est} value={est}>{est}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* 5. Cliente */}
+          <div>
+            <label className="text-[11px] font-bold text-[var(--color-muted)] block mb-1">Cliente</label>
+            <select
+              className="w-full text-xs h-9 px-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-subtle)] text-[var(--color-heading)] font-semibold outline-none focus:border-[var(--color-primary)] truncate"
+              value={filters.cliente}
+              onChange={(e) => setFilters((prev) => ({ ...prev, cliente: e.target.value }))}
+            >
+              {uniqueClientes.map((cli) => (
+                <option key={cli} value={cli}>{cli}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* 6. Contrato */}
+          <div>
+            <label className="text-[11px] font-bold text-[var(--color-muted)] block mb-1">Contrato</label>
+            <select
+              className="w-full text-xs h-9 px-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-subtle)] text-[var(--color-heading)] font-semibold outline-none focus:border-[var(--color-primary)] truncate"
+              value={filters.contrato}
+              onChange={(e) => setFilters((prev) => ({ ...prev, contrato: e.target.value }))}
+            >
+              {uniqueContratos.map((ctr) => (
+                <option key={ctr} value={ctr}>{ctr}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Notificação se houver mês selecionado via clique no gráfico */}
+        {selectedMonthInChart && (
+          <div className="pt-2 border-t border-[var(--color-border)] flex items-center justify-between text-xs text-[var(--color-primary)] bg-[var(--color-primary-soft)] px-3 py-2 rounded-xl">
+            <span className="font-semibold">
+              🔍 Filtrando pelo gráfico no mês: <strong>{selectedMonthInChart}</strong>
+            </span>
+            <button
+              type="button"
+              className="font-bold hover:underline flex items-center gap-1"
+              onClick={() => setSelectedMonthInChart(null)}
+            >
+              <X size={14} />
+              <span>Remover filtro de mês</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* KPIs */}
