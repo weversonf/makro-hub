@@ -14,20 +14,9 @@ export default function Header() {
     collapsed,
     setCollapsed,
     user,
-    setMobileDrawerOpen
+    setMobileDrawerOpen,
+    toggleTheme
   } = useHub();
-
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    if (next === 'dark') {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('hr-theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('hr-theme', 'light');
-    }
-  };
 
   const toggleSidebar = () => {
     const next = !collapsed;

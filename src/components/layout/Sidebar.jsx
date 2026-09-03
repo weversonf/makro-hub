@@ -15,20 +15,8 @@ export default function Sidebar() {
     mobileDrawerOpen,
     setMobileDrawerOpen,
     theme,
-    setTheme
+    toggleTheme
   } = useHub();
-
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    if (next === 'dark') {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('hr-theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('hr-theme', 'light');
-    }
-  };
   const navRef = useRef(null);
   const [indicatorStyle, setIndicatorStyle] = useState({ top: 0, height: 48, opacity: 0 });
 

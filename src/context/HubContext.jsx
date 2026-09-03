@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { db, auth, storage, googleProvider, getUserCollection, getUserDoc } from '../firebase';
+import firebase, { db, auth, storage, googleProvider, getUserCollection, getUserDoc } from '../firebase';
 
 const HubContext = createContext();
 
@@ -101,9 +101,13 @@ export function HubProvider({ children }) {
     setMobileDrawerOpen(false);
   }, []);
   const view = currentView;
-  const [theme, setTheme] = useState(() => localStorage.getItem('ax:theme') || 'light');
+  const [theme, setTheme] = useState(() => localStorage.getItem('hr-theme') || localStorage.getItem('ax:theme') || 'light');
   const [accentColor, setAccentColor] = useState(() => localStorage.getItem('ax:accent') || '#1E856C');
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('ax:collapsed') === '1');
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  }, []);
 
   // Filtros de Tarefas
   const [listMode, setListMode] = useState('table');
@@ -140,13 +144,22 @@ export function HubProvider({ children }) {
     setConfirmModal((prev) => ({ ...prev, open: false, onConfirm: null }));
   }, []);
 
-  // Theme & Accent effect
+  // Theme & Accent effect com sincronização em nuvem
   useEffect(() => {
     document.documentElement.setAttribute('data-ax-theme', theme);
     document.documentElement.classList.toggle('dark', theme === 'dark');
     localStorage.setItem('ax:theme', theme);
     localStorage.setItem('hr-theme', theme);
-  }, [theme]);
+
+    if (user && user.uid) {
+      const payload = {
+        theme,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      getUserDoc('settings', 'preferences').set(payload, { merge: true }).catch(() => {});
+      db.collection('users').doc(user.uid).set(payload, { merge: true }).catch(() => {});
+    }
+  }, [theme, user]);
 
   useEffect(() => {
     document.documentElement.style.setProperty('--ax-accent', accentColor);
@@ -173,6 +186,24 @@ export function HubProvider({ children }) {
     });
     return unsub;
   }, []);
+
+  // Sincronização em tempo real das preferências do usuário (Tema PC <-> Mobile)
+  useEffect(() => {
+    if (!user || !user.uid) return;
+
+    const unsubPrefs = getUserDoc('settings', 'preferences').onSnapshot((doc) => {
+      if (doc.exists) {
+        const data = doc.data();
+        if (data && (data.theme === 'dark' || data.theme === 'light')) {
+          setTheme((curr) => (curr !== data.theme ? data.theme : curr));
+        }
+      }
+    }, (err) => {
+      console.warn('[Firestore] Erro ao sincronizar preferências:', err);
+    });
+
+    return () => unsubPrefs();
+  }, [user]);
 
   // Firestore Sync
   useEffect(() => {
@@ -590,6 +621,7 @@ export function HubProvider({ children }) {
         setView,
         theme,
         setTheme,
+        toggleTheme,
         accentColor,
         setAccentColor,
         collapsed,
