@@ -33,7 +33,7 @@ export default function Header() {
   const viewTitles = {
     dash: 'Dashboard',
     lista: 'Tarefas & Kanban',
-    projetos: 'Campanhas & Projetos',
+    projetos: 'Projetos',
     editorial: 'Calendário Editorial',
     documentos: 'Documentos & Mídia Kit',
     equipe: 'Equipe do Marketing',

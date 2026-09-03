@@ -104,7 +104,7 @@ export default function ConfigView() {
                 Categorias de Marketing
               </h3>
               <p className="text-xs text-[var(--color-muted)] mt-0.5">
-                Organize suas entregas por áreas temáticas, mídias e campanhas
+                Organize suas entregas por áreas temáticas, mídias e projetos
               </p>
             </div>
 

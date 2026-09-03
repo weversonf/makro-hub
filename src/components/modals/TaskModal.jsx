@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useHub, STAGES, PRIOS, CANAIS, fmtDate, isEditorialActivity } from '../../context/HubContext';
 import { storage, auth } from '../../firebase';
-import { X, Trash2, ExternalLink, UploadCloud, Tag, Calendar, Send, Plus, Copy, Check } from 'lucide-react';
+import { X, Trash2, ExternalLink, UploadCloud, Tag, Calendar, Send, Plus, Copy, Check, FolderKanban } from 'lucide-react';
 import HrivoDatePicker from '../common/HrivoDatePicker';
 
 export default function TaskModal() {
@@ -16,12 +16,18 @@ export default function TaskModal() {
     catOf,
     stageOf,
     getTask,
-    showToast
+    showToast,
+    projects,
+    createProject,
+    allProjectsList
   } = useHub();
 
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
   const [categoria, setCategoria] = useState('');
+  const [isProjeto, setIsProjeto] = useState(false);
+  const [projeto, setProjeto] = useState('');
+  const [isCreatingNewProject, setIsCreatingNewProject] = useState(false);
   const [stage, setStage] = useState('afazer');
   const [prioridade, setPrioridade] = useState('baixa');
   const [dataVencimento, setDataVencimento] = useState('');
@@ -58,6 +64,9 @@ export default function TaskModal() {
         setCanais(task.canais ? [...task.canais] : []);
         setImagens(task.imagens ? JSON.parse(JSON.stringify(task.imagens)) : []);
         setSupportLinks(task.supportLinks ? JSON.parse(JSON.stringify(task.supportLinks)) : []);
+        setIsProjeto(Boolean(task.isProjeto || task.projeto));
+        setProjeto(task.projeto || '');
+        setIsCreatingNewProject(false);
       }
     } else {
       // Nova tarefa / publicação
@@ -75,6 +84,9 @@ export default function TaskModal() {
       setCanais([]);
       setImagens([]);
       setSupportLinks([]);
+      setIsProjeto(Boolean(taskModalInitialData?.isProjeto || taskModalInitialData?.projeto));
+      setProjeto(taskModalInitialData?.projeto || '');
+      setIsCreatingNewProject(false);
     }
     setCheckInput('');
     setLinkUrl('');
@@ -210,10 +222,14 @@ export default function TaskModal() {
       return;
     }
 
+    const cleanProjeto = isProjeto && projeto ? projeto.trim() : '';
+
     const payload = {
       titulo: titulo.trim(),
       descricao: descricao.trim(),
       categoria: Number(categoria) || categoria || null,
+      isProjeto: Boolean(cleanProjeto),
+      projeto: cleanProjeto || null,
       stage,
       prioridade,
       dataVencimento: dataVencimento || null,
@@ -225,6 +241,10 @@ export default function TaskModal() {
       imagens,
       supportLinks
     };
+
+    if (cleanProjeto) {
+      createProject({ nome: cleanProjeto });
+    }
 
     if (stage === 'concluido') payload.progress = 100;
     saveTask(payload);
@@ -391,6 +411,89 @@ export default function TaskModal() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Vínculo com Projeto */}
+            <div className="p-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-subtle)] space-y-2.5">
+              <label className="flex items-center justify-between cursor-pointer select-none">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-md bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center font-bold text-xs">
+                    <FolderKanban size={13} />
+                  </span>
+                  <div>
+                    <span className="text-xs font-bold text-[var(--color-heading)] block">Vincular a um Projeto?</span>
+                    <span className="text-[10px] text-[var(--color-muted)]">Esta tarefa faz parte de um projeto específico</span>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={isProjeto}
+                  onChange={(e) => {
+                    setIsProjeto(e.target.checked);
+                    if (!e.target.checked) setProjeto('');
+                  }}
+                  className="w-4 h-4 rounded text-[var(--color-primary)] accent-[var(--color-primary)] cursor-pointer"
+                />
+              </label>
+
+              {/* Se marcar, aparece para selecionar ou criar */}
+              {isProjeto && (
+                <div className="pt-2 border-t border-[var(--color-border)] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-[var(--color-heading)]">Projeto</span>
+                    {isCreatingNewProject ? (
+                      <button
+                        type="button"
+                        className="text-[10px] text-[var(--color-primary)] hover:underline font-semibold"
+                        onClick={() => setIsCreatingNewProject(false)}
+                      >
+                        Selecionar existente
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="text-[10px] text-[var(--color-primary)] hover:underline font-semibold flex items-center gap-1"
+                        onClick={() => {
+                          setIsCreatingNewProject(true);
+                          setProjeto('');
+                        }}
+                      >
+                        <Plus size={11} /> Novo Projeto
+                      </button>
+                    )}
+                  </div>
+
+                  {isCreatingNewProject ? (
+                    <input
+                      type="text"
+                      value={projeto}
+                      onChange={(e) => setProjeto(e.target.value)}
+                      placeholder="Nome do novo projeto..."
+                      className="w-full h-8 px-2.5 rounded-lg border border-[var(--color-primary)] bg-[var(--color-surface)] text-xs text-[var(--color-heading)] outline-none"
+                      autoFocus
+                    />
+                  ) : (
+                    <select
+                      value={projeto}
+                      onChange={(e) => {
+                        if (e.target.value === '__NEW__') {
+                          setIsCreatingNewProject(true);
+                          setProjeto('');
+                        } else {
+                          setProjeto(e.target.value);
+                        }
+                      }}
+                      className="w-full h-8 px-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-xs text-[var(--color-heading)] outline-none focus:border-[var(--color-primary)]"
+                    >
+                      <option value="">Selecione um projeto cadastrado...</option>
+                      {allProjectsList.map((p) => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                      <option value="__NEW__">+ Criar novo projeto...</option>
+                    </select>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Canais de Publicação (se editorial) */}

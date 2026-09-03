@@ -123,7 +123,7 @@ export default function DashboardView() {
               <span className="w-8 h-8 rounded-lg bg-indigo-500/15 text-indigo-500 flex items-center justify-center flex-shrink-0">
                 <i className="ph ph-kanban text-lg" />
               </span>
-              <span className="text-xs font-semibold truncate">Campanhas</span>
+              <span className="text-xs font-semibold truncate">Projetos</span>
             </button>
 
             <button
@@ -291,7 +291,7 @@ export default function DashboardView() {
               Timeline Project
             </h3>
             <p className="text-xs text-[var(--color-muted)] mt-0.5">
-              Cronograma de entregas e campanhas distribuído por membros da equipe
+              Cronograma de entregas e projetos distribuído por membros da equipe
             </p>
           </div>
 
@@ -442,7 +442,7 @@ export default function DashboardView() {
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-semibold text-[var(--color-heading)] truncate leading-tight">
-                        Campanha Super Heavy Lift
+                        Projeto Super Heavy Lift
                       </p>
                       <p className="text-[10px] text-[var(--color-muted)] truncate">
                         Sex 11 Abr - Ter 15 Abr

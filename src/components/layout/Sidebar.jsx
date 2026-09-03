@@ -180,10 +180,10 @@ export default function Sidebar() {
           <button
             className={`hr-nav-item ${view === 'projetos' ? 'hr-nav-item--active' : ''}`}
             onClick={() => setView('projetos')}
-            data-tooltip="Campanhas & Projetos"
+            data-tooltip="Projetos"
           >
-            <i className="ph ph-kanban text-xl flex-shrink-0" />
-            <span className="hr-nav-label">Campanhas / Projetos</span>
+            <i className="ph ph-folder-notch text-xl flex-shrink-0" />
+            <span className="hr-nav-label">Projetos</span>
           </button>
 
           <button

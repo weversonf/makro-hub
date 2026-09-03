@@ -33,6 +33,13 @@ export const DEFAULT_CATS = [
   { id: 4, nome: 'Cliente XYZ',    cor: '#0EA5C4' }
 ];
 
+export const DEFAULT_PROJECTS = [
+  { id: 'proj-1', nome: 'Expomaq & Eventos 2026', status: 'em-andamento', cor: '#1279FF', tags: ['Feiras', 'Eventos'] },
+  { id: 'proj-2', nome: 'Endomarketing & SIPAT Makro', status: 'em-andamento', cor: '#10B981', tags: ['Endomarketing', 'SIPAT'] },
+  { id: 'proj-3', nome: 'Projeto Super Heavy Lift (Frota Pesada)', status: 'em-andamento', cor: '#F59E0B', tags: ['Guindastes', 'Frota'] },
+  { id: 'proj-4', nome: 'Redesign Portal & Mídia Kit 2026', status: 'planejamento', cor: '#8B5CF6', tags: ['Branding', 'Website'] }
+];
+
 export function todayISO() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -93,6 +100,7 @@ export function HubProvider({ children }) {
   const [authLoading, setAuthLoading] = useState(true);
   const [activities, setActivities] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [currentView, setCurrentView] = useState('dash');
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
@@ -210,6 +218,7 @@ export function HubProvider({ children }) {
     if (!user) {
       setActivities([]);
       setCategories([]);
+      setProjects([]);
       return;
     }
 
@@ -238,11 +247,67 @@ export function HubProvider({ children }) {
       console.warn('[Firestore] Error snapshot categories:', err);
     });
 
+    const unsubProjs = getUserCollection('projects').onSnapshot((snap) => {
+      const projs = [];
+      snap.forEach((doc) => {
+        projs.push({ ...doc.data(), _fbId: doc.id });
+      });
+      if (projs.length === 0) {
+        // Inicializa projetos default
+        Promise.all(DEFAULT_PROJECTS.map((p) => getUserCollection('projects').add(p)));
+      } else {
+        setProjects(projs);
+      }
+    }, (err) => {
+      console.warn('[Firestore] Error snapshot projects:', err);
+    });
+
     return () => {
       unsubActs();
       unsubCats();
+      unsubProjs();
     };
   }, [user]);
+
+  // Helpers de Projetos
+  const createProject = useCallback(async (projectData) => {
+    if (!projectData || !projectData.nome) return null;
+    const cleanNome = projectData.nome.trim();
+    if (!cleanNome) return null;
+
+    const exists = projects.find((p) => p.nome && p.nome.toLowerCase() === cleanNome.toLowerCase());
+    if (exists) return cleanNome;
+
+    const newProj = {
+      nome: cleanNome,
+      descricao: projectData.descricao || '',
+      status: projectData.status || 'em-andamento',
+      prazo: projectData.prazo || null,
+      cor: projectData.cor || '#1279FF',
+      tags: projectData.tags || ['Projeto'],
+      createdAt: new Date().toISOString()
+    };
+    try {
+      await getUserCollection('projects').add(newProj);
+    } catch (e) {
+      console.warn('Erro ao criar projeto:', e);
+    }
+    return cleanNome;
+  }, [projects]);
+
+  const allProjectsList = useMemo(() => {
+    const set = new Set();
+    projects.forEach((p) => {
+      if (p.nome && p.nome.trim()) set.add(p.nome.trim());
+    });
+    activities.forEach((a) => {
+      if (a.projeto && a.projeto.trim()) set.add(a.projeto.trim());
+    });
+    if (set.size === 0) {
+      DEFAULT_PROJECTS.forEach((p) => set.add(p.nome));
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }, [projects, activities]);
 
   const [authError, setAuthError] = useState(null);
   const [loggingIn, setLoggingIn] = useState(false);
@@ -617,6 +682,10 @@ export function HubProvider({ children }) {
         signOutUser,
         activities,
         categories,
+        projects,
+        setProjects,
+        createProject,
+        allProjectsList,
         view,
         setView,
         theme,

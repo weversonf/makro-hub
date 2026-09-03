@@ -36,7 +36,7 @@ export default function TarefasView() {
       if (listCat !== 'all' && String(a.categoria) !== String(listCat)) return false;
       if (q) {
         const cat = catOf(a.categoria);
-        const hay = `${a.titulo} ${a.descricao || ''} ${cat ? cat.nome : ''}`.toLowerCase();
+        const hay = `${a.titulo} ${a.descricao || ''} ${a.projeto || ''} ${cat ? cat.nome : ''}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -207,7 +207,14 @@ export default function TarefasView() {
                       return (
                         <tr key={a.id} className="row-click" onClick={() => openEditTask(a.id)}>
                           <td>
-                            <div className="font-semibold text-xs text-[var(--ax-text-strong)]">{a.titulo}</div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-semibold text-xs text-[var(--ax-text-strong)]">{a.titulo}</span>
+                              {a.projeto && (
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--color-primary-soft)] text-[var(--color-primary)] border border-[var(--color-primary)]/20">
+                                  📁 {a.projeto}
+                                </span>
+                              )}
+                            </div>
                             {a.descricao && (
                               <div className="text-[11px] text-[var(--ax-text-subtle)] max-w-xs truncate">{a.descricao}</div>
                             )}
@@ -364,6 +371,14 @@ export default function TarefasView() {
                             {cat ? cat.nome : 'Sem categoria'}
                           </span>
                         </div>
+
+                        {a.projeto && (
+                          <div className="mb-2">
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--color-primary-soft)] text-[var(--color-primary)] border border-[var(--color-primary)]/20 inline-block truncate max-w-full">
+                              📁 {a.projeto}
+                            </span>
+                          </div>
+                        )}
 
                         <div className="ax-pl-card__row">
                           <span className="ax-num text-xs font-bold text-[var(--ax-text-strong)]">{a.progress}%</span>
