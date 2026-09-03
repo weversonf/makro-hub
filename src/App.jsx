@@ -7,6 +7,7 @@ import Toast from './components/common/Toast';
 import ConfirmModal from './components/common/ConfirmModal';
 import TaskModal from './components/modals/TaskModal';
 import CategoryModal from './components/modals/CategoryModal';
+import NotificationsModal from './components/modals/NotificationsModal';
 import DashboardView from './views/DashboardView';
 import TarefasView from './views/TarefasView';
 import CalendarioView from './views/CalendarioView';
@@ -33,6 +34,8 @@ export default function App() {
     closeTaskModal,
     catModalOpen,
     closeCategoryModal,
+    notifModalOpen,
+    closeNotifModal,
     confirmModal,
     closeConfirm,
     authError,
@@ -45,6 +48,7 @@ export default function App() {
       // Esc fecha modais
       if (e.key === 'Escape') {
         if (confirmModal.open) { closeConfirm(); return; }
+        if (notifModalOpen) { closeNotifModal(); return; }
         if (taskModalOpen) { closeTaskModal(); return; }
         if (catModalOpen) { closeCategoryModal(); return; }
         if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target?.tagName)) {
@@ -75,7 +79,7 @@ export default function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [confirmModal, taskModalOpen, catModalOpen, closeConfirm, closeTaskModal, closeCategoryModal, openNewTask, setTheme, setCollapsed]);
+  }, [confirmModal, taskModalOpen, catModalOpen, notifModalOpen, closeConfirm, closeTaskModal, closeCategoryModal, closeNotifModal, openNewTask, setTheme, setCollapsed]);
 
   if (authLoading) {
     return (
@@ -181,6 +185,7 @@ export default function App() {
       {/* Modais Globais */}
       <TaskModal />
       <CategoryModal />
+      <NotificationsModal />
       <ConfirmModal />
       <Toast />
     </div>

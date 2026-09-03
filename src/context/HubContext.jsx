@@ -131,6 +131,10 @@ export function HubProvider({ children }) {
   const [catModalOpen, setCatModalOpen] = useState(false);
   const [editCategoryData, setEditCategoryData] = useState(null);
 
+  const [notifModalOpen, setNotifModalOpen] = useState(false);
+  const openNotifModal = useCallback(() => setNotifModalOpen(true), []);
+  const closeNotifModal = useCallback(() => setNotifModalOpen(false), []);
+
   const [confirmModal, setConfirmModal] = useState({ open: false, title: '', message: '', onConfirm: null });
   const [toasts, setToasts] = useState([]);
 
@@ -355,6 +359,60 @@ export function HubProvider({ children }) {
     const limit = addDaysISO(today, 2);
     return a.dataVencimento >= today && a.dataVencimento <= limit;
   }, []);
+
+  const notifications = useMemo(() => {
+    const list = [];
+    activities.forEach((a) => {
+      if (a.stage === 'concluido') return;
+      const overdue = isOverdue(a);
+      const dueSoon = isDueSoon(a);
+      const isUrgent = a.prioridade === 'urgente' || a.prioridade === 'alta';
+
+      if (overdue) {
+        list.push({
+          id: `overdue-${a.id}`,
+          taskId: a.id,
+          task: a,
+          type: 'overdue',
+          title: a.titulo,
+          badge: 'Atrasada',
+          tone: 'danger',
+          desc: `Venceu em ${fmtDate(a.dataVencimento)}`,
+          date: a.dataVencimento
+        });
+      } else if (dueSoon) {
+        list.push({
+          id: `duesoon-${a.id}`,
+          taskId: a.id,
+          task: a,
+          type: 'duesoon',
+          title: a.titulo,
+          badge: 'Vencendo em breve',
+          tone: 'warning',
+          desc: `Prazo: ${fmtDate(a.dataVencimento)}`,
+          date: a.dataVencimento
+        });
+      } else if (isUrgent) {
+        list.push({
+          id: `urgent-${a.id}`,
+          taskId: a.id,
+          task: a,
+          type: 'urgent',
+          title: a.titulo,
+          badge: a.prioridade === 'urgente' ? 'Urgente' : 'Alta Prioridade',
+          tone: 'danger',
+          desc: `Prioridade ${a.prioridade === 'urgente' ? 'Urgente' : 'Alta'} pendente`,
+          date: a.dataVencimento
+        });
+      }
+    });
+
+    return list.sort((x, y) => {
+      if (x.type === 'overdue' && y.type !== 'overdue') return -1;
+      if (y.type === 'overdue' && x.type !== 'overdue') return 1;
+      return (x.date || '9999-99-99') < (y.date || '9999-99-99') ? -1 : 1;
+    });
+  }, [activities, isOverdue, isDueSoon]);
 
   // CRUD Tarefas
   const openNewTask = useCallback((stageId = 'afazer', initialData = null) => {
@@ -717,6 +775,11 @@ export function HubProvider({ children }) {
         openNewCategory,
         openEditCategory,
         closeCategoryModal,
+        notifModalOpen,
+        setNotifModalOpen,
+        openNotifModal,
+        closeNotifModal,
+        notifications,
         saveCategory,
         deleteCategory,
         confirmModal,

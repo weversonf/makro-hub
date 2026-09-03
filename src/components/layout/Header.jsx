@@ -15,7 +15,9 @@ export default function Header() {
     setCollapsed,
     user,
     setMobileDrawerOpen,
-    toggleTheme
+    toggleTheme,
+    openNotifModal,
+    notifications
   } = useHub();
 
   const toggleSidebar = () => {
@@ -99,12 +101,12 @@ export default function Header() {
         <button
           type="button"
           className="hr-icon-btn relative"
-          onClick={() => setView('lista')}
-          title={`${urgentCount} tarefas urgentes pendentes`}
+          onClick={openNotifModal}
+          title={notifications.length > 0 ? `${notifications.length} notificações pendentes` : 'Notificações'}
         >
-          {urgentCount > 0 && (
+          {notifications.length > 0 && (
             <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-[var(--color-danger)] text-white text-[10px] font-bold leading-none flex items-center justify-center">
-              {urgentCount}
+              {notifications.length}
             </span>
           )}
           <i className="ph ph-bell text-lg sm:text-xl" />
