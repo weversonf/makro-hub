@@ -268,31 +268,17 @@ export default function DashboardView() {
           </span>
         </div>
 
-        {/* Critical / Overdue */}
+        {/* Card 4: Atrasadas / Atenção */}
         <div className="hr-card p-3.5 sm:p-5 flex items-center justify-between gap-2">
           <div className="min-w-0">
-            <p className="text-[11px] sm:text-xs font-medium text-[var(--color-muted)] truncate">Críticas / Atraso</p>
+            <p className="text-[11px] sm:text-xs font-medium text-[var(--color-muted)] truncate">Atrasadas</p>
             <h4 className="text-xl sm:text-2xl font-bold text-[var(--color-heading)] mt-0.5 sm:mt-1">{atrasadas}</h4>
-            <span className="text-[10px] sm:text-[11px] font-semibold text-[var(--color-danger)] mt-0.5 block truncate">
-              Atenção urgente
+            <span className={`text-[10px] sm:text-[11px] font-semibold ${atrasadas > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'} mt-0.5 block truncate`}>
+              {atrasadas > 0 ? 'Requer atenção' : 'Tudo em dia'}
             </span>
           </div>
-          <span className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[var(--color-danger-soft)] text-[var(--color-danger)] flex items-center justify-center flex-shrink-0">
-            <i className="ph ph-warning-circle text-lg sm:text-2xl" />
-          </span>
-        </div>
-
-        {/* Pending / Attention */}
-        <div className="hr-card flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-[var(--color-muted)]">Atrasadas</p>
-            <h4 className="text-2xl font-bold text-[var(--color-heading)] mt-1">{atrasadas}</h4>
-            <span className={`text-[11px] font-semibold ${atrasadas > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'} mt-1 inline-block`}>
-              {atrasadas > 0 ? 'Requer atenção' : 'Prazo 100% em dia'}
-            </span>
-          </div>
-          <span className={`w-12 h-12 rounded-2xl ${atrasadas > 0 ? 'bg-[var(--color-danger-soft)] text-[var(--color-danger)]' : 'bg-[var(--color-success-soft)] text-[var(--color-success)]'} flex items-center justify-center flex-shrink-0`}>
-            <i className={`ph ${atrasadas > 0 ? 'ph-warning-circle' : 'ph-shield-check'} text-2xl`} />
+          <span className={`w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl ${atrasadas > 0 ? 'bg-[var(--color-danger-soft)] text-[var(--color-danger)]' : 'bg-[var(--color-success-soft)] text-[var(--color-success)]'} flex items-center justify-center flex-shrink-0`}>
+            <i className={`ph ${atrasadas > 0 ? 'ph-warning-circle' : 'ph-shield-check'} text-lg sm:text-2xl`} />
           </span>
         </div>
       </section>
