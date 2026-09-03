@@ -187,23 +187,145 @@ export default function NpsView() {
     return 'Outros';
   };
 
+  // 1. Normalização de Unidade (Ignora N/A e unifica sinônimos)
+  const normalizeUnidade = (rawU) => {
+    if (!rawU) return null;
+    const clean = String(rawU).trim().toUpperCase();
+    // Ignore os "N/A" tire da conta:
+    if (
+      clean === '#N/A' ||
+      clean === 'N/A' ||
+      clean === 'NA' ||
+      clean === 'SEM UNIDADE' ||
+      clean === 'SEMINOVOS' ||
+      clean === 'NULL' ||
+      clean === 'UNDEFINED'
+    ) {
+      return null;
+    }
+    // AMP + PC + PECEM são a mesma coisa (deixe como AMP)
+    if (clean === 'AMP' || clean === 'PC' || clean === 'PECEM' || clean === 'PECÉM') {
+      return 'AMP';
+    }
+    // PE + PERNAMBUCO são a mesma coisa (deixe como PE)
+    if (clean === 'PE' || clean === 'PERNAMBUCO') {
+      return 'PE';
+    }
+    // RN + RIO GRANDE DO NORTE
+    if (clean === 'RN' || clean === 'RIO GRANDE DO NORTE') {
+      return 'RN';
+    }
+    // MA + MARANHÃO
+    if (clean === 'MA' || clean === 'MARANHAO' || clean === 'MARANHÃO') {
+      return 'MA';
+    }
+    if (clean === 'WIND') {
+      return 'Wind';
+    }
+    return String(rawU).trim();
+  };
+
+  // 2. Resolução do Nome do Cliente (Apenas nomes, nunca números)
+  const resolveClienteNome = (d, contractsMap) => {
+    const numKey = String(d.numContrato || d.contrato || '').trim();
+    const c = contractsMap[numKey];
+
+    // 2.1 Se listaContratos tem o nome do cliente válido
+    if (c?.cliente && !/^\d+$/.test(c.cliente.trim()) && c.cliente.trim().toUpperCase() !== '#N/A') {
+      return c.cliente.trim();
+    }
+
+    // 2.2 Extrair do nomeContrato (ex.: "VALE - CONSOLIDADO CKS" -> "Vale")
+    const nomeContrato = String(d.nomeContrato || '').trim();
+    if (nomeContrato && !/^\d+$/.test(nomeContrato) && nomeContrato.toUpperCase() !== '#N/A') {
+      const parts = nomeContrato.split(/\s*-\s*/);
+      const candidate = parts[0].trim();
+      if (candidate && !/^\d+$/.test(candidate) && candidate.toUpperCase() !== '#N/A') {
+        return candidate;
+      }
+      if (parts[1] && !/^\d+$/.test(parts[1].trim()) && parts[1].trim().toUpperCase() !== '#N/A') {
+        return parts[1].trim();
+      }
+      return nomeContrato;
+    }
+
+    // 2.3 Da exibição da lista de contratos
+    if (c?.exibicao && !/^\d+$/.test(c.exibicao.trim()) && c.exibicao.trim().toUpperCase() !== '#N/A') {
+      const parts = c.exibicao.split(/\s*-\s*/);
+      return parts[0].trim();
+    }
+
+    // 2.4 Se d.cliente não for um número puro
+    const rawCli = String(d.cliente || '').trim();
+    if (rawCli && !/^\d+$/.test(rawCli) && rawCli.toUpperCase() !== '#N/A' && rawCli.toUpperCase() !== 'N/A') {
+      return rawCli;
+    }
+
+    // 2.5 Fallback por classificação estratégica
+    if (d.classificacao && d.classificacao.trim() && d.classificacao.toUpperCase() !== '#N/A') {
+      return d.classificacao.trim();
+    }
+
+    return 'Outros';
+  };
+
+  // 3. Resolução do Contrato (Número + Nome do Cliente, ex.: "6545 - Vale CKS")
+  const resolveContratoExibicao = (d, contractsMap, clientName) => {
+    const num = String(d.numContrato || d.contrato || '').trim();
+    const c = contractsMap[num];
+    const exib = (c?.exibicao ? c.exibicao.trim() : '') || String(d.nomeContrato || '').trim();
+
+    if (num && exib) {
+      if (exib.startsWith(num)) {
+        return exib;
+      }
+      return `${num} - ${exib}`;
+    }
+
+    if (num && clientName && clientName !== 'Outros') {
+      return `${num} - ${clientName}`;
+    }
+
+    if (num) {
+      return num;
+    }
+
+    return exib || 'Sem Contrato';
+  };
+
   const data = useMemo(() => {
-    const contratoLookup = {};
+    const contractsMap = {};
     contractsList.forEach((c) => {
-      if (c.numero && c.exibicao) contratoLookup[String(c.numero).trim()] = c.exibicao;
+      if (c.numero) {
+        contractsMap[String(c.numero).trim()] = c;
+      }
     });
+
     const VALID_MONTH_REGEX = /^(Jan|Fev|Mar|Abr|Mai|Jun|Jul|Ago|Set|Out|Nov|Dez)\s\d{2}(\s-\sN\/A)?$/i;
-    return rawData
-      .filter((d) => d.mes && VALID_MONTH_REGEX.test(d.mes))
-      .map((d) => {
-        let u = d.unidade || '';
-        if (u.toUpperCase() === 'WIND') u = 'Wind';
-        const numKey = String(d.numContrato || d.contrato || '').trim();
-        const contratoExibicao = contratoLookup[numKey] || d.contrato || numKey;
-        const cliente = (d.cliente || '').toString().normalize('NFC').trim().replace(/\s+/g, ' ');
-        return { ...d, unidade: u, contratoExibicao, cliente };
-      })
-      .filter((d) => d.unidade && d.unidade.toUpperCase() !== 'SEMINOVOS');
+
+    const list = [];
+    for (const d of rawData) {
+      if (!d.mes || !VALID_MONTH_REGEX.test(d.mes)) continue;
+
+      // Unidade: Ignora os "N/A" e tira da conta
+      const u = normalizeUnidade(d.unidade);
+      if (!u) continue; // Tirado da conta!
+
+      // Cliente: Nome do cliente, nunca o número
+      const cliente = resolveClienteNome(d, contractsMap);
+
+      // Contrato: Número do contrato + Nome do cliente
+      const contratoExibicao = resolveContratoExibicao(d, contractsMap, cliente);
+
+      list.push({
+        ...d,
+        unidade: u,
+        cliente,
+        contratoExibicao
+      });
+    }
+
+    return list;
   }, [rawData, contractsList]);
 
   useEffect(() => {
@@ -249,7 +371,9 @@ export default function NpsView() {
   }, [data]);
 
   const uniqueUnidades = useMemo(() => {
-    const list = Array.from(new Set(data.map((d) => d.unidade))).filter(Boolean).sort();
+    const list = Array.from(new Set(data.map((d) => d.unidade)))
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b, 'pt-BR'));
     return ['Todas', ...list];
   }, [data]);
 
@@ -258,12 +382,16 @@ export default function NpsView() {
   }, []);
 
   const uniqueClientes = useMemo(() => {
-    const list = Array.from(new Set(data.map((d) => d.cliente))).filter(Boolean).sort();
+    const list = Array.from(new Set(data.map((d) => d.cliente)))
+      .filter((cli) => cli && cli !== 'Outros' && !/^\d+$/.test(cli) && cli.toUpperCase() !== '#N/A')
+      .sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
     return ['Todos', ...list];
   }, [data]);
 
   const uniqueContratos = useMemo(() => {
-    const list = Array.from(new Set(data.map((d) => d.contratoExibicao))).filter(Boolean).sort();
+    const list = Array.from(new Set(data.map((d) => d.contratoExibicao)))
+      .filter((ctr) => ctr && ctr !== 'Sem Contrato' && ctr.toUpperCase() !== '#N/A')
+      .sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
     return ['Todos', ...list];
   }, [data]);
 
