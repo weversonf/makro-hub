@@ -459,12 +459,22 @@ button { font-family: inherit; cursor: pointer; }
   color: var(--ax-text-strong); font-size: var(--ax-text-sm); font-family: inherit;
   outline: none; transition: border-color var(--ax-motion-fast), box-shadow var(--ax-motion-fast);
 }
+.ax-select {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  padding-right: 34px !important;
+  cursor: pointer;
+}
+.ax-select::-ms-expand {
+  display: none;
+}
 .ax-textarea { height: auto; padding: 11px 13px; resize: vertical; min-height: 84px; line-height: 1.55; }
 .ax-input:focus, .ax-select:focus, .ax-textarea:focus { border-color: var(--ax-accent); box-shadow: 0 0 0 3px var(--ax-focus-ring); }
 .ax-select-wrap { position: relative; }
 .ax-select-wrap::after {
-  content: ""; position: absolute; right: 13px; top: 50%; transform: translateY(-70%) rotate(45deg);
-  width: 7px; height: 7px; border-right: 2px solid var(--ax-text-subtle); border-bottom: 2px solid var(--ax-text-subtle);
+  content: ""; position: absolute; right: 14px; top: 50%; transform: translateY(-70%) rotate(45deg);
+  width: 6px; height: 6px; border-right: 2px solid var(--ax-text-subtle); border-bottom: 2px solid var(--ax-text-subtle);
   pointer-events: none;
 }
 

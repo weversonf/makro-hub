@@ -133,7 +133,7 @@ export default function TarefasView() {
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <div className="ax-select-wrap flex-1 sm:w-40">
               <select
-                className="ax-select w-full"
+                className="ax-select w-full appearance-none"
                 value={listStage}
                 onChange={(e) => setListStage(e.target.value)}
               >
@@ -148,7 +148,7 @@ export default function TarefasView() {
 
             <div className="ax-select-wrap flex-1 sm:w-44">
               <select
-                className="ax-select w-full"
+                className="ax-select w-full appearance-none"
                 value={listCat}
                 onChange={(e) => setListCat(e.target.value)}
               >
