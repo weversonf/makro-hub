@@ -2,7 +2,19 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useHub } from '../../context/HubContext';
 
 export default function Sidebar() {
-  const { view, setView, activities, categories, user, signOutUser, collapsed, setCollapsed, isEditorialActivity } = useHub();
+  const {
+    view,
+    setView,
+    activities,
+    categories,
+    user,
+    signOutUser,
+    collapsed,
+    setCollapsed,
+    isEditorialActivity,
+    mobileDrawerOpen,
+    setMobileDrawerOpen
+  } = useHub();
   const navRef = useRef(null);
   const [indicatorStyle, setIndicatorStyle] = useState({ top: 0, height: 48, opacity: 0 });
 
@@ -59,35 +71,58 @@ export default function Sidebar() {
   }, [view, collapsed]);
 
   return (
-    <aside className="hr-sidebar" id="sidebar">
-      {/* Brand Header */}
-      <div className="hr-sidebar__brand">
-        <a
-          className="flex items-center gap-2 overflow-hidden cursor-pointer"
-          onClick={collapsed ? toggleSidebar : () => setView('dash')}
-          title={collapsed ? 'Clique para expandir o menu' : 'Makro'}
-        >
-          <img
-            className="hr-sidebar__logo-full"
-            src="https://makroengenharia.com.br/wp-content/uploads/2023/03/logo-1.png"
-            alt="Makro Engenharia"
-          />
-          <img
-            className="hr-sidebar__logo-icon"
-            src="https://makroengenharia.com.br/wp-content/uploads/2026/08/ICONE-ESTRELA-LOGO-MAKRO-VERMELHA.png"
-            alt="Makro"
-          />
-        </a>
-        <button
-          type="button"
-          className="hr-icon-btn hr-sidebar-toggle-btn w-8 h-8 rounded-lg text-[var(--color-sidebar-muted)] hover:text-white hover:bg-white/10 transition-colors"
-          onClick={toggleSidebar}
-          title="Recolher Menu"
-          aria-label="Toggle sidebar"
-        >
-          <i className="ph ph-sidebar-simple text-lg" />
-        </button>
-      </div>
+    <>
+      {/* Backdrop escuro para Mobile Drawer */}
+      {mobileDrawerOpen && (
+        <div
+          className="fixed inset-0 bg-black/65 backdrop-blur-sm z-40 lg:hidden transition-opacity"
+          onClick={() => setMobileDrawerOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside className={`hr-sidebar ${mobileDrawerOpen ? 'open' : ''}`} id="sidebar">
+        {/* Brand Header */}
+        <div className="hr-sidebar__brand">
+          <a
+            className="flex items-center gap-2 overflow-hidden cursor-pointer"
+            onClick={collapsed ? toggleSidebar : () => setView('dash')}
+            title={collapsed ? 'Clique para expandir o menu' : 'Makro'}
+          >
+            <img
+              className="hr-sidebar__logo-full"
+              src="https://makroengenharia.com.br/wp-content/uploads/2023/03/logo-1.png"
+              alt="Makro Engenharia"
+            />
+            <img
+              className="hr-sidebar__logo-icon"
+              src="https://makroengenharia.com.br/wp-content/uploads/2026/08/ICONE-ESTRELA-LOGO-MAKRO-VERMELHA.png"
+              alt="Makro"
+            />
+          </a>
+
+          {/* Botão recolher no Desktop */}
+          <button
+            type="button"
+            className="hidden lg:inline-flex hr-icon-btn hr-sidebar-toggle-btn w-8 h-8 rounded-lg text-[var(--color-sidebar-muted)] hover:text-white hover:bg-white/10 transition-colors"
+            onClick={toggleSidebar}
+            title="Recolher Menu"
+            aria-label="Toggle sidebar"
+          >
+            <i className="ph ph-sidebar-simple text-lg" />
+          </button>
+
+          {/* Botão fechar no Mobile */}
+          <button
+            type="button"
+            className="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center text-[var(--color-sidebar-muted)] hover:text-white hover:bg-white/10 transition-colors"
+            onClick={() => setMobileDrawerOpen(false)}
+            title="Fechar Menu"
+            aria-label="Close menu"
+          >
+            <i className="ph ph-x text-lg" />
+          </button>
+        </div>
 
       {/* Navigation Links */}
       <nav className="hr-sidebar__nav" ref={navRef}>
@@ -247,5 +282,6 @@ export default function Sidebar() {
         </div>
       </div>
     </aside>
+  </>
   );
 }

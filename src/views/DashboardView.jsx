@@ -224,47 +224,61 @@ export default function DashboardView() {
         </div>
       </section>
 
-      {/* Hrivo KPI Stats Grid */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Hrivo KPI Stats Grid (2x2 em mobile, 4 colunas em desktop) */}
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* Total Tasks */}
-        <div className="hr-card flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-[var(--color-muted)]">Total de Tarefas</p>
-            <h4 className="text-2xl font-bold text-[var(--color-heading)] mt-1">{total}</h4>
-            <span className="text-[11px] font-semibold text-[var(--color-primary)] mt-1 inline-block">
-              {concluidas} finalizadas
+        <div className="hr-card p-3.5 sm:p-5 flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-[11px] sm:text-xs font-medium text-[var(--color-muted)] truncate">Total Tarefas</p>
+            <h4 className="text-xl sm:text-2xl font-bold text-[var(--color-heading)] mt-0.5 sm:mt-1">{total}</h4>
+            <span className="text-[10px] sm:text-[11px] font-semibold text-[var(--color-primary)] mt-0.5 block truncate">
+              {concluidas} feitas
             </span>
           </div>
-          <span className="w-12 h-12 rounded-2xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center flex-shrink-0">
-            <i className="ph ph-folder text-2xl" />
+          <span className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center flex-shrink-0">
+            <i className="ph ph-folder text-lg sm:text-2xl" />
           </span>
         </div>
 
         {/* In Progress */}
-        <div className="hr-card flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-[var(--color-muted)]">Em Andamento</p>
-            <h4 className="text-2xl font-bold text-[var(--color-heading)] mt-1">{emAndamento}</h4>
-            <span className="text-[11px] font-semibold text-blue-500 mt-1 inline-block">
-              Em execução ativa
+        <div className="hr-card p-3.5 sm:p-5 flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-[11px] sm:text-xs font-medium text-[var(--color-muted)] truncate">Em Andamento</p>
+            <h4 className="text-xl sm:text-2xl font-bold text-[var(--color-heading)] mt-0.5 sm:mt-1">{emAndamento}</h4>
+            <span className="text-[10px] sm:text-[11px] font-semibold text-blue-500 mt-0.5 block truncate">
+              Execução ativa
             </span>
           </div>
-          <span className="w-12 h-12 rounded-2xl bg-blue-500/15 text-blue-500 flex items-center justify-center flex-shrink-0">
-            <i className="ph ph-spinner-gap text-2xl" />
+          <span className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-blue-500/15 text-blue-500 flex items-center justify-center flex-shrink-0">
+            <i className="ph ph-spinner-gap text-lg sm:text-2xl" />
           </span>
         </div>
 
         {/* Completion Rate */}
-        <div className="hr-card flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-[var(--color-muted)]">Taxa de Conclusão</p>
-            <h4 className="text-2xl font-bold text-[var(--color-heading)] mt-1">{rate}%</h4>
-            <span className="text-[11px] font-semibold text-[var(--color-success)] mt-1 inline-block">
-              Aproveitamento Makro
+        <div className="hr-card p-3.5 sm:p-5 flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-[11px] sm:text-xs font-medium text-[var(--color-muted)] truncate">Taxa Conclusão</p>
+            <h4 className="text-xl sm:text-2xl font-bold text-[var(--color-heading)] mt-0.5 sm:mt-1">{rate}%</h4>
+            <span className="text-[10px] sm:text-[11px] font-semibold text-[var(--color-success)] mt-0.5 block truncate">
+              Aproveitamento
             </span>
           </div>
-          <span className="w-12 h-12 rounded-2xl bg-[var(--color-success-soft)] text-[var(--color-success)] flex items-center justify-center flex-shrink-0">
-            <i className="ph ph-check-circle text-2xl" />
+          <span className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[var(--color-success-soft)] text-[var(--color-success)] flex items-center justify-center flex-shrink-0">
+            <i className="ph ph-check-circle text-lg sm:text-2xl" />
+          </span>
+        </div>
+
+        {/* Critical / Overdue */}
+        <div className="hr-card p-3.5 sm:p-5 flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-[11px] sm:text-xs font-medium text-[var(--color-muted)] truncate">Críticas / Atraso</p>
+            <h4 className="text-xl sm:text-2xl font-bold text-[var(--color-heading)] mt-0.5 sm:mt-1">{atrasadas}</h4>
+            <span className="text-[10px] sm:text-[11px] font-semibold text-[var(--color-danger)] mt-0.5 block truncate">
+              Atenção urgente
+            </span>
+          </div>
+          <span className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[var(--color-danger-soft)] text-[var(--color-danger)] flex items-center justify-center flex-shrink-0">
+            <i className="ph ph-warning-circle text-lg sm:text-2xl" />
           </span>
         </div>
 

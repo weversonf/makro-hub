@@ -92,64 +92,76 @@ export default function TarefasView() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Barra de Filtros */}
+      {/* Barra de Filtros Responsiva */}
       <div className="ax-card">
-        <div className="ax-card__body flex items-center gap-3 flex-wrap">
-          <div className="ax-header__search flex-1 min-w-[240px]">
-            <Search className="ax-icon" size={17} />
-            <input
-              type="search"
-              placeholder="Filtrar tarefas…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+        <div className="ax-card__body flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
+          {/* Linha 1 no Mobile: Busca e Alternador Tabela / Kanban */}
+          <div className="flex items-center gap-2 flex-1">
+            <div className="ax-header__search flex-1 min-w-0">
+              <Search className="ax-icon" size={17} />
+              <input
+                type="search"
+                placeholder="Filtrar tarefas…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            <div className="ax-segment shrink-0">
+              <button
+                type="button"
+                className={`ax-segment__option ${listMode === 'table' ? 'is-active' : ''}`}
+                onClick={() => setListMode('table')}
+                title="Visualização em Tabela"
+              >
+                <TableIcon size={15} />
+                <span className="hidden sm:inline">Tabela</span>
+              </button>
+              <button
+                type="button"
+                className={`ax-segment__option ${listMode === 'kanban' ? 'is-active' : ''}`}
+                onClick={() => setListMode('kanban')}
+                title="Visualização em Kanban"
+              >
+                <KanbanIcon size={15} />
+                <span className="hidden sm:inline">Kanban</span>
+              </button>
+            </div>
           </div>
 
-          <div className="ax-select-wrap w-40">
-            <select
-              className="ax-select"
-              value={listStage}
-              onChange={(e) => setListStage(e.target.value)}
-            >
-              <option value="all">Todos os estágios</option>
-              {STAGES.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="ax-select-wrap w-44">
-            <select
-              className="ax-select"
-              value={listCat}
-              onChange={(e) => setListCat(e.target.value)}
-            >
-              <option value="all">Todas as categorias</option>
-              {categories
-                .filter((c) => String(c.id) !== '1' && !c.nome?.toLowerCase().includes('editorial'))
-                .map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nome}
+          {/* Linha 2 no Mobile: Dropdowns lado a lado (50% cada) */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="ax-select-wrap flex-1 sm:w-40">
+              <select
+                className="ax-select w-full"
+                value={listStage}
+                onChange={(e) => setListStage(e.target.value)}
+              >
+                <option value="all">Todos os estágios</option>
+                {STAGES.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label}
                   </option>
                 ))}
-            </select>
-          </div>
+              </select>
+            </div>
 
-          <div className="ax-segment">
-            <button
-              className={`ax-segment__option ${listMode === 'table' ? 'is-active' : ''}`}
-              onClick={() => setListMode('table')}
-            >
-              <TableIcon size={15} /> Tabela
-            </button>
-            <button
-              className={`ax-segment__option ${listMode === 'kanban' ? 'is-active' : ''}`}
-              onClick={() => setListMode('kanban')}
-            >
-              <KanbanIcon size={15} /> Kanban
-            </button>
+            <div className="ax-select-wrap flex-1 sm:w-44">
+              <select
+                className="ax-select w-full"
+                value={listCat}
+                onChange={(e) => setListCat(e.target.value)}
+              >
+                <option value="all">Todas as categorias</option>
+                {categories
+                  .filter((c) => String(c.id) !== '1' && !c.nome?.toLowerCase().includes('editorial'))
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nome}
+                    </option>
+                  ))}
+              </select>
+            </div>
           </div>
         </div>
       </div>

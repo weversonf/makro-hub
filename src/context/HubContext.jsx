@@ -93,7 +93,14 @@ export function HubProvider({ children }) {
   const [authLoading, setAuthLoading] = useState(true);
   const [activities, setActivities] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [view, setView] = useState('dash');
+  const [currentView, setCurrentView] = useState('dash');
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+
+  const setView = useCallback((newView) => {
+    setCurrentView(newView);
+    setMobileDrawerOpen(false);
+  }, []);
+  const view = currentView;
   const [theme, setTheme] = useState(() => localStorage.getItem('ax:theme') || 'light');
   const [accentColor, setAccentColor] = useState(() => localStorage.getItem('ax:accent') || '#1E856C');
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('ax:collapsed') === '1');
@@ -627,7 +634,9 @@ export function HubProvider({ children }) {
         isEditorialActivity: (a) => isEditorialActivity(a, categories),
         rescheduleUnpublishedEditorial,
         authError,
-        loggingIn
+        loggingIn,
+        mobileDrawerOpen,
+        setMobileDrawerOpen
       }}
     >
       {children}

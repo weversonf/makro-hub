@@ -167,7 +167,7 @@ export default function App() {
 
       {showFab && (
         <button
-          className="fixed bottom-6 right-6 z-40 rounded-full bg-[var(--color-primary)] text-white shadow-xl hover:scale-105 transition flex items-center justify-center border-0 cursor-pointer"
+          className="hidden lg:flex fixed bottom-6 right-6 z-40 rounded-full bg-[var(--color-primary)] text-white shadow-xl hover:scale-105 transition items-center justify-center border-0 cursor-pointer"
           style={{ width: '52px', height: '52px' }}
           title="Nova Tarefa (N)"
           onClick={() => openNewTask()}

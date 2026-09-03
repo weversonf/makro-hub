@@ -319,7 +319,7 @@ export default function CalendarioView() {
 
           <button
             type="button"
-            className="hr-btn hr-btn--primary text-xs h-9 px-4 flex-shrink-0 font-semibold shadow-md hover:scale-[1.02] transition"
+            className="hr-btn hr-btn--primary text-xs h-9 px-4 flex-shrink-0 font-semibold shadow-md hover:scale-[1.02] transition w-full sm:w-auto justify-center"
             onClick={handleReschedule}
             disabled={rescheduling}
           >
@@ -332,39 +332,53 @@ export default function CalendarioView() {
       <div className="ax-dash-grid">
         <div className="ax-col--9">
           <div className="ax-card">
-            <div className="ax-card__header flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-3">
-              <h2 className="ax-card__title">
-                {calMode === 'month' ? `${CAL_MONTHS[m]} ${y}` : getWeekRange(calDate).label}
-              </h2>
-              <div className="ax-segment">
-                <button
-                  className={`ax-segment__option ${calMode === 'month' ? 'is-active' : ''}`}
-                  onClick={() => setCalMode('month')}
-                >
-                  Mensal
-                </button>
-                <button
-                  className={`ax-segment__option ${calMode === 'week' ? 'is-active' : ''}`}
-                  onClick={() => setCalMode('week')}
-                >
-                  Semanal / Planejamento
-                </button>
+            <div className="ax-card__header flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="ax-card__title text-base sm:text-lg">
+                  {calMode === 'month' ? `${CAL_MONTHS[m]} ${y}` : getWeekRange(calDate).label}
+                </h2>
+                <div className="flex items-center gap-1 sm:hidden">
+                  <button className="ax-btn ax-btn--secondary ax-btn--sm px-2" onClick={calPrev} title="Mês Anterior">
+                    <ChevronLeft size={16} />
+                  </button>
+                  <button className="ax-btn ax-btn--secondary ax-btn--sm px-2.5" onClick={calToday}>
+                    Hoje
+                  </button>
+                  <button className="ax-btn ax-btn--secondary ax-btn--sm px-2" onClick={calNext} title="Próximo Mês">
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between sm:justify-end gap-2">
+                <div className="ax-segment">
+                  <button
+                    className={`ax-segment__option ${calMode === 'month' ? 'is-active' : ''}`}
+                    onClick={() => setCalMode('month')}
+                  >
+                    Mensal
+                  </button>
+                  <button
+                    className={`ax-segment__option ${calMode === 'week' ? 'is-active' : ''}`}
+                    onClick={() => setCalMode('week')}
+                  >
+                    Semanal
+                  </button>
+                </div>
+
+                <div className="hidden sm:flex items-center gap-1.5">
+                  <button className="ax-btn ax-btn--secondary ax-btn--sm" onClick={calPrev} title="Anterior">
+                    <ChevronLeft size={16} />
+                  </button>
+                  <button className="ax-btn ax-btn--secondary ax-btn--sm" onClick={calToday}>
+                    Hoje
+                  </button>
+                  <button className="ax-btn ax-btn--secondary ax-btn--sm" onClick={calNext} title="Próximo">
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
               </div>
             </div>
-
-            <div className="flex items-center gap-1.5">
-              <button className="ax-btn ax-btn--secondary ax-btn--sm" onClick={calPrev}>
-                <ChevronLeft size={16} />
-              </button>
-              <button className="ax-btn ax-btn--secondary ax-btn--sm" onClick={calToday}>
-                Hoje
-              </button>
-              <button className="ax-btn ax-btn--secondary ax-btn--sm" onClick={calNext}>
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          </div>
 
           <div className="ax-card__body p-3">
             {calMode === 'month' ? (

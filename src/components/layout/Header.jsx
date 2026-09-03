@@ -2,7 +2,20 @@ import React from 'react';
 import { useHub } from '../../context/HubContext';
 
 export default function Header() {
-  const { theme, setTheme, view, setView, searchQuery, setSearchQuery, openNewTask, activities, collapsed, setCollapsed } = useHub();
+  const {
+    theme,
+    setTheme,
+    view,
+    setView,
+    searchQuery,
+    setSearchQuery,
+    openNewTask,
+    activities,
+    collapsed,
+    setCollapsed,
+    user,
+    setMobileDrawerOpen
+  } = useHub();
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
@@ -47,16 +60,21 @@ export default function Header() {
   return (
     <header className="hr-topbar" id="topbar">
       {/* Left: Page Title & Mobile Toggle (apenas mobile) */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5">
         <button
           type="button"
           className="hr-icon-btn hr-mobile-toggle"
-          onClick={toggleSidebar}
+          onClick={() => setMobileDrawerOpen(true)}
           aria-label="Menu"
         >
           <i className="ph ph-list text-xl" />
         </button>
-        <h1 className="text-lg sm:text-xl font-bold text-[var(--color-heading)] m-0">
+        <img
+          src="https://makroengenharia.com.br/wp-content/uploads/2026/08/ICONE-ESTRELA-LOGO-MAKRO-VERMELHA.png"
+          alt="Makro"
+          className="w-6 h-6 object-contain sm:hidden flex-shrink-0"
+        />
+        <h1 className="text-base sm:text-xl font-bold text-[var(--color-heading)] m-0 truncate max-w-[160px] sm:max-w-none">
           {viewTitles[view] || 'Dashboard'}
         </h1>
       </div>

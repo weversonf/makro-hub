@@ -240,8 +240,8 @@ export default function TaskModal() {
         className="ax-modal"
         style={{
           maxWidth: '1100px',
-          width: '95vw',
-          maxHeight: '92vh',
+          width: '100%',
+          maxHeight: '94vh',
           borderRadius: '20px',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.45)'
         }}
@@ -249,8 +249,8 @@ export default function TaskModal() {
         role="dialog"
       >
         {/* Cabeçalho do Modal (Clean e Objetivo) */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
-          <div className="flex items-center gap-2.5">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+          <div className="flex items-center gap-2 sm:gap-2.5">
             <span
               className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs"
               style={{
@@ -260,12 +260,12 @@ export default function TaskModal() {
             >
               <Tag size={15} />
             </span>
-            <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)]">
+            <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] truncate max-w-[120px] sm:max-w-none">
               {currentCat ? currentCat.nome : isEditorial ? 'Editorial' : 'Geral'}
             </span>
             <span className="text-xs text-[var(--color-border-strong)]">·</span>
             <span className="text-xs font-mono text-[var(--color-muted)]">
-              {editTaskId ? `Tarefa #${editTaskId}` : 'Nova Demanda'}
+              {editTaskId ? `#${editTaskId}` : 'Nova Demanda'}
             </span>
           </div>
 
@@ -280,11 +280,11 @@ export default function TaskModal() {
         </div>
 
         {/* CORPO EM 2 COLUNAS: ESQUERDA (Propriedades) | DIREITA (Conteúdo/Texto) */}
-        <div className="flex-1 overflow-hidden p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 bg-[var(--color-surface)]">
+        <div className="flex-1 overflow-y-auto lg:overflow-hidden p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 bg-[var(--color-surface)]">
           {/* ============================================================ */}
           {/* COLUNA ESQUERDA: PROPRIEDADES PRINCIPAIS (col-span-5)        */}
           {/* ============================================================ */}
-          <div className="lg:col-span-5 flex flex-col gap-4 overflow-y-auto pr-1">
+          <div className="lg:col-span-5 flex flex-col gap-4 overflow-y-visible lg:overflow-y-auto pr-0 lg:pr-1">
             {/* Estágio / Status */}
             <div>
               <label className="text-xs font-bold text-[var(--color-heading)] block mb-1.5">
@@ -530,7 +530,7 @@ export default function TaskModal() {
           {/* ============================================================ */}
           {/* COLUNA DIREITA: TÍTULO & CONTEÚDO / LEGENDA (col-span-7)     */}
           {/* ============================================================ */}
-          <div className="lg:col-span-7 flex flex-col gap-3 h-full border-l border-[var(--color-border)] lg:pl-6">
+          <div className="lg:col-span-7 flex flex-col gap-3 h-full border-t lg:border-t-0 lg:border-l border-[var(--color-border)] pt-5 lg:pt-0 lg:pl-6 overflow-y-visible lg:overflow-y-auto">
             {/* Título da Tarefa / Headline Principal */}
             <div>
               <label className="text-xs font-bold text-[var(--color-heading)] block mb-1">
@@ -631,15 +631,15 @@ export default function TaskModal() {
         </div>
 
         {/* RODAPÉ FIXO DO MODAL */}
-        <div className="flex items-center justify-between px-6 py-3.5 border-t border-[var(--color-border)] bg-[var(--color-surface)]">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-t border-[var(--color-border)] bg-[var(--color-surface)] sticky bottom-0 z-20">
           {editTaskId ? (
             <button
               type="button"
-              className="text-xs text-[var(--color-danger)] hover:underline flex items-center gap-1.5 font-semibold"
+              className="text-xs text-[var(--color-danger)] hover:underline flex items-center gap-1 font-semibold"
               onClick={() => deleteTask(editTaskId)}
             >
               <Trash2 size={15} />
-              <span>Excluir Tarefa</span>
+              <span className="hidden sm:inline">Excluir Tarefa</span>
             </button>
           ) : (
             <div />
