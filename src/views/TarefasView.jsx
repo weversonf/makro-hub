@@ -1,6 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useHub, STAGES, PRIOS, fmtDate } from '../context/HubContext';
-import { Search, Table as TableIcon, Kanban as KanbanIcon, Plus, Edit2, Calendar, CheckSquare, Send, Link, AlertTriangle } from 'lucide-react';
+import {
+  Search,
+  Table as TableIcon,
+  Kanban as KanbanIcon,
+  Plus,
+  Edit2,
+  Calendar,
+  CheckSquare,
+  Send,
+  Link,
+  AlertTriangle,
+  ChevronDown,
+  Check,
+  Eye,
+  EyeOff,
+  CheckCircle2
+} from 'lucide-react';
 
 export default function TarefasView() {
   const {
@@ -27,12 +43,52 @@ export default function TarefasView() {
   const [draggedTaskId, setDraggedTaskId] = useState(null);
   const [dragOverCol, setDragOverCol] = useState(null);
 
+  // Multi-select de estágios e controle da coluna de Concluídos no Kanban
+  const [selectedStages, setSelectedStages] = useState([]);
+  const [stageDropdownOpen, setStageDropdownOpen] = useState(false);
+  const [showCompletedCol, setShowCompletedCol] = useState(false);
+  const stageRef = useRef(null);
+
+  // Fecha dropdown de estágios ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (stageRef.current && !stageRef.current.contains(e.target)) {
+        setStageDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const toggleStageFilter = (id) => {
+    setSelectedStages((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((x) => x !== id);
+      } else {
+        return [...prev, id];
+      }
+    });
+  };
+
+  const selectAllStages = () => {
+    setSelectedStages([]);
+  };
+
+  const stageFilterText = () => {
+    if (selectedStages.length === 0) return 'Todos os estágios';
+    if (selectedStages.length === 1) {
+      const found = STAGES.find((s) => s.id === selectedStages[0]);
+      return found ? found.label : '1 estágio';
+    }
+    return `${selectedStages.length} estágios`;
+  };
+
   // Filtragem (Demandas editoriais, posts de redes e revistas ficam exclusivamente no Calendário)
   const q = searchQuery.toLowerCase().trim();
   const tasks = activities
     .filter((a) => !isEditorialActivity(a))
     .filter((a) => {
-      if (listStage !== 'all' && a.stage !== listStage) return false;
+      if (selectedStages.length > 0 && !selectedStages.includes(a.stage)) return false;
       if (listCat !== 'all' && String(a.categoria) !== String(listCat)) return false;
       if (q) {
         const cat = catOf(a.categoria);
@@ -90,12 +146,14 @@ export default function TarefasView() {
     handleDragEnd();
   };
 
+  const totalConcludedCount = activities.filter((a) => !isEditorialActivity(a) && a.stage === 'concluido').length;
+
   return (
     <div className="flex flex-col gap-4">
       {/* Barra de Filtros Responsiva */}
       <div className="ax-card">
         <div className="ax-card__body flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
-          {/* Linha 1 no Mobile: Busca e Alternador Tabela / Kanban */}
+          {/* Linha 1 no Mobile: Busca, Alternador Tabela / Kanban e Botão Concluídos */}
           <div className="flex items-center gap-2 flex-1">
             <div className="ax-header__search flex-1 min-w-0">
               <Search className="ax-icon" size={17} />
@@ -127,25 +185,132 @@ export default function TarefasView() {
                 <span className="hidden sm:inline">Kanban</span>
               </button>
             </div>
+
+            {/* Botão de Toggle da Coluna Concluídos no Kanban */}
+            {listMode === 'kanban' && (
+              <button
+                type="button"
+                onClick={() => setShowCompletedCol((prev) => !prev)}
+                className={`text-xs px-2.5 py-1.5 rounded-lg border font-semibold flex items-center gap-1.5 transition shrink-0 ${
+                  showCompletedCol
+                    ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                    : 'border-[var(--ax-border)] bg-[var(--ax-surface)] text-[var(--ax-text-muted)] hover:text-[var(--ax-text-strong)]'
+                }`}
+                title={showCompletedCol ? 'Ocultar coluna de concluídos' : 'Mostrar coluna de concluídos'}
+              >
+                {showCompletedCol ? <EyeOff size={14} /> : <Eye size={14} />}
+                <span className="hidden md:inline">{showCompletedCol ? 'Ocultar Concluídos' : 'Concluídos'}</span>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-[var(--ax-surface-subtle)]">
+                  {totalConcludedCount}
+                </span>
+              </button>
+            )}
           </div>
 
           {/* Linha 2 no Mobile: Dropdowns lado a lado (50% cada) */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="ax-select-wrap flex-1 sm:w-40">
-              <select
-                className="ax-select w-full appearance-none"
-                value={listStage}
-                onChange={(e) => setListStage(e.target.value)}
+            {/* Multi-Select de Estágios */}
+            <div className="relative flex-1 sm:w-48" ref={stageRef}>
+              <button
+                type="button"
+                className="ax-select w-full flex items-center justify-between text-xs px-3 h-[42px] rounded-xl border border-[var(--ax-border)] bg-[var(--ax-surface)] text-[var(--ax-text-strong)] cursor-pointer text-left transition"
+                onClick={() => setStageDropdownOpen((prev) => !prev)}
               >
-                <option value="all">Todos os estágios</option>
-                {STAGES.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
+                <div className="flex items-center gap-1.5 truncate">
+                  {selectedStages.length === 1 && (
+                    <span
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ background: STAGES.find((s) => s.id === selectedStages[0])?.color }}
+                    />
+                  )}
+                  <span className="truncate font-medium">{stageFilterText()}</span>
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0 ml-1">
+                  {selectedStages.length > 1 && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
+                      {selectedStages.length}
+                    </span>
+                  )}
+                  <ChevronDown
+                    size={14}
+                    className={`text-[var(--ax-text-subtle)] transition-transform duration-200 ${
+                      stageDropdownOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </div>
+              </button>
+
+              {stageDropdownOpen && (
+                <div className="absolute left-0 top-full mt-1.5 w-60 p-2 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-2xl z-50 space-y-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      selectAllStages();
+                      setStageDropdownOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition ${
+                      selectedStages.length === 0
+                        ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)] font-bold'
+                        : 'text-[var(--color-heading)] hover:bg-[var(--color-subtle)]'
+                    }`}
+                  >
+                    <span>Todos os estágios</span>
+                    {selectedStages.length === 0 && <Check size={14} />}
+                  </button>
+
+                  <div className="h-px bg-[var(--color-border)] my-1" />
+
+                  <div className="space-y-0.5">
+                    {STAGES.map((s) => {
+                      const isChecked = selectedStages.includes(s.id);
+                      const count = activities.filter((a) => !isEditorialActivity(a) && a.stage === s.id).length;
+                      return (
+                        <label
+                          key={s.id}
+                          className="flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs text-[var(--color-heading)] hover:bg-[var(--color-subtle)] cursor-pointer select-none transition"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => toggleStageFilter(s.id)}
+                              className="w-3.5 h-3.5 rounded text-[var(--color-primary)] accent-[var(--color-primary)] cursor-pointer"
+                            />
+                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
+                            <span className={`truncate ${isChecked ? 'font-bold text-[var(--color-primary)]' : ''}`}>
+                              {s.label}
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-mono text-[var(--color-muted)]">{count}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  {selectedStages.length > 0 && (
+                    <div className="pt-2 border-t border-[var(--color-border)] flex justify-between items-center px-1">
+                      <button
+                        type="button"
+                        className="text-[11px] text-[var(--color-muted)] hover:text-[var(--color-danger)] font-medium"
+                        onClick={selectAllStages}
+                      >
+                        Limpar
+                      </button>
+                      <button
+                        type="button"
+                        className="text-[11px] text-[var(--color-primary)] font-bold hover:underline"
+                        onClick={() => setStageDropdownOpen(false)}
+                      >
+                        Concluir
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
+            {/* Select de Categoria */}
             <div className="ax-select-wrap flex-1 sm:w-44">
               <select
                 className="ax-select w-full appearance-none"
@@ -299,6 +464,14 @@ export default function TarefasView() {
       {listMode === 'kanban' && (
         <div className="ax-pl-board">
           {STAGES.map((st) => {
+            const isConcluido = st.id === 'concluido';
+            if (isConcluido && !showCompletedCol) {
+              return null;
+            }
+            if (selectedStages.length > 0 && !selectedStages.includes(st.id)) {
+              return null;
+            }
+
             const colTasks = tasks.filter((a) => a.stage === st.id);
             const isOver = dragOverCol === st.id;
 
@@ -316,7 +489,19 @@ export default function TarefasView() {
                       <span className="ax-pl-col__cap" style={{ background: st.color }} />
                       <span className="ax-pl-col__name">{st.label}</span>
                     </div>
-                    <span className="ax-pl-col__count">{colTasks.length}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="ax-pl-col__count">{colTasks.length}</span>
+                      {isConcluido && (
+                        <button
+                          type="button"
+                          className="w-5 h-5 rounded flex items-center justify-center text-[var(--ax-text-subtle)] hover:text-[var(--ax-text-strong)] hover:bg-[var(--ax-surface-subtle)] transition cursor-pointer"
+                          onClick={() => setShowCompletedCol(false)}
+                          title="Ocultar coluna Concluído"
+                        >
+                          <EyeOff size={13} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -460,6 +645,33 @@ export default function TarefasView() {
               </div>
             );
           })}
+
+          {/* Coluna Concluído Recolhida (Oculta por padrão, abre ao clicar) */}
+          {!showCompletedCol && (!selectedStages.length || selectedStages.includes('concluido')) && (
+            <div
+              onClick={() => setShowCompletedCol(true)}
+              onDragOver={(e) => handleDragOver(e, 'concluido')}
+              onDragLeave={() => setDragOverCol(null)}
+              onDrop={(e) => handleDrop(e, 'concluido')}
+              className={`flex flex-col items-center justify-start py-5 px-2 rounded-2xl border-2 border-dashed transition select-none w-14 shrink-0 min-h-[380px] cursor-pointer group ${
+                dragOverCol === 'concluido'
+                  ? 'border-emerald-500 bg-emerald-500/15 shadow-lg scale-105'
+                  : 'border-[var(--ax-border)] hover:border-emerald-500/60 bg-[var(--ax-surface-subtle)]/40 hover:bg-emerald-500/5'
+              }`}
+              title="Clique para abrir a coluna de tarefas Concluídas (ou arraste uma tarefa para cá)"
+            >
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center mb-3 group-hover:scale-110 transition">
+                <CheckCircle2 size={18} />
+              </div>
+              <span className="text-[11px] font-bold [writing-mode:vertical-rl] rotate-180 uppercase tracking-widest text-[var(--ax-text-muted)] group-hover:text-emerald-500 transition py-2">
+                Concluídos ({activities.filter((a) => !isEditorialActivity(a) && a.stage === 'concluido').length})
+              </span>
+              <div className="mt-auto text-[var(--ax-text-subtle)] group-hover:text-emerald-500 flex flex-col items-center gap-1 transition">
+                <Eye size={15} />
+                <span className="text-[9px] font-semibold [writing-mode:vertical-rl] rotate-180">Expandir</span>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
