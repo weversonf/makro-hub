@@ -305,63 +305,92 @@ export default function TaskModal() {
           {/* COLUNA ESQUERDA: PROPRIEDADES PRINCIPAIS (col-span-5)        */}
           {/* ============================================================ */}
           <div className="lg:col-span-5 flex flex-col gap-4 overflow-y-visible lg:overflow-y-auto pr-0 lg:pr-1">
-            {/* Estágio / Status */}
-            <div>
-              <label className="text-xs font-bold text-[var(--color-heading)] block mb-1.5">
-                Status / Estágio
-              </label>
-              <div className="grid grid-cols-3 gap-1.5">
-                {STAGES.map((s) => {
-                  const active = stage === s.id;
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      className={`text-xs py-1.5 px-2 rounded-lg font-medium border text-center transition truncate ${
-                        active
-                          ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)] font-bold'
-                          : 'border-[var(--color-border)] text-[var(--color-muted)] hover:bg-[var(--color-subtle)]'
-                      }`}
-                      onClick={() => {
-                        setStage(s.id);
-                        if (s.id === 'concluido') setProgress(100);
-                      }}
-                    >
-                      {s.label}
-                    </button>
-                  );
-                })}
+            {/* Lado a Lado: Status / Estágio e Prioridade (Ganho de espaço) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
+              {/* Estágio / Status */}
+              <div>
+                <label className="text-xs font-bold text-[var(--color-heading)] block mb-1.5">
+                  Status / Estágio
+                </label>
+                <div className="space-y-1">
+                  <div className="grid grid-cols-3 gap-1">
+                    {STAGES.slice(0, 3).map((s) => {
+                      const active = stage === s.id;
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          className={`text-[11px] py-1.5 px-1 rounded-lg font-medium border text-center transition truncate ${
+                            active
+                              ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)] font-bold'
+                              : 'border-[var(--color-border)] text-[var(--color-muted)] hover:bg-[var(--color-subtle)]'
+                          }`}
+                          onClick={() => {
+                            setStage(s.id);
+                            if (s.id === 'concluido') setProgress(100);
+                          }}
+                          title={s.label}
+                        >
+                          {s.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {STAGES.slice(3, 5).map((s) => {
+                      const active = stage === s.id;
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          className={`text-[11px] py-1.5 px-1 rounded-lg font-medium border text-center transition truncate ${
+                            active
+                              ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)] font-bold'
+                              : 'border-[var(--color-border)] text-[var(--color-muted)] hover:bg-[var(--color-subtle)]'
+                          }`}
+                          onClick={() => {
+                            setStage(s.id);
+                            if (s.id === 'concluido') setProgress(100);
+                          }}
+                          title={s.label}
+                        >
+                          {s.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {/* Prioridade */}
-            <div>
-              <label className="text-xs font-bold text-[var(--color-heading)] block mb-1.5">
-                Prioridade
-              </label>
-              <div className="grid grid-cols-4 gap-1.5">
-                {Object.keys(PRIOS).map((pk) => {
-                  const active = prioridade === pk;
-                  const p = PRIOS[pk];
-                  return (
-                    <button
-                      key={pk}
-                      type="button"
-                      className={`text-xs py-1 px-2 rounded-lg font-medium border text-center transition ${
-                        active
-                          ? 'border-current font-bold'
-                          : 'border-[var(--color-border)] text-[var(--color-muted)] hover:bg-[var(--color-subtle)]'
-                      }`}
-                      style={{
-                        color: active ? p.color : undefined,
-                        backgroundColor: active ? `color-mix(in srgb, ${p.color} 15%, transparent)` : undefined
-                      }}
-                      onClick={() => setPrioridade(pk)}
-                    >
-                      {p.label}
-                    </button>
-                  );
-                })}
+              {/* Prioridade */}
+              <div>
+                <label className="text-xs font-bold text-[var(--color-heading)] block mb-1.5">
+                  Prioridade
+                </label>
+                <div className="grid grid-cols-2 gap-1">
+                  {Object.keys(PRIOS).map((pk) => {
+                    const active = prioridade === pk;
+                    const p = PRIOS[pk];
+                    return (
+                      <button
+                        key={pk}
+                        type="button"
+                        className={`text-[11px] py-1.5 px-1.5 rounded-lg font-medium border text-center transition truncate ${
+                          active
+                            ? 'border-current font-bold'
+                            : 'border-[var(--color-border)] text-[var(--color-muted)] hover:bg-[var(--color-subtle)]'
+                        }`}
+                        style={{
+                          color: active ? p.color : undefined,
+                          backgroundColor: active ? `color-mix(in srgb, ${p.color} 15%, transparent)` : undefined
+                        }}
+                        onClick={() => setPrioridade(pk)}
+                      >
+                        {p.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
