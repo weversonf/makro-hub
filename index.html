@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-ax-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Hub de Marketing</title>
+  <meta name="theme-color" content="#0A0C11" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#FCFBF9" media="(prefers-color-scheme: light)" />
+  <link rel="icon" type="image/png" href="https://makroengenharia.com.br/wp-content/uploads/2026/08/ICONE-ESTRELA-LOGO-MAKRO-VERMELHA.png" />
+
+  <!-- Anti-flash script restore -->
+  <script>
+    (function () {
+      var D = document.documentElement, LS = null;
+      try { LS = window.localStorage; } catch (e) {}
+      var theme = (LS && LS.getItem('hr-theme')) || (LS && LS.getItem('ax:theme')) || 'system';
+      var dark = false;
+      try { dark = window.matchMedia('(prefers-color-scheme: dark)').matches; } catch (e) {}
+      var resolved = theme === 'system' ? (dark ? 'dark' : 'light') : theme;
+      D.setAttribute('data-ax-theme', resolved);
+      if (resolved === 'dark') D.classList.add('dark');
+      try { if (LS && (LS.getItem('hr-sidebar') === 'collapsed' || LS.getItem('ax:collapsed') === '1')) D.classList.add('sidebar-collapsed'); } catch (e) {}
+      try {
+        var acc = LS && LS.getItem('ax:accent');
+        if (acc) D.style.setProperty('--ax-accent', acc);
+      } catch (e) {}
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Ubuntu:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+</html>

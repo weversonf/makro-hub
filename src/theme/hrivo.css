@@ -1,0 +1,689 @@
+/* ============================================================ */
+/* HRIVO DESIGN SYSTEM (v02)                                    */
+/* ============================================================ */
+:root {
+  --color-primary: #1279FF;
+  --color-primary-strong: #0D62D9;
+  --color-primary-soft: rgba(18, 121, 255, 0.12);
+  --color-secondary: #6366F1;
+
+  --color-success: #10B981;
+  --color-success-soft: rgba(16, 185, 129, 0.12);
+  --color-warning: #F59E0B;
+  --color-warning-soft: rgba(245, 158, 11, 0.12);
+  --color-danger: #EF4444;
+  --color-danger-soft: rgba(239, 68, 68, 0.12);
+
+  /* Light Theme */
+  --color-bg: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-subtle: #F1F5F9;
+  --color-border: #E2E8F0;
+  --color-border-subtle: #EDF2F7;
+  --color-border-strong: #CBD5E1;
+  --color-heading: #0F172A;
+  --color-text: #334155;
+  --color-text-secondary: #64748B;
+  --color-muted: #64748B;
+  --color-faint: #94A3B8;
+
+  --color-sidebar: #0E1521;
+  --color-sidebar-text: #E2E8F0;
+  --color-sidebar-muted: #8893A7;
+  --color-sidebar-border: rgba(255, 255, 255, 0.08);
+
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --sidebar-w: 256px;
+  --sidebar-collapsed-w: 78px;
+}
+
+html.dark {
+  color-scheme: dark;
+  --color-bg: #0B0F17;
+  --color-surface: #10151F;
+  --color-subtle: #161C28;
+  --color-border: #1E2636;
+  --color-border-subtle: #19202E;
+  --color-border-strong: #2A344A;
+  --color-heading: #F1F5F9;
+  --color-text: #CBD5E1;
+  --color-text-secondary: #8893A7;
+  --color-muted: #8893A7;
+  --color-faint: #64748B;
+
+  --color-sidebar: #0A0D14;
+  --color-sidebar-text: #E2E8F0;
+  --color-sidebar-muted: #7E8B9F;
+  --color-sidebar-border: rgba(255, 255, 255, 0.06);
+}
+
+html {
+  overflow-y: scroll;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  overflow-x: hidden;
+  overflow-y: auto !important;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Scrollbars Elegantes e Visíveis */
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 999px;
+  border: 2px solid var(--color-bg);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) var(--color-bg);
+}
+
+/* ============================================================ */
+/* HRIVO SIDEBAR                                                */
+/* ============================================================ */
+.hr-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 50;
+  width: var(--sidebar-w);
+  background-color: var(--color-sidebar);
+  border-right: 1px solid var(--color-sidebar-border);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.28s cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.sidebar-collapsed .hr-sidebar {
+  width: var(--sidebar-collapsed-w);
+}
+
+.hr-sidebar__brand {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--color-sidebar-border);
+  flex-shrink: 0;
+}
+
+.sidebar-collapsed .hr-sidebar__brand {
+  justify-content: center;
+  padding: 0;
+}
+
+.hr-sidebar__logo-full {
+  height: 28px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.hr-sidebar__logo-icon {
+  height: 32px;
+  width: 32px;
+  object-fit: contain;
+  display: none;
+}
+
+.sidebar-collapsed .hr-sidebar__logo-full { display: none; }
+.sidebar-collapsed .hr-sidebar__logo-icon { display: block; }
+.sidebar-collapsed .hr-sidebar-toggle-btn { display: none; }
+
+.hr-sidebar__nav {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hr-nav-section {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-sidebar-muted);
+  padding: 4px 12px;
+  margin-bottom: 4px;
+  white-space: nowrap;
+}
+
+.sidebar-collapsed .hr-nav-section {
+  display: none;
+}
+
+.hr-sidebar__nav {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+}
+
+.hr-nav-indicator {
+  position: absolute;
+  top: 0;
+  left: 10px;
+  right: 10px;
+  border-radius: 9999px;
+  background-color: var(--color-primary);
+  box-shadow: 0 4px 18px -2px rgba(18, 121, 255, 0.45);
+  pointer-events: none;
+  z-index: 1;
+  transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.2, 1),
+              height 0.2s cubic-bezier(0.2, 0.9, 0.2, 1),
+              width 0.2s ease,
+              border-radius 0.2s ease,
+              opacity 0.15s ease;
+}
+
+.sidebar-collapsed .hr-nav-indicator {
+  width: 48px;
+  height: 48px !important;
+  left: 50%;
+  right: auto;
+  margin-left: -24px;
+  border-radius: 50% !important;
+}
+
+.hr-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 9999px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--color-sidebar-text);
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+  z-index: 2;
+  transition: color 0.16s ease;
+  width: 100%;
+}
+
+.hr-nav-item:hover:not(.hr-nav-item--active) {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: #FFFFFF;
+}
+
+.hr-nav-item--active {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  color: #FFFFFF !important;
+  font-weight: 600;
+}
+
+.hr-nav-item--active:hover {
+  background-color: transparent !important;
+  color: #FFFFFF !important;
+}
+
+.sidebar-collapsed .hr-sidebar__brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  width: 100%;
+}
+
+.sidebar-collapsed .hr-sidebar__logo-icon {
+  display: block;
+  margin: 0 auto;
+}
+
+.sidebar-collapsed .hr-sidebar__nav {
+  padding: 16px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.sidebar-collapsed .hr-nav-item {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 6px;
+  padding: 0;
+  border-radius: 50% !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-collapsed .hr-nav-label,
+.sidebar-collapsed .hr-nav-badge {
+  display: none;
+}
+
+/* Tooltip on collapsed item */
+.sidebar-collapsed .hr-nav-item::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%) scale(0.92);
+  background: #18202F;
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 100;
+}
+
+.sidebar-collapsed .hr-nav-item:hover::after {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+}
+
+.hr-nav-badge {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+}
+
+.hr-sidebar__footer {
+  padding: 12px 14px;
+  border-top: 1px solid var(--color-sidebar-border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.sidebar-collapsed .hr-sidebar__footer {
+  padding: 14px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.sidebar-collapsed .hr-user-wrap {
+  width: auto;
+  justify-content: center;
+  gap: 0;
+}
+
+.sidebar-collapsed .hr-user-avatar-wrap {
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-collapsed .hr-user-avatar-wrap img,
+.sidebar-collapsed .hr-user-avatar-wrap div {
+  width: 42px;
+  height: 42px;
+  display: block;
+}
+
+.sidebar-collapsed .hr-user-meta {
+  display: none !important;
+}
+
+.sidebar-collapsed .hr-user-logout-btn {
+  display: none !important;
+}
+
+/* ============================================================ */
+/* HRIVO TOPBAR (HEADER)                                        */
+/* ============================================================ */
+.hr-topbar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: var(--sidebar-w);
+  height: 64px;
+  z-index: 40;
+  background-color: color-mix(in srgb, var(--color-surface) 80%, transparent);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  transition: left 0.28s cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.sidebar-collapsed .hr-topbar {
+  left: var(--sidebar-collapsed-w);
+}
+
+.hr-mobile-toggle {
+  display: none !important;
+}
+
+@media (max-width: 992px) {
+  .hr-mobile-toggle {
+    display: inline-flex !important;
+  }
+}
+
+.hr-search-wrap {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  width: 280px;
+  padding: 0 12px;
+  background-color: var(--color-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  gap: 8px;
+  transition: border-color 0.15s ease;
+}
+
+.hr-search-wrap:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(18, 121, 255, 0.15);
+}
+
+.hr-search-input {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  outline: none;
+  font-size: 13.5px;
+  color: var(--color-heading);
+  font-family: inherit;
+}
+
+.hr-search-input::placeholder {
+  color: var(--color-muted);
+}
+
+.hr-icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hr-icon-btn:hover {
+  background-color: var(--color-subtle);
+  border-color: var(--color-border-strong);
+  color: var(--color-heading);
+}
+
+/* ============================================================ */
+/* HRIVO MAIN CONTENT SHELL                                     */
+/* ============================================================ */
+.hr-main-shell {
+  margin-left: var(--sidebar-w);
+  padding-top: 64px;
+  min-height: 100vh;
+  transition: margin-left 0.28s cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.sidebar-collapsed .hr-main-shell {
+  margin-left: var(--sidebar-collapsed-w);
+}
+
+.hr-container {
+  padding: 24px;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+/* ============================================================ */
+/* HRIVO CARDS & TILES                                          */
+/* ============================================================ */
+.hr-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.hr-card:hover {
+  border-color: var(--color-border-strong);
+}
+
+.hr-card-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(18, 121, 255, 0.12) 0%, rgba(99, 102, 241, 0.08) 100%);
+  border: 1px solid rgba(18, 121, 255, 0.2);
+  padding: 24px;
+}
+
+.hr-quick-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  text-decoration: none;
+  color: var(--color-heading);
+}
+
+.hr-quick-action:hover {
+  background-color: var(--color-primary-soft);
+  border-color: rgba(18, 121, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+/* ============================================================ */
+/* HRIVO BUTTONS                                                */
+/* ============================================================ */
+.hr-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.hr-btn--primary {
+  background-color: var(--color-primary);
+  color: #FFFFFF;
+}
+
+.hr-btn--primary:hover {
+  background-color: var(--color-primary-strong);
+  box-shadow: 0 4px 14px -2px rgba(18, 121, 255, 0.45);
+}
+
+.hr-btn--secondary {
+  background-color: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-heading);
+}
+
+.hr-btn--secondary:hover {
+  background-color: var(--color-subtle);
+  border-color: var(--color-border-strong);
+}
+
+/* ============================================================ */
+/* HRIVO TABLE & BADGES                                         */
+/* ============================================================ */
+.hr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.hr-table th {
+  padding: 12px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+}
+
+.hr-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  color: var(--color-text);
+  vertical-align: middle;
+}
+
+.hr-table tr:hover td {
+  background-color: var(--color-subtle);
+}
+
+.hr-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.hr-pill--success {
+  background-color: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.hr-pill--danger {
+  background-color: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.hr-pill--warning {
+  background-color: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.hr-pill--info {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+/* Responsive Mobile */
+@media (max-width: 992px) {
+  .hr-sidebar {
+    transform: translateX(-100%);
+  }
+  .hr-sidebar.open {
+    transform: translateX(0);
+  }
+  .hr-topbar {
+    left: 0 !important;
+  }
+  .hr-main-shell {
+    margin-left: 0 !important;
+  }
+}
+
+/* ============================================================ */
+/* HRIVO KANBAN PIPELINE                                        */
+/* ============================================================ */
+.ax-pl-board,
+.ax-pipeline {
+  display: flex !important;
+  gap: 16px !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  padding-bottom: 24px !important;
+  width: 100% !important;
+  min-height: 520px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ax-pl-col {
+  min-width: 300px !important;
+  max-width: 320px !important;
+  flex: 0 0 300px !important;
+  background-color: var(--color-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.ax-table-wrap,
+.overflow-x-auto {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
+.ax-pl-col__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.ax-pl-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  cursor: grab;
+}
+.ax-pl-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  border-color: var(--color-border-strong);
+}
