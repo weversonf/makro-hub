@@ -406,6 +406,8 @@ export default function TarefasView() {
     handleDragEnd();
   };
 
+  const totalConcludedCount = activities.filter((a) => !isEditorialActivity(a) && a.stage === 'concluido').length;
+
   const renderFilterContent = (colKey) => {
     switch (colKey) {
       case 'titulo':
