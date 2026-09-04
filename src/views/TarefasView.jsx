@@ -15,7 +15,10 @@ import {
   Check,
   Eye,
   EyeOff,
-  CheckCircle2
+  CheckCircle2,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 
 export default function TarefasView() {
@@ -50,6 +53,46 @@ export default function TarefasView() {
   const [showCompletedCol, setShowCompletedCol] = useState(false);
   const stageRef = useRef(null);
   const catRef = useRef(null);
+
+  // Ordenação das colunas da tabela
+  const [sortField, setSortField] = useState(null);
+  const [sortDirection, setSortDirection] = useState('asc'); // 'asc' | 'desc'
+
+  const handleSort = (field) => {
+    if (sortField !== field) {
+      setSortField(field);
+      // Para progresso, prioridade e checklist, primeiro clique é desc (maior pro menor)
+      if (field === 'progress' || field === 'prioridade' || field === 'checklist') {
+        setSortDirection('desc');
+      } else {
+        setSortDirection('asc');
+      }
+    } else {
+      if (sortDirection === 'asc') {
+        setSortDirection('desc');
+      } else {
+        // Terceiro clique reseta para o padrão
+        setSortField(null);
+        setSortDirection('asc');
+      }
+    }
+  };
+
+  const renderSortIndicator = (field) => {
+    const isActive = sortField === field;
+    if (!isActive) {
+      return (
+        <ArrowUpDown
+          size={12}
+          className="text-[var(--ax-text-subtle)] opacity-40 group-hover:opacity-100 transition shrink-0 ml-1"
+        />
+      );
+    }
+    if (sortDirection === 'asc') {
+      return <ArrowUp size={13} className="text-[var(--color-primary)] shrink-0 ml-1 animate-in fade-in" />;
+    }
+    return <ArrowDown size={13} className="text-[var(--color-primary)] shrink-0 ml-1 animate-in fade-in" />;
+  };
 
   // Fecha dropdowns de estágios e categorias ao clicar fora
   useEffect(() => {
@@ -117,6 +160,74 @@ export default function TarefasView() {
       if (ox !== oy) return oy - ox;
       return (x.dataVencimento || '9999-99-99') < (y.dataVencimento || '9999-99-99') ? -1 : 1;
     });
+
+  const displayedTableTasks = useMemo(() => {
+    if (!sortField) return tasks;
+
+    return [...tasks].sort((a, b) => {
+      let comp = 0;
+      switch (sortField) {
+        case 'titulo':
+          comp = (a.titulo || '').localeCompare(b.titulo || '', 'pt-BR', { sensitivity: 'base' });
+          break;
+
+        case 'categoria': {
+          const catA = catOf(a.categoria)?.nome || '';
+          const catB = catOf(b.categoria)?.nome || '';
+          comp = catA.localeCompare(catB, 'pt-BR', { sensitivity: 'base' });
+          break;
+        }
+
+        case 'stage': {
+          const stageOrder = { afazer: 1, andamento: 2, espera: 3, validando: 4, concluido: 5 };
+          const sA = stageOrder[a.stage] || 99;
+          const sB = stageOrder[b.stage] || 99;
+          comp = sA - sB;
+          break;
+        }
+
+        case 'progress': {
+          const pA = Number(a.progress) || 0;
+          const pB = Number(b.progress) || 0;
+          comp = pA - pB;
+          break;
+        }
+
+        case 'checklist': {
+          const totA = (a.idCheck || []).length;
+          const doneA = totA ? a.idCheck.filter((c) => c.done).length : 0;
+          const ratioA = totA > 0 ? doneA / totA : 0;
+
+          const totB = (b.idCheck || []).length;
+          const doneB = totB ? b.idCheck.filter((c) => c.done).length : 0;
+          const ratioB = totB > 0 ? doneB / totB : 0;
+
+          comp = ratioA !== ratioB ? ratioA - ratioB : doneA - doneB;
+          break;
+        }
+
+        case 'dataVencimento': {
+          const dA = a.dataVencimento || '9999-99-99';
+          const dB = b.dataVencimento || '9999-99-99';
+          comp = dA.localeCompare(dB);
+          break;
+        }
+
+        case 'prioridade': {
+          const prioOrder = { alta: 3, media: 2, baixa: 1 };
+          const prA = prioOrder[a.prioridade] || 0;
+          const prB = prioOrder[b.prioridade] || 0;
+          comp = prA - prB;
+          break;
+        }
+
+        default:
+          comp = 0;
+      }
+
+      return sortDirection === 'desc' ? -comp : comp;
+    });
+  }, [tasks, sortField, sortDirection, catOf]);
 
   const progColor = (p) => {
     if (p >= 100) return 'var(--ax-viz-emerald)';
@@ -437,21 +548,124 @@ export default function TarefasView() {
               </div>
             ) : (
               <div className="ax-table-wrap">
+                {sortField && (
+                  <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-primary-soft)]/20 text-xs">
+                    <span className="text-[var(--ax-text-muted)] flex items-center gap-1.5">
+                      <span>Ordenando por:</span>
+                      <strong className="text-[var(--color-primary)] font-bold">
+                        {sortField === 'progress' && 'Progresso'}
+                        {sortField === 'titulo' && 'Tarefa'}
+                        {sortField === 'categoria' && 'Categoria'}
+                        {sortField === 'stage' && 'Estágio'}
+                        {sortField === 'checklist' && 'Checklist'}
+                        {sortField === 'dataVencimento' && 'Deadline'}
+                        {sortField === 'prioridade' && 'Prioridade'}
+                      </strong>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--ax-text-strong)] font-semibold">
+                        {sortDirection === 'desc' ? 'Maior para menor' : 'Menor para maior / A-Z'}
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSortField(null)}
+                      className="text-[11px] text-[var(--color-primary)] font-semibold hover:underline cursor-pointer"
+                    >
+                      Limpar ordenação
+                    </button>
+                  </div>
+                )}
                 <table className="ax-table ax-table--hover">
                   <thead>
                     <tr>
-                      <th>Tarefa</th>
-                      <th>Categoria</th>
-                      <th>Estágio</th>
-                      <th>Progresso</th>
-                      <th>Checklist</th>
-                      <th>Deadline</th>
-                      <th>Prioridade</th>
+                      <th
+                        className="cursor-pointer select-none group transition hover:text-[var(--color-primary)]"
+                        onClick={() => handleSort('titulo')}
+                        title="Ordenar por Tarefa (A-Z / Z-A)"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span className={sortField === 'titulo' ? 'text-[var(--color-primary)] font-bold' : ''}>
+                            Tarefa
+                          </span>
+                          {renderSortIndicator('titulo')}
+                        </div>
+                      </th>
+                      <th
+                        className="cursor-pointer select-none group transition hover:text-[var(--color-primary)]"
+                        onClick={() => handleSort('categoria')}
+                        title="Ordenar por Categoria (A-Z / Z-A)"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span className={sortField === 'categoria' ? 'text-[var(--color-primary)] font-bold' : ''}>
+                            Categoria
+                          </span>
+                          {renderSortIndicator('categoria')}
+                        </div>
+                      </th>
+                      <th
+                        className="cursor-pointer select-none group transition hover:text-[var(--color-primary)]"
+                        onClick={() => handleSort('stage')}
+                        title="Ordenar por Estágio do fluxo"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span className={sortField === 'stage' ? 'text-[var(--color-primary)] font-bold' : ''}>
+                            Estágio
+                          </span>
+                          {renderSortIndicator('stage')}
+                        </div>
+                      </th>
+                      <th
+                        className="cursor-pointer select-none group transition hover:text-[var(--color-primary)]"
+                        onClick={() => handleSort('progress')}
+                        title="Ordenar por Progresso (Maior para menor / Menor para maior)"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span className={sortField === 'progress' ? 'text-[var(--color-primary)] font-bold' : ''}>
+                            Progresso
+                          </span>
+                          {renderSortIndicator('progress')}
+                        </div>
+                      </th>
+                      <th
+                        className="cursor-pointer select-none group transition hover:text-[var(--color-primary)]"
+                        onClick={() => handleSort('checklist')}
+                        title="Ordenar por Checklist concluído"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span className={sortField === 'checklist' ? 'text-[var(--color-primary)] font-bold' : ''}>
+                            Checklist
+                          </span>
+                          {renderSortIndicator('checklist')}
+                        </div>
+                      </th>
+                      <th
+                        className="cursor-pointer select-none group transition hover:text-[var(--color-primary)]"
+                        onClick={() => handleSort('dataVencimento')}
+                        title="Ordenar por Prazo/Deadline"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span className={sortField === 'dataVencimento' ? 'text-[var(--color-primary)] font-bold' : ''}>
+                            Deadline
+                          </span>
+                          {renderSortIndicator('dataVencimento')}
+                        </div>
+                      </th>
+                      <th
+                        className="cursor-pointer select-none group transition hover:text-[var(--color-primary)]"
+                        onClick={() => handleSort('prioridade')}
+                        title="Ordenar por Prioridade (Alta para Baixa / Baixa para Alta)"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span className={sortField === 'prioridade' ? 'text-[var(--color-primary)] font-bold' : ''}>
+                            Prioridade
+                          </span>
+                          {renderSortIndicator('prioridade')}
+                        </div>
+                      </th>
                       <th style={{ width: '80px' }} />
                     </tr>
                   </thead>
                   <tbody>
-                    {tasks.map((a) => {
+                    {displayedTableTasks.map((a) => {
                       const cat = catOf(a.categoria);
                       const st = stageOf(a.stage);
                       const prio = PRIOS[a.prioridade] || PRIOS.baixa;
