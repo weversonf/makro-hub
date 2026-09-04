@@ -282,6 +282,7 @@ export function HubProvider({ children }) {
     const exists = projects.find((p) => p.nome && p.nome.toLowerCase() === cleanNome.toLowerCase());
     if (exists) return cleanNome;
 
+    const docRef = getUserCollection('projects').doc();
     const newProj = {
       nome: cleanNome,
       descricao: projectData.descricao || '',
@@ -291,11 +292,15 @@ export function HubProvider({ children }) {
       tags: projectData.tags || ['Projeto'],
       createdAt: new Date().toISOString()
     };
-    try {
-      await getUserCollection('projects').add(newProj);
-    } catch (e) {
+    const newProjWithFbId = { ...newProj, _fbId: docRef.id };
+
+    // Atualização otimista imediata na UI
+    setProjects((prev) => [...prev, newProjWithFbId]);
+
+    docRef.set(newProj).catch((e) => {
       console.warn('Erro ao criar projeto:', e);
-    }
+      setProjects((prev) => prev.filter((p) => p._fbId !== docRef.id));
+    });
     return cleanNome;
   }, [projects]);
 
@@ -433,26 +438,58 @@ export function HubProvider({ children }) {
     setTaskModalInitialData(null);
   }, []);
 
-  const saveTask = async (taskData) => {
+  const saveTask = (taskData) => {
     try {
       if (editTaskId) {
         const existing = getTask(editTaskId);
-        if (existing?._fbId) {
-          await getUserDoc('activities', existing._fbId).update(taskData);
+        if (existing) {
+          const updatedTask = {
+            ...existing,
+            ...taskData,
+            concluidoEm: taskData.stage === 'concluido' ? (existing.concluidoEm || todayISO()) : null
+          };
+          // Atualização otimista imediata na UI
+          setActivities((prev) => prev.map((a) => (a.id === editTaskId ? updatedTask : a)));
+          closeTaskModal();
           showToast('Tarefa atualizada com sucesso');
+
+          if (existing._fbId) {
+            getUserDoc('activities', existing._fbId)
+              .update(taskData)
+              .catch((err) => {
+                console.error('[Firestore] Erro ao atualizar tarefa:', err);
+                // Rollback
+                setActivities((prev) => prev.map((a) => (a.id === editTaskId ? existing : a)));
+                showToast('Erro ao sincronizar atualização com o servidor.', 'error');
+              });
+          }
         }
       } else {
         const nextId = activities.length > 0 ? Math.max(...activities.map((a) => a.id || 0)) + 1 : 1;
+        const docRef = getUserCollection('activities').doc();
         const newTask = {
           ...taskData,
           id: nextId,
           criadoEm: todayISO(),
           concluidoEm: taskData.stage === 'concluido' ? todayISO() : null
         };
-        await getUserCollection('activities').add(newTask);
+        const newTaskWithFbId = {
+          ...newTask,
+          _fbId: docRef.id
+        };
+
+        // Atualização otimista imediata na UI
+        setActivities((prev) => [...prev, newTaskWithFbId]);
+        closeTaskModal();
         showToast('Tarefa criada com sucesso');
+
+        docRef.set(newTask).catch((err) => {
+          console.error('[Firestore] Erro ao salvar nova tarefa:', err);
+          // Rollback
+          setActivities((prev) => prev.filter((a) => a._fbId !== docRef.id));
+          showToast('Erro ao salvar tarefa no servidor.', 'error');
+        });
       }
-      closeTaskModal();
     } catch (err) {
       console.error(err);
       showToast('Erro ao salvar tarefa.', 'error');
@@ -462,15 +499,21 @@ export function HubProvider({ children }) {
   const deleteTask = useCallback((taskId) => {
     const t = getTask(taskId);
     if (!t) return;
-    showConfirm('Excluir tarefa?', 'Essa ação removerá a tarefa definitivamente.', async () => {
-      try {
-        if (t._fbId) {
-          await getUserDoc('activities', t._fbId).delete();
-          showToast('Tarefa excluída');
-          closeTaskModal();
-        }
-      } catch (e) {
-        showToast('Erro ao excluir tarefa.', 'error');
+    showConfirm('Excluir tarefa?', 'Essa ação removerá a tarefa definitivamente.', () => {
+      // Atualização otimista imediata na UI
+      setActivities((prev) => prev.filter((a) => a.id !== taskId));
+      closeTaskModal();
+      showToast('Tarefa excluída');
+
+      if (t._fbId) {
+        getUserDoc('activities', t._fbId)
+          .delete()
+          .catch((e) => {
+            console.error('[Firestore] Erro ao excluir tarefa:', e);
+            // Rollback
+            setActivities((prev) => [...prev, t]);
+            showToast('Erro ao excluir tarefa no servidor.', 'error');
+          });
       }
     });
   }, [getTask, showConfirm, closeTaskModal, showToast]);
@@ -614,21 +657,44 @@ export function HubProvider({ children }) {
     setEditCategoryData(null);
   }, []);
 
-  const saveCategory = async ({ id, nome, cor }) => {
+  const saveCategory = ({ id, nome, cor }) => {
     try {
       if (id) {
         const c = categories.find((x) => x.id === id);
-        if (c?._fbId) {
-          await getUserDoc('categories', c._fbId).update({ nome, cor });
+        if (c) {
+          // Atualização otimista imediata na UI
+          setCategories((prev) => prev.map((x) => (x.id === id ? { ...x, nome, cor } : x)));
+          closeCategoryModal();
           showToast('Categoria atualizada');
+
+          if (c._fbId) {
+            getUserDoc('categories', c._fbId)
+              .update({ nome, cor })
+              .catch((e) => {
+                console.error('[Firestore] Erro ao atualizar categoria:', e);
+                setCategories((prev) => prev.map((x) => (x.id === id ? c : x)));
+                showToast('Erro ao sincronizar categoria.', 'error');
+              });
+          }
         }
       } else {
         const nextCatId = categories.length > 0 ? Math.max(...categories.map((c) => c.id || 0)) + 1 : 1;
-        await getUserCollection('categories').add({ id: nextCatId, nome, cor });
+        const docRef = getUserCollection('categories').doc();
+        const newCat = { id: nextCatId, nome, cor, _fbId: docRef.id };
+
+        // Atualização otimista imediata na UI
+        setCategories((prev) => [...prev, newCat]);
+        closeCategoryModal();
         showToast('Categoria criada');
+
+        docRef.set({ id: nextCatId, nome, cor }).catch((e) => {
+          console.error('[Firestore] Erro ao criar categoria:', e);
+          setCategories((prev) => prev.filter((x) => x._fbId !== docRef.id));
+          showToast('Erro ao salvar categoria no servidor.', 'error');
+        });
       }
-      closeCategoryModal();
     } catch (e) {
+      console.error(e);
       showToast('Erro ao salvar categoria.', 'error');
     }
   };
@@ -636,15 +702,20 @@ export function HubProvider({ children }) {
   const deleteCategory = useCallback((catId) => {
     const c = categories.find((x) => x.id === catId);
     if (!c || c.id === 1) return;
-    showConfirm('Excluir categoria?', 'Tarefas dessa categoria ficarão sem categoria vinculada.', async () => {
-      try {
-        if (c._fbId) {
-          await getUserDoc('categories', c._fbId).delete();
-          showToast('Categoria removida');
-          closeCategoryModal();
-        }
-      } catch (e) {
-        showToast('Erro ao remover categoria.', 'error');
+    showConfirm('Excluir categoria?', 'Tarefas dessa categoria ficarão sem categoria vinculada.', () => {
+      // Atualização otimista imediata na UI
+      setCategories((prev) => prev.filter((x) => x.id !== catId));
+      closeCategoryModal();
+      showToast('Categoria removida');
+
+      if (c._fbId) {
+        getUserDoc('categories', c._fbId)
+          .delete()
+          .catch((e) => {
+            console.error('[Firestore] Erro ao remover categoria:', e);
+            setCategories((prev) => [...prev, c]);
+            showToast('Erro ao remover categoria no servidor.', 'error');
+          });
       }
     });
   }, [categories, showConfirm, closeCategoryModal, showToast]);

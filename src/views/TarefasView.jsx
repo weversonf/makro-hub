@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useHub, STAGES, PRIOS, fmtDate } from '../context/HubContext';
 import {
   Search,
@@ -46,19 +46,33 @@ export default function TarefasView() {
   // Multi-select de estágios e controle da coluna de Concluídos no Kanban
   const [selectedStages, setSelectedStages] = useState([]);
   const [stageDropdownOpen, setStageDropdownOpen] = useState(false);
+  const [catDropdownOpen, setCatDropdownOpen] = useState(false);
   const [showCompletedCol, setShowCompletedCol] = useState(false);
   const stageRef = useRef(null);
+  const catRef = useRef(null);
 
-  // Fecha dropdown de estágios ao clicar fora
+  // Fecha dropdowns de estágios e categorias ao clicar fora
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (stageRef.current && !stageRef.current.contains(e.target)) {
         setStageDropdownOpen(false);
       }
+      if (catRef.current && !catRef.current.contains(e.target)) {
+        setCatDropdownOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const availableCategories = useMemo(() => {
+    return categories.filter((c) => String(c.id) !== '1' && !c.nome?.toLowerCase().includes('editorial'));
+  }, [categories]);
+
+  const selectedCategoryObj = useMemo(() => {
+    if (listCat === 'all') return null;
+    return categories.find((c) => String(c.id) === String(listCat));
+  }, [categories, listCat]);
 
   const toggleStageFilter = (id) => {
     setSelectedStages((prev) => {
@@ -151,8 +165,8 @@ export default function TarefasView() {
   return (
     <div className="flex flex-col gap-4">
       {/* Barra de Filtros Responsiva */}
-      <div className="ax-card">
-        <div className="ax-card__body flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
+      <div className="ax-card !overflow-visible relative z-30">
+        <div className="ax-card__body flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 !overflow-visible">
           {/* Linha 1 no Mobile: Busca, Alternador Tabela / Kanban e Botão Concluídos */}
           <div className="flex items-center gap-2 flex-1">
             <div className="ax-header__search flex-1 min-w-0">
@@ -208,12 +222,14 @@ export default function TarefasView() {
           </div>
 
           {/* Linha 2 no Mobile: Dropdowns lado a lado (50% cada) */}
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto relative z-30">
             {/* Multi-Select de Estágios */}
-            <div className="relative flex-1 sm:w-48" ref={stageRef}>
+            <div className="relative flex-1 sm:w-48 z-40" ref={stageRef}>
               <button
                 type="button"
-                className="ax-select w-full flex items-center justify-between text-xs px-3 h-[42px] rounded-xl border border-[var(--ax-border)] bg-[var(--ax-surface)] text-[var(--ax-text-strong)] cursor-pointer text-left transition"
+                className={`ax-select w-full flex items-center justify-between text-xs px-3 h-[42px] rounded-xl border bg-[var(--ax-surface)] text-[var(--ax-text-strong)] cursor-pointer text-left transition ${
+                  stageDropdownOpen ? 'border-[var(--color-primary)] ring-2 ring-[var(--color-primary)]/25' : 'border-[var(--ax-border)]'
+                }`}
                 onClick={() => setStageDropdownOpen((prev) => !prev)}
               >
                 <div className="flex items-center gap-1.5 truncate">
@@ -242,7 +258,7 @@ export default function TarefasView() {
               </button>
 
               {stageDropdownOpen && (
-                <div className="absolute left-0 top-full mt-1.5 w-60 p-2 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-2xl z-50 space-y-1">
+                <div className="absolute left-0 top-full mt-1.5 w-60 p-2 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-[0_12px_40px_rgba(0,0,0,0.35)] z-[100] space-y-1">
                   <button
                     type="button"
                     onClick={() => {
@@ -310,22 +326,97 @@ export default function TarefasView() {
               )}
             </div>
 
-            {/* Select de Categoria */}
-            <div className="ax-select-wrap flex-1 sm:w-44">
-              <select
-                className="ax-select w-full appearance-none"
-                value={listCat}
-                onChange={(e) => setListCat(e.target.value)}
+            {/* Dropdown Customizado de Categoria */}
+            <div className="relative flex-1 sm:w-48 z-40" ref={catRef}>
+              <button
+                type="button"
+                className={`ax-select w-full flex items-center justify-between text-xs px-3 h-[42px] rounded-xl border bg-[var(--ax-surface)] text-[var(--ax-text-strong)] cursor-pointer text-left transition ${
+                  catDropdownOpen
+                    ? 'border-[var(--color-primary)] ring-2 ring-[var(--color-primary)]/25'
+                    : 'border-[var(--ax-border)]'
+                }`}
+                onClick={() => setCatDropdownOpen((prev) => !prev)}
               >
-                <option value="all">Todas as categorias</option>
-                {categories
-                  .filter((c) => String(c.id) !== '1' && !c.nome?.toLowerCase().includes('editorial'))
-                  .map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nome}
-                    </option>
-                  ))}
-              </select>
+                <div className="flex items-center gap-1.5 truncate">
+                  {selectedCategoryObj ? (
+                    <>
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ background: selectedCategoryObj.cor || 'var(--color-primary)' }}
+                      />
+                      <span className="truncate font-medium">{selectedCategoryObj.nome}</span>
+                    </>
+                  ) : (
+                    <span className="truncate font-medium">Todas as categorias</span>
+                  )}
+                </div>
+
+                <ChevronDown
+                  size={14}
+                  className={`text-[var(--ax-text-subtle)] transition-transform duration-200 shrink-0 ml-1 ${
+                    catDropdownOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {catDropdownOpen && (
+                <div className="absolute right-0 sm:left-0 top-full mt-1.5 w-60 p-2 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-[0_12px_40px_rgba(0,0,0,0.35)] z-[100] space-y-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setListCat('all');
+                      setCatDropdownOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition ${
+                      listCat === 'all'
+                        ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)] font-bold'
+                        : 'text-[var(--color-heading)] hover:bg-[var(--color-subtle)]'
+                    }`}
+                  >
+                    <span>Todas as categorias</span>
+                    {listCat === 'all' && <Check size={14} />}
+                  </button>
+
+                  <div className="h-px bg-[var(--color-border)] my-1" />
+
+                  <div className="space-y-0.5 max-h-60 overflow-y-auto">
+                    {availableCategories.map((c) => {
+                      const isSelected = String(listCat) === String(c.id);
+                      const count = activities.filter(
+                        (a) => !isEditorialActivity(a) && String(a.categoria) === String(c.id)
+                      ).length;
+
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => {
+                            setListCat(c.id);
+                            setCatDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs transition cursor-pointer select-none ${
+                            isSelected
+                              ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)] font-bold'
+                              : 'text-[var(--color-heading)] hover:bg-[var(--color-subtle)]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span
+                              className="w-2.5 h-2.5 rounded-full shrink-0"
+                              style={{ background: c.cor || 'var(--color-primary)' }}
+                            />
+                            <span className="truncate">{c.nome}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="text-[10px] font-mono text-[var(--color-muted)]">{count}</span>
+                            {isSelected && <Check size={14} />}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

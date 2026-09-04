@@ -44,6 +44,7 @@ export default function TaskModal() {
   const [linkUrl, setLinkUrl] = useState('');
   const [linkLabel, setLinkLabel] = useState('');
   const [copied, setCopied] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (!taskModalOpen) return;
@@ -92,6 +93,7 @@ export default function TaskModal() {
     setLinkUrl('');
     setLinkLabel('');
     setCopied(false);
+    setIsSaving(false);
   }, [taskModalOpen, editTaskId, taskModalInitialData, categories, getTask]);
 
   if (!taskModalOpen) return null;
@@ -216,11 +218,14 @@ export default function TaskModal() {
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    if (isSaving) return;
     if (!titulo.trim()) {
       showToast('Informe um título para a tarefa.', 'error');
       return;
     }
+
+    setIsSaving(true);
 
     const cleanProjeto = isProjeto && projeto ? projeto.trim() : '';
 
@@ -787,10 +792,18 @@ export default function TaskModal() {
             </button>
             <button
               type="button"
-              className="hr-btn hr-btn--primary text-xs h-9 px-5 font-bold shadow-md"
+              className="hr-btn hr-btn--primary text-xs h-9 px-5 font-bold shadow-md flex items-center gap-2"
               onClick={handleSubmit}
+              disabled={isSaving}
             >
-              Salvar Alterações
+              {isSaving ? (
+                <>
+                  <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
+                  <span>Salvando...</span>
+                </>
+              ) : (
+                'Salvar Alterações'
+              )}
             </button>
           </div>
         </div>
