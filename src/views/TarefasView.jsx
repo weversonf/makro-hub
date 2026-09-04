@@ -1217,8 +1217,8 @@ export default function TarefasView() {
                   <thead className="relative z-20">
                     <tr>
                       {/* Tarefa */}
-                      <th className="text-center relative select-none">
-                        <div className="flex items-center justify-center gap-1.5">
+                      <th className="text-left relative select-none">
+                        <div className="flex items-center justify-start gap-1.5">
                           <div
                             className="flex items-center gap-1 cursor-pointer hover:text-[var(--color-primary)] transition"
                             onClick={() => handleSort('titulo')}
@@ -1478,9 +1478,9 @@ export default function TarefasView() {
 
                         return (
                           <tr key={a.id} className="row-click" onClick={() => openEditTask(a.id)}>
-                            <td className="text-center">
-                              <div className="flex flex-col items-center justify-center gap-1">
-                                <div className="flex items-center justify-center gap-1.5 flex-wrap text-center">
+                            <td className="text-left">
+                              <div className="flex flex-col items-start justify-center gap-1 text-left">
+                                <div className="flex items-center gap-1.5 flex-wrap text-left">
                                   <span className="font-semibold text-xs text-[var(--ax-text-strong)]">{a.titulo}</span>
                                   {a.projeto && (
                                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--color-primary-soft)] text-[var(--color-primary)] border border-[var(--color-primary)]/20">
@@ -1489,7 +1489,7 @@ export default function TarefasView() {
                                   )}
                                 </div>
                                 {a.descricao && (
-                                  <div className="text-[11px] text-[var(--ax-text-subtle)] max-w-xs truncate text-center">
+                                  <div className="text-[11px] text-[var(--ax-text-subtle)] max-w-xs truncate text-left">
                                     {a.descricao}
                                   </div>
                                 )}
