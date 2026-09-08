@@ -102,7 +102,6 @@ export default function TarefasView() {
     stage: [],
     prioridade: [],
     progress: [],
-    checklist: [],
     deadline: [],
     responsavel: [],
     titulo: ''
@@ -133,7 +132,6 @@ export default function TarefasView() {
       stage: [],
       prioridade: [],
       progress: [],
-      checklist: [],
       deadline: [],
       responsavel: [],
       titulo: ''
@@ -146,7 +144,6 @@ export default function TarefasView() {
     if (colFilters.stage.length > 0) count++;
     if (colFilters.prioridade.length > 0) count++;
     if (colFilters.progress.length > 0) count++;
-    if (colFilters.checklist?.length > 0) count++;
     if (colFilters.deadline.length > 0) count++;
     if (colFilters.responsavel?.length > 0) count++;
     if (colFilters.titulo.trim().length > 0) count++;
@@ -262,19 +259,6 @@ export default function TarefasView() {
         if (!match) return false;
       }
 
-      // Filtro de Checklist
-      if (colFilters.checklist && colFilters.checklist.length > 0) {
-        const tot = (a.idCheck || []).length;
-        const done = tot ? a.idCheck.filter((c) => c.done).length : 0;
-        const match = colFilters.checklist.some((type) => {
-          if (type === 'completed') return tot > 0 && done === tot;
-          if (type === 'pending') return tot > 0 && done < tot;
-          if (type === 'none') return tot === 0;
-          return false;
-        });
-        if (!match) return false;
-      }
-
       // Filtro de Deadline
       if (colFilters.deadline.length > 0) {
         const overdue = isOverdue(a);
@@ -334,19 +318,6 @@ export default function TarefasView() {
           const pA = Number(a.progress) || 0;
           const pB = Number(b.progress) || 0;
           comp = pA - pB;
-          break;
-        }
-
-        case 'checklist': {
-          const totA = (a.idCheck || []).length;
-          const doneA = totA ? a.idCheck.filter((c) => c.done).length : 0;
-          const ratioA = totA > 0 ? doneA / totA : 0;
-
-          const totB = (b.idCheck || []).length;
-          const doneB = totB ? b.idCheck.filter((c) => c.done).length : 0;
-          const ratioB = totB > 0 ? doneB / totB : 0;
-
-          comp = ratioA !== ratioB ? ratioA - ratioB : doneA - doneB;
           break;
         }
 
@@ -531,47 +502,6 @@ export default function TarefasView() {
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => toggleColFilterValue('progress', item.id)}
-                    className="rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)] cursor-pointer"
-                  />
-                  <span className="flex-1 text-[var(--ax-text-strong)]">{item.label}</span>
-                  <span className="text-[10px] font-mono text-[var(--ax-text-muted)]">({count})</span>
-                </label>
-              );
-            })}
-          </div>
-        );
-
-      case 'checklist':
-        return (
-          <div className="flex flex-col gap-1">
-            {[
-              {
-                id: 'completed',
-                label: 'Todos concluídos',
-                test: (t) => (t.idCheck || []).length > 0 && (t.idCheck || []).every((c) => c.done)
-              },
-              {
-                id: 'pending',
-                label: 'Com itens pendentes',
-                test: (t) => (t.idCheck || []).length > 0 && (t.idCheck || []).some((c) => !c.done)
-              },
-              {
-                id: 'none',
-                label: 'Sem checklist',
-                test: (t) => !(t.idCheck || []).length
-              }
-            ].map((item) => {
-              const isChecked = (colFilters.checklist || []).includes(item.id);
-              const count = tasks.filter(item.test).length;
-              return (
-                <label
-                  key={item.id}
-                  className="flex items-center gap-2 p-1.5 rounded-lg text-xs hover:bg-[var(--ax-surface-subtle)] cursor-pointer select-none"
-                >
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => toggleColFilterValue('checklist', item.id)}
                     className="rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)] cursor-pointer"
                   />
                   <span className="flex-1 text-[var(--ax-text-strong)]">{item.label}</span>
@@ -1144,6 +1074,22 @@ export default function TarefasView() {
                         </span>
                       )}
 
+                      {/* Pill de Progresso */}
+                      {colFilters.progress.length > 0 && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--ax-text-strong)] text-[11px] font-medium shadow-xs">
+                          <span className="text-[var(--ax-text-muted)]">Progresso:</span>
+                          <span>{colFilters.progress.map((p) => p === '100' ? '100%' : p === '50-99' ? '50-99%' : p === '1-49' ? '1-49%' : '0%').join(', ')}</span>
+                          <button
+                            type="button"
+                            onClick={() => clearColFilter('progress')}
+                            className="text-[var(--ax-text-muted)] hover:text-[var(--ax-danger-500)] ml-0.5 cursor-pointer"
+                            title="Remover filtro de progresso"
+                          >
+                            <X size={12} />
+                          </button>
+                        </span>
+                      )}
+
                       {/* Pill de Categoria */}
                       {colFilters.categoria.length > 0 && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--ax-text-strong)] text-[11px] font-medium shadow-xs">
@@ -1176,32 +1122,16 @@ export default function TarefasView() {
                         </span>
                       )}
 
-                      {/* Pill de Progresso */}
-                      {colFilters.progress.length > 0 && (
+                      {/* Pill de Prioridade */}
+                      {colFilters.prioridade.length > 0 && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--ax-text-strong)] text-[11px] font-medium shadow-xs">
-                          <span className="text-[var(--ax-text-muted)]">Progresso:</span>
-                          <span>{colFilters.progress.map((p) => p === '100' ? '100%' : p === '50-99' ? '50-99%' : p === '1-49' ? '1-49%' : '0%').join(', ')}</span>
+                          <span className="text-[var(--ax-text-muted)]">Prioridade:</span>
+                          <span>{colFilters.prioridade.map((p) => PRIOS[p]?.label || p).join(', ')}</span>
                           <button
                             type="button"
-                            onClick={() => clearColFilter('progress')}
+                            onClick={() => clearColFilter('prioridade')}
                             className="text-[var(--ax-text-muted)] hover:text-[var(--ax-danger-500)] ml-0.5 cursor-pointer"
-                            title="Remover filtro de progresso"
-                          >
-                            <X size={12} />
-                          </button>
-                        </span>
-                      )}
-
-                      {/* Pill de Checklist */}
-                      {colFilters.checklist?.length > 0 && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--ax-text-strong)] text-[11px] font-medium shadow-xs">
-                          <span className="text-[var(--ax-text-muted)]">Checklist:</span>
-                          <span>{colFilters.checklist.map((c) => c === 'completed' ? 'Concluídos' : c === 'pending' ? 'Pendentes' : 'Sem checklist').join(', ')}</span>
-                          <button
-                            type="button"
-                            onClick={() => clearColFilter('checklist')}
-                            className="text-[var(--ax-text-muted)] hover:text-[var(--ax-danger-500)] ml-0.5 cursor-pointer"
-                            title="Remover filtro de checklist"
+                            title="Remover filtro de prioridade"
                           >
                             <X size={12} />
                           </button>
@@ -1218,22 +1148,6 @@ export default function TarefasView() {
                             onClick={() => clearColFilter('deadline')}
                             className="text-[var(--ax-text-muted)] hover:text-[var(--ax-danger-500)] ml-0.5 cursor-pointer"
                             title="Remover filtro de deadline"
-                          >
-                            <X size={12} />
-                          </button>
-                        </span>
-                      )}
-
-                      {/* Pill de Prioridade */}
-                      {colFilters.prioridade.length > 0 && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--ax-text-strong)] text-[11px] font-medium shadow-xs">
-                          <span className="text-[var(--ax-text-muted)]">Prioridade:</span>
-                          <span>{colFilters.prioridade.map((p) => PRIOS[p]?.label || p).join(', ')}</span>
-                          <button
-                            type="button"
-                            onClick={() => clearColFilter('prioridade')}
-                            className="text-[var(--ax-text-muted)] hover:text-[var(--ax-danger-500)] ml-0.5 cursor-pointer"
-                            title="Remover filtro de prioridade"
                           >
                             <X size={12} />
                           </button>
@@ -1309,6 +1223,38 @@ export default function TarefasView() {
                         {renderExcelFilterMenu('titulo')}
                       </th>
 
+                      {/* Progresso */}
+                      <th className="text-center relative select-none">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <div
+                            className="flex items-center gap-1 cursor-pointer hover:text-[var(--color-primary)] transition"
+                            onClick={() => handleSort('progress')}
+                            title="Ordenar por Progresso (Maior para menor / Menor para maior)"
+                          >
+                            <span className={sortField === 'progress' ? 'text-[var(--color-primary)] font-bold' : ''}>
+                              Progresso
+                            </span>
+                            {renderSortIndicator('progress')}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveFilterMenu(activeFilterMenu === 'progress' ? null : 'progress');
+                            }}
+                            className={`p-1 rounded-md transition cursor-pointer ${
+                              isColFiltered('progress')
+                                ? 'bg-[var(--color-primary)] text-white shadow-xs'
+                                : 'text-[var(--ax-text-subtle)] hover:bg-[var(--ax-surface-subtle)] hover:text-[var(--ax-text-strong)]'
+                            }`}
+                            title="Filtrar por Progresso"
+                          >
+                            <Filter size={11} className={isColFiltered('progress') ? 'fill-white' : ''} />
+                          </button>
+                        </div>
+                        {renderExcelFilterMenu('progress')}
+                      </th>
+
                       {/* Categoria */}
                       <th className="text-center relative select-none">
                         <div className="flex items-center justify-center gap-1.5">
@@ -1373,68 +1319,36 @@ export default function TarefasView() {
                         {renderExcelFilterMenu('stage')}
                       </th>
 
-                      {/* Progresso */}
+                      {/* Prioridade */}
                       <th className="text-center relative select-none">
                         <div className="flex items-center justify-center gap-1.5">
                           <div
                             className="flex items-center gap-1 cursor-pointer hover:text-[var(--color-primary)] transition"
-                            onClick={() => handleSort('progress')}
-                            title="Ordenar por Progresso (Maior para menor / Menor para maior)"
+                            onClick={() => handleSort('prioridade')}
+                            title="Ordenar por Prioridade (Maior para menor / Menor para maior)"
                           >
-                            <span className={sortField === 'progress' ? 'text-[var(--color-primary)] font-bold' : ''}>
-                              Progresso
+                            <span className={sortField === 'prioridade' ? 'text-[var(--color-primary)] font-bold' : ''}>
+                              Prioridade
                             </span>
-                            {renderSortIndicator('progress')}
+                            {renderSortIndicator('prioridade')}
                           </div>
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setActiveFilterMenu(activeFilterMenu === 'progress' ? null : 'progress');
+                              setActiveFilterMenu(activeFilterMenu === 'prioridade' ? null : 'prioridade');
                             }}
                             className={`p-1 rounded-md transition cursor-pointer ${
-                              isColFiltered('progress')
+                              isColFiltered('prioridade')
                                 ? 'bg-[var(--color-primary)] text-white shadow-xs'
                                 : 'text-[var(--ax-text-subtle)] hover:bg-[var(--ax-surface-subtle)] hover:text-[var(--ax-text-strong)]'
                             }`}
-                            title="Filtrar por Progresso"
+                            title="Filtrar por Prioridade"
                           >
-                            <Filter size={11} className={isColFiltered('progress') ? 'fill-white' : ''} />
+                            <Filter size={11} className={isColFiltered('prioridade') ? 'fill-white' : ''} />
                           </button>
                         </div>
-                        {renderExcelFilterMenu('progress')}
-                      </th>
-
-                      {/* Checklist */}
-                      <th className="text-center relative select-none">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <div
-                            className="flex items-center gap-1 cursor-pointer hover:text-[var(--color-primary)] transition"
-                            onClick={() => handleSort('checklist')}
-                            title="Ordenar por Checklist concluído"
-                          >
-                            <span className={sortField === 'checklist' ? 'text-[var(--color-primary)] font-bold' : ''}>
-                              Checklist
-                            </span>
-                            {renderSortIndicator('checklist')}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveFilterMenu(activeFilterMenu === 'checklist' ? null : 'checklist');
-                            }}
-                            className={`p-1 rounded-md transition cursor-pointer ${
-                              isColFiltered('checklist')
-                                ? 'bg-[var(--color-primary)] text-white shadow-xs'
-                                : 'text-[var(--ax-text-subtle)] hover:bg-[var(--ax-surface-subtle)] hover:text-[var(--ax-text-strong)]'
-                            }`}
-                            title="Filtrar por Checklist"
-                          >
-                            <Filter size={11} className={isColFiltered('checklist') ? 'fill-white' : ''} />
-                          </button>
-                        </div>
-                        {renderExcelFilterMenu('checklist')}
+                        {renderExcelFilterMenu('prioridade')}
                       </th>
 
                       {/* Deadline */}
@@ -1467,38 +1381,6 @@ export default function TarefasView() {
                           </button>
                         </div>
                         {renderExcelFilterMenu('dataVencimento')}
-                      </th>
-
-                      {/* Prioridade */}
-                      <th className="text-center relative select-none">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <div
-                            className="flex items-center gap-1 cursor-pointer hover:text-[var(--color-primary)] transition"
-                            onClick={() => handleSort('prioridade')}
-                            title="Ordenar por Prioridade (Maior para menor / Menor para maior)"
-                          >
-                            <span className={sortField === 'prioridade' ? 'text-[var(--color-primary)] font-bold' : ''}>
-                              Prioridade
-                            </span>
-                            {renderSortIndicator('prioridade')}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveFilterMenu(activeFilterMenu === 'prioridade' ? null : 'prioridade');
-                            }}
-                            className={`p-1 rounded-md transition cursor-pointer ${
-                              isColFiltered('prioridade')
-                                ? 'bg-[var(--color-primary)] text-white shadow-xs'
-                                : 'text-[var(--ax-text-subtle)] hover:bg-[var(--ax-surface-subtle)] hover:text-[var(--ax-text-strong)]'
-                            }`}
-                            title="Filtrar por Prioridade"
-                          >
-                            <Filter size={11} className={isColFiltered('prioridade') ? 'fill-white' : ''} />
-                          </button>
-                        </div>
-                        {renderExcelFilterMenu('prioridade')}
                       </th>
 
                       {/* Responsável */}
@@ -1540,7 +1422,7 @@ export default function TarefasView() {
                   <tbody>
                     {displayedTableTasks.length === 0 ? (
                       <tr>
-                        <td colSpan={9} className="py-12 text-center text-xs text-[var(--ax-text-subtle)]">
+                        <td colSpan={8} className="py-12 text-center text-xs text-[var(--ax-text-subtle)]">
                           <div className="flex flex-col items-center justify-center gap-2">
                             <Filter size={24} className="text-[var(--ax-text-muted)] opacity-50" />
                             <span className="font-semibold text-[var(--ax-text-strong)]">
@@ -1564,8 +1446,6 @@ export default function TarefasView() {
                         const cat = catOf(a.categoria);
                         const st = stageOf(a.stage);
                         const prio = PRIOS[a.prioridade] || PRIOS.baixa;
-                        const totCheck = (a.idCheck || []).length;
-                        const doCheck = totCheck ? a.idCheck.filter((c) => c.done).length : 0;
                         const overdue = isOverdue(a);
                         const dueSoon = isDueSoon(a);
 
@@ -1588,21 +1468,7 @@ export default function TarefasView() {
                                 )}
                               </div>
                             </td>
-                            <td className="text-center">
-                              <span
-                                className="ax-badge ax-badge--soft ax-badge--pill inline-flex items-center justify-center mx-auto"
-                                style={{ '--_b500': cat ? cat.cor : 'var(--ax-text-muted)' }}
-                              >
-                                <span className="ax-badge__dot" />
-                                {cat ? cat.nome : 'Sem categoria'}
-                              </span>
-                            </td>
-                            <td className="text-center">
-                              <span className={`ax-badge ax-badge--soft ax-badge--${st.tone} ax-badge--pill inline-flex items-center justify-center mx-auto`}>
-                                <span className="ax-badge__dot" />
-                                {st.label}
-                              </span>
-                            </td>
+                            {/* Progresso */}
                             <td className="text-center">
                               <div className="flex items-center justify-center gap-2 max-w-[130px] mx-auto">
                                 <div className="ax-progress ax-progress--sm flex-1">
@@ -1613,9 +1479,33 @@ export default function TarefasView() {
                                 <span className="ax-num text-xs text-[var(--ax-text-muted)] w-8 text-right">{a.progress}%</span>
                               </div>
                             </td>
-                            <td className="ax-num text-xs text-[var(--ax-text-muted)] text-center">
-                              {doCheck}/{totCheck}
+                            {/* Categoria */}
+                            <td className="text-center">
+                              <span
+                                className="ax-badge ax-badge--soft ax-badge--pill inline-flex items-center justify-center mx-auto"
+                                style={{ '--_b500': cat ? cat.cor : 'var(--ax-text-muted)' }}
+                              >
+                                <span className="ax-badge__dot" />
+                                {cat ? cat.nome : 'Sem categoria'}
+                              </span>
                             </td>
+                            {/* Estágio */}
+                            <td className="text-center">
+                              <span className={`ax-badge ax-badge--soft ax-badge--${st.tone} ax-badge--pill inline-flex items-center justify-center mx-auto`}>
+                                <span className="ax-badge__dot" />
+                                {st.label}
+                              </span>
+                            </td>
+                            {/* Prioridade */}
+                            <td className="text-center">
+                              <span
+                                className="ax-badge ax-badge--soft ax-badge--pill inline-flex items-center justify-center mx-auto"
+                                style={{ '--_b500': prio.color }}
+                              >
+                                {prio.label}
+                              </span>
+                            </td>
+                            {/* Deadline */}
                             <td
                               className="ax-num text-xs font-semibold text-center"
                               style={{
@@ -1635,14 +1525,6 @@ export default function TarefasView() {
                                   </span>
                                 )}
                               </div>
-                            </td>
-                            <td className="text-center">
-                              <span
-                                className="ax-badge ax-badge--soft ax-badge--pill inline-flex items-center justify-center mx-auto"
-                                style={{ '--_b500': prio.color }}
-                              >
-                                {prio.label}
-                              </span>
                             </td>
                             {/* Responsável */}
                             <td className="text-center">
