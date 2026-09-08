@@ -104,6 +104,7 @@ export default function TarefasView() {
     progress: [],
     checklist: [],
     deadline: [],
+    responsavel: [],
     titulo: ''
   });
   const [activeFilterMenu, setActiveFilterMenu] = useState(null);
@@ -134,6 +135,7 @@ export default function TarefasView() {
       progress: [],
       checklist: [],
       deadline: [],
+      responsavel: [],
       titulo: ''
     });
   };
@@ -146,6 +148,7 @@ export default function TarefasView() {
     if (colFilters.progress.length > 0) count++;
     if (colFilters.checklist?.length > 0) count++;
     if (colFilters.deadline.length > 0) count++;
+    if (colFilters.responsavel?.length > 0) count++;
     if (colFilters.titulo.trim().length > 0) count++;
     return count;
   }, [colFilters]);
@@ -292,6 +295,12 @@ export default function TarefasView() {
         if (!colFilters.prioridade.includes(a.prioridade)) return false;
       }
 
+      // Filtro de Responsável
+      if (colFilters.responsavel && colFilters.responsavel.length > 0) {
+        const resp = a.responsavel || 'Weverson Nascimento';
+        if (!colFilters.responsavel.includes(resp)) return false;
+      }
+
       return true;
     });
   }, [tasks, colFilters, isOverdue, isDueSoon]);
@@ -353,6 +362,13 @@ export default function TarefasView() {
           const prA = prioOrder[a.prioridade] || 0;
           const prB = prioOrder[b.prioridade] || 0;
           comp = prA - prB;
+          break;
+        }
+
+        case 'responsavel': {
+          const rA = a.responsavel || 'Weverson Nascimento';
+          const rB = b.responsavel || 'Weverson Nascimento';
+          comp = rA.localeCompare(rB, 'pt-BR', { sensitivity: 'base' });
           break;
         }
 
@@ -651,6 +667,33 @@ export default function TarefasView() {
             })}
           </div>
         );
+
+      case 'responsavel': {
+        const uniqueResps = Array.from(new Set(tasks.map((t) => t.responsavel || 'Weverson Nascimento')));
+        return (
+          <div className="flex flex-col gap-1">
+            {uniqueResps.map((resp) => {
+              const isChecked = (colFilters.responsavel || []).includes(resp);
+              const count = tasks.filter((t) => (t.responsavel || 'Weverson Nascimento') === resp).length;
+              return (
+                <label
+                  key={resp}
+                  className="flex items-center gap-2 p-1.5 rounded-lg text-xs hover:bg-[var(--ax-surface-subtle)] cursor-pointer select-none"
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => toggleColFilterValue('responsavel', resp)}
+                    className="rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)] cursor-pointer"
+                  />
+                  <span className="flex-1 text-[var(--ax-text-strong)] truncate">{resp}</span>
+                  <span className="text-[10px] font-mono text-[var(--ax-text-muted)]">({count})</span>
+                </label>
+              );
+            })}
+          </div>
+        );
+      }
 
       default:
         return null;
@@ -1196,6 +1239,22 @@ export default function TarefasView() {
                           </button>
                         </span>
                       )}
+
+                      {/* Pill de Responsável */}
+                      {colFilters.responsavel?.length > 0 && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--ax-text-strong)] text-[11px] font-medium shadow-xs">
+                          <span className="text-[var(--ax-text-muted)]">Responsável:</span>
+                          <span>{colFilters.responsavel.join(', ')}</span>
+                          <button
+                            type="button"
+                            onClick={() => clearColFilter('responsavel')}
+                            className="text-[var(--ax-text-muted)] hover:text-[var(--ax-danger-500)] ml-0.5 cursor-pointer"
+                            title="Remover filtro de responsável"
+                          >
+                            <X size={12} />
+                          </button>
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
@@ -1442,6 +1501,38 @@ export default function TarefasView() {
                         {renderExcelFilterMenu('prioridade')}
                       </th>
 
+                      {/* Responsável */}
+                      <th className="text-center relative select-none">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <div
+                            className="flex items-center gap-1 cursor-pointer hover:text-[var(--color-primary)] transition"
+                            onClick={() => handleSort('responsavel')}
+                            title="Ordenar por Responsável (A-Z / Z-A)"
+                          >
+                            <span className={sortField === 'responsavel' ? 'text-[var(--color-primary)] font-bold' : ''}>
+                              Responsável
+                            </span>
+                            {renderSortIndicator('responsavel')}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveFilterMenu(activeFilterMenu === 'responsavel' ? null : 'responsavel');
+                            }}
+                            className={`p-1 rounded-md transition cursor-pointer ${
+                              isColFiltered('responsavel')
+                                ? 'bg-[var(--color-primary)] text-white shadow-xs'
+                                : 'text-[var(--ax-text-subtle)] hover:bg-[var(--ax-surface-subtle)] hover:text-[var(--ax-text-strong)]'
+                            }`}
+                            title="Filtrar por Responsável"
+                          >
+                            <Filter size={11} className={isColFiltered('responsavel') ? 'fill-white' : ''} />
+                          </button>
+                        </div>
+                        {renderExcelFilterMenu('responsavel')}
+                      </th>
+
                       {/* Ações */}
                       <th className="text-center" style={{ width: '80px' }} />
                     </tr>
@@ -1449,7 +1540,7 @@ export default function TarefasView() {
                   <tbody>
                     {displayedTableTasks.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="py-12 text-center text-xs text-[var(--ax-text-subtle)]">
+                        <td colSpan={9} className="py-12 text-center text-xs text-[var(--ax-text-subtle)]">
                           <div className="flex flex-col items-center justify-center gap-2">
                             <Filter size={24} className="text-[var(--ax-text-muted)] opacity-50" />
                             <span className="font-semibold text-[var(--ax-text-strong)]">
@@ -1552,6 +1643,25 @@ export default function TarefasView() {
                               >
                                 {prio.label}
                               </span>
+                            </td>
+                            {/* Responsável */}
+                            <td className="text-center">
+                              <div className="flex items-center justify-center gap-1.5" title={a.responsavel || 'Weverson Nascimento'}>
+                                {a.responsavelFoto ? (
+                                  <img
+                                    src={a.responsavelFoto}
+                                    alt={a.responsavel || 'Weverson'}
+                                    className="w-6 h-6 rounded-full object-cover border border-[var(--color-border)]"
+                                  />
+                                ) : (
+                                  <span className="w-6 h-6 rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)] text-[10px] font-bold flex items-center justify-center border border-[var(--color-border)]">
+                                    {(a.responsavel || 'WN').slice(0, 2).toUpperCase()}
+                                  </span>
+                                )}
+                                <span className="text-xs font-medium text-[var(--ax-text-strong)] truncate max-w-[85px] hidden xl:inline">
+                                  {a.responsavel ? a.responsavel.split(' ')[0] : 'Weverson'}
+                                </span>
+                              </div>
                             </td>
                             <td className="text-center">
                               <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
@@ -1734,6 +1844,24 @@ export default function TarefasView() {
                           </div>
 
                           <div className="flex items-center gap-1.5">
+                            {/* Responsável no Kanban */}
+                            <div className="flex items-center gap-1" title={`Responsável: ${a.responsavel || 'Weverson Nascimento'}`}>
+                              {a.responsavelFoto ? (
+                                <img
+                                  src={a.responsavelFoto}
+                                  alt={a.responsavel || 'Weverson'}
+                                  className="w-4.5 h-4.5 rounded-full object-cover border border-[var(--color-border)]"
+                                  style={{ width: '18px', height: '18px' }}
+                                />
+                              ) : (
+                                <span
+                                  className="rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)] text-[9px] font-bold flex items-center justify-center border border-[var(--color-border)]"
+                                  style={{ width: '18px', height: '18px' }}
+                                >
+                                  {(a.responsavel || 'WN').slice(0, 2).toUpperCase()}
+                                </span>
+                              )}
+                            </div>
                             {isHot && <span className="ax-pulse-dot" style={{ background: prio.color }} />}
                             <span
                               className="ax-avatar ax-avatar--xs ax-avatar--squircle text-[10px] font-bold"

@@ -367,23 +367,31 @@ export default function DashboardView() {
             <div className="grid grid-cols-[160px_1fr] gap-3 pt-4">
               {/* Roster de Colaboradores */}
               <div className="flex flex-col gap-3 py-1">
-                {employees.map((emp) => (
-                  <div key={emp.id || emp.nome} className="flex items-center gap-2.5 h-12">
-                    <img
-                      src={emp.foto}
-                      alt={emp.nome}
-                      className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-[var(--color-border)]"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <span className="text-xs font-medium text-[var(--color-heading)] truncate block">
-                        {emp.nome}
-                      </span>
-                      <span className="text-[10px] text-[var(--color-muted)] truncate block">
-                        {emp.cargo}
-                      </span>
+                {employees.map((emp) => {
+                  const empTasksCount = dashActs.filter((a) => {
+                    if (a.responsavelId) return a.responsavelId === emp.id;
+                    if (a.responsavel) return a.responsavel.toLowerCase().includes(emp.nome.toLowerCase());
+                    return a.stage !== 'concluido';
+                  }).length;
+
+                  return (
+                    <div key={emp.id || emp.nome} className="flex items-center gap-2.5 h-12">
+                      <img
+                        src={emp.foto}
+                        alt={emp.nome}
+                        className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-[var(--color-border)]"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <span className="text-xs font-medium text-[var(--color-heading)] truncate block">
+                          {emp.nome}
+                        </span>
+                        <span className="text-[10px] text-[var(--color-primary)] font-semibold truncate block">
+                          {empTasksCount} {empTasksCount === 1 ? 'tarefa ativa' : 'tarefas ativas'}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Timeline Track com as Barras */}
@@ -402,41 +410,45 @@ export default function DashboardView() {
                 {/* Linha pontilhada azul do dia 'Hoje' (Dom 13) */}
                 <div className="absolute top-0 bottom-0 left-[50%] border-l border-dashed border-[var(--color-primary)] pointer-events-none opacity-60 z-10" />
 
-                {employees.map((emp, idx) => {
+                {employees.map((emp) => {
                   const empTasks = dashActs.filter((a) => {
                     if (a.responsavelId) return a.responsavelId === emp.id;
                     if (a.responsavel) return a.responsavel.toLowerCase().includes(emp.nome.toLowerCase());
-                    return idx === 0 && a.stage !== 'concluido';
+                    return a.stage !== 'concluido';
                   });
 
-                  const taskToShow = empTasks[0];
-
                   return (
-                    <div key={emp.id || emp.nome} className="h-12 flex items-center relative z-10">
-                      {taskToShow ? (
-                        <div
-                          onClick={() => openEditTask(taskToShow.id)}
-                          className="w-full max-w-[90%] h-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 flex items-center gap-2.5 shadow-sm hover:border-[var(--color-primary)] hover:shadow-md transition cursor-pointer group"
-                          style={{ marginLeft: `${Math.min(idx * 15, 25)}%` }}
-                        >
-                          <span className="w-7 h-7 rounded-lg bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center flex-shrink-0">
-                            <i className="ph ph-check-square text-sm" />
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-semibold text-[var(--color-heading)] truncate leading-tight group-hover:text-[var(--color-primary)] transition-colors">
-                              {taskToShow.titulo}
-                            </p>
-                            <p className="text-[10px] text-[var(--color-muted)] truncate">
-                              {taskToShow.dataVencimento ? `Prazo: ${fmtDate(taskToShow.dataVencimento)}` : 'Sem prazo'} • {stageOf(taskToShow.stage)?.label || 'A Fazer'}
-                            </p>
+                    <div key={emp.id || emp.nome} className="flex flex-col gap-2 relative z-10">
+                      {empTasks.length > 0 ? (
+                        empTasks.slice(0, 3).map((taskToShow, tIdx) => (
+                          <div key={taskToShow.id} className="h-12 flex items-center relative">
+                            <div
+                              onClick={() => openEditTask(taskToShow.id)}
+                              className="w-full max-w-[90%] h-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 flex items-center gap-2.5 shadow-sm hover:border-[var(--color-primary)] hover:shadow-md transition cursor-pointer group"
+                              style={{ marginLeft: `${(tIdx * 16) % 32}%` }}
+                            >
+                              <span className="w-7 h-7 rounded-lg bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center flex-shrink-0">
+                                <i className="ph ph-check-square text-sm" />
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-semibold text-[var(--color-heading)] truncate leading-tight group-hover:text-[var(--color-primary)] transition-colors">
+                                  {taskToShow.titulo}
+                                </p>
+                                <p className="text-[10px] text-[var(--color-muted)] truncate">
+                                  {taskToShow.dataVencimento ? `Prazo: ${fmtDate(taskToShow.dataVencimento)}` : 'Sem prazo'} • {stageOf(taskToShow.stage)?.label || 'A Fazer'}
+                                </p>
+                              </div>
+                              <span className="text-[var(--color-muted)] group-hover:text-[var(--color-heading)] p-1">
+                                <i className="ph ph-pencil-simple text-sm" />
+                              </span>
+                            </div>
                           </div>
-                          <span className="text-[var(--color-muted)] group-hover:text-[var(--color-heading)] p-1">
-                            <i className="ph ph-pencil-simple text-sm" />
-                          </span>
-                        </div>
+                        ))
                       ) : (
-                        <div className="w-full h-10 rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-subtle)]/40 px-3 flex items-center justify-center text-[11px] text-[var(--color-muted)]">
-                          Nenhuma tarefa pendente agendada
+                        <div className="h-12 flex items-center relative">
+                          <div className="w-full h-10 rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-subtle)]/40 px-3 flex items-center justify-center text-[11px] text-[var(--color-muted)]">
+                            Nenhuma tarefa pendente agendada
+                          </div>
                         </div>
                       )}
                     </div>
@@ -475,6 +487,7 @@ export default function DashboardView() {
               <tr>
                 <th>Tarefa</th>
                 <th>Categoria</th>
+                <th>Responsável</th>
                 <th>Progresso</th>
                 <th>Vencimento</th>
                 <th>Status</th>
@@ -483,7 +496,7 @@ export default function DashboardView() {
             <tbody>
               {recActs.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-8 text-[var(--color-muted)]">
+                  <td colSpan={6} className="text-center py-8 text-[var(--color-muted)]">
                     Nenhuma tarefa registrada ainda.
                   </td>
                 </tr>
@@ -509,6 +522,24 @@ export default function DashboardView() {
                           />
                           {cat?.nome || 'Geral'}
                         </span>
+                      </td>
+                      <td>
+                        <div className="flex items-center gap-1.5">
+                          {a.responsavelFoto ? (
+                            <img
+                              src={a.responsavelFoto}
+                              alt={a.responsavel || 'Weverson'}
+                              className="w-5 h-5 rounded-full object-cover border border-[var(--color-border)]"
+                            />
+                          ) : (
+                            <span className="w-5 h-5 rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)] text-[9px] font-bold flex items-center justify-center border border-[var(--color-border)]">
+                              {(a.responsavel || 'WN').slice(0, 2).toUpperCase()}
+                            </span>
+                          )}
+                          <span className="text-xs text-[var(--color-heading)] font-medium truncate max-w-[120px]">
+                            {a.responsavel || 'Weverson Nascimento'}
+                          </span>
+                        </div>
                       </td>
                       <td>
                         <div className="flex items-center gap-2">

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useHub, STAGES, PRIOS, CANAIS, fmtDate, isEditorialActivity } from '../../context/HubContext';
 import { storage, auth } from '../../firebase';
-import { X, Trash2, ExternalLink, UploadCloud, Tag, Calendar, Send, Plus, Copy, Check, FolderKanban } from 'lucide-react';
+import { X, Trash2, ExternalLink, UploadCloud, Tag, Calendar, Send, Plus, Copy, Check, FolderKanban, User } from 'lucide-react';
 import HrivoDatePicker from '../common/HrivoDatePicker';
 
 export default function TaskModal() {
@@ -19,7 +19,10 @@ export default function TaskModal() {
     showToast,
     projects,
     createProject,
-    allProjectsList
+    allProjectsList,
+    registeredUsers,
+    user,
+    MASTER_ADMIN_EMAIL
   } = useHub();
 
   const [titulo, setTitulo] = useState('');
@@ -45,6 +48,10 @@ export default function TaskModal() {
   const [linkLabel, setLinkLabel] = useState('');
   const [copied, setCopied] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [responsavelId, setResponsavelId] = useState('');
+  const [responsavelNome, setResponsavelNome] = useState('');
+  const [responsavelEmail, setResponsavelEmail] = useState('');
+  const [responsavelFoto, setResponsavelFoto] = useState('');
 
   useEffect(() => {
     if (!taskModalOpen) return;
@@ -68,6 +75,10 @@ export default function TaskModal() {
         setIsProjeto(Boolean(task.isProjeto || task.projeto));
         setProjeto(task.projeto || '');
         setIsCreatingNewProject(false);
+        setResponsavelId(task.responsavelId || user?.uid || '');
+        setResponsavelNome(task.responsavel || user?.displayName || 'Weverson Nascimento');
+        setResponsavelEmail(task.responsavelEmail || user?.email || MASTER_ADMIN_EMAIL);
+        setResponsavelFoto(task.responsavelFoto || user?.photoURL || '');
       }
     } else {
       // Nova tarefa / publicação
@@ -88,13 +99,17 @@ export default function TaskModal() {
       setIsProjeto(Boolean(taskModalInitialData?.isProjeto || taskModalInitialData?.projeto));
       setProjeto(taskModalInitialData?.projeto || '');
       setIsCreatingNewProject(false);
+      setResponsavelId(user?.uid || '');
+      setResponsavelNome(user?.displayName || 'Weverson Nascimento');
+      setResponsavelEmail(user?.email || MASTER_ADMIN_EMAIL);
+      setResponsavelFoto(user?.photoURL || '');
     }
     setCheckInput('');
     setLinkUrl('');
     setLinkLabel('');
     setCopied(false);
     setIsSaving(false);
-  }, [taskModalOpen, editTaskId, taskModalInitialData, categories, getTask]);
+  }, [taskModalOpen, editTaskId, taskModalInitialData, categories, getTask, user, MASTER_ADMIN_EMAIL]);
 
   if (!taskModalOpen) return null;
 
@@ -235,6 +250,10 @@ export default function TaskModal() {
       categoria: Number(categoria) || categoria || null,
       isProjeto: Boolean(cleanProjeto),
       projeto: cleanProjeto || null,
+      responsavel: responsavelNome || user?.displayName || 'Weverson Nascimento',
+      responsavelEmail: responsavelEmail || user?.email || MASTER_ADMIN_EMAIL,
+      responsavelId: responsavelId || user?.uid || 'master',
+      responsavelFoto: responsavelFoto || user?.photoURL || '',
       stage,
       prioridade,
       dataVencimento: dataVencimento || null,
@@ -444,6 +463,44 @@ export default function TaskModal() {
                     {c.nome}
                   </option>
                 ))}
+              </select>
+            </div>
+
+            {/* Responsável */}
+            <div>
+              <label className="text-xs font-bold text-[var(--color-heading)] block mb-1 flex items-center gap-1.5">
+                <User size={13} className="text-[var(--color-primary)]" />
+                <span>Responsável</span>
+              </label>
+              <select
+                className="w-full h-9 px-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-subtle)] text-xs text-[var(--color-heading)] focus:border-[var(--color-primary)] outline-none cursor-pointer"
+                value={responsavelId || user?.uid || ''}
+                onChange={(e) => {
+                  const rid = e.target.value;
+                  setResponsavelId(rid);
+                  const found = (registeredUsers || []).find((u) => (u.id || u.uid) === rid);
+                  if (found) {
+                    setResponsavelNome(found.displayName || found.nome || found.email);
+                    setResponsavelEmail(found.email || '');
+                    setResponsavelFoto(found.photoURL || found.foto || '');
+                  } else {
+                    setResponsavelNome(user?.displayName || 'Weverson Nascimento');
+                    setResponsavelEmail(user?.email || MASTER_ADMIN_EMAIL);
+                    setResponsavelFoto(user?.photoURL || '');
+                  }
+                }}
+              >
+                {registeredUsers && registeredUsers.length > 0 ? (
+                  registeredUsers.map((u) => (
+                    <option key={u.id || u.uid} value={u.id || u.uid}>
+                      {u.displayName || u.nome || u.email} ({u.role === 'admin_master' ? 'ADM Master' : u.role || 'Colaborador'})
+                    </option>
+                  ))
+                ) : (
+                  <option value={user?.uid || 'master'}>
+                    {user?.displayName || 'Weverson Nascimento'} (ADM Master)
+                  </option>
+                )}
               </select>
             </div>
 

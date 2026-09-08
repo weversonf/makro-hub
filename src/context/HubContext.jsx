@@ -34,10 +34,10 @@ export const DEFAULT_CATS = [
 ];
 
 export const DEFAULT_PROJECTS = [
-  { id: 'proj-1', nome: 'Expomaq & Eventos 2026', status: 'em-andamento', cor: '#1279FF', tags: ['Feiras', 'Eventos'] },
-  { id: 'proj-2', nome: 'Endomarketing & SIPAT Makro', status: 'em-andamento', cor: '#10B981', tags: ['Endomarketing', 'SIPAT'] },
-  { id: 'proj-3', nome: 'Projeto Super Heavy Lift (Frota Pesada)', status: 'em-andamento', cor: '#F59E0B', tags: ['Guindastes', 'Frota'] },
-  { id: 'proj-4', nome: 'Redesign Portal & Mídia Kit 2026', status: 'planejamento', cor: '#8B5CF6', tags: ['Branding', 'Website'] }
+  { id: 'proj-1', nome: 'Expomaq & Eventos 2026', status: 'em-andamento', cor: '#1279FF', tags: ['Feiras', 'Eventos'], lider: 'Weverson Nascimento', responsavelEmail: 'weversonf@gmail.com' },
+  { id: 'proj-2', nome: 'Endomarketing & SIPAT Makro', status: 'em-andamento', cor: '#10B981', tags: ['Endomarketing', 'SIPAT'], lider: 'Weverson Nascimento', responsavelEmail: 'weversonf@gmail.com' },
+  { id: 'proj-3', nome: 'Projeto Super Heavy Lift (Frota Pesada)', status: 'em-andamento', cor: '#F59E0B', tags: ['Guindastes', 'Frota'], lider: 'Weverson Nascimento', responsavelEmail: 'weversonf@gmail.com' },
+  { id: 'proj-4', nome: 'Redesign Portal & Mídia Kit 2026', status: 'planejamento', cor: '#8B5CF6', tags: ['Branding', 'Website'], lider: 'Weverson Nascimento', responsavelEmail: 'weversonf@gmail.com' }
 ];
 
 export const MASTER_ADMIN_EMAIL = 'weversonf@gmail.com';
@@ -366,11 +366,63 @@ export function HubProvider({ children }) {
       return;
     }
 
-    const unsubActs = getUserCollection('activities').onSnapshot((snap) => {
+    const unsubActs = getUserCollection('activities').onSnapshot(async (snap) => {
       const list = [];
+      const userName = user?.displayName || 'Weverson Nascimento';
+      const userEmail = user?.email || MASTER_ADMIN_EMAIL;
+      const userUid = user?.uid || 'master';
+      const userFoto = user?.photoURL || '';
+
       snap.forEach((doc) => {
-        list.push({ ...doc.data(), _fbId: doc.id });
+        const d = doc.data();
+        list.push({
+          ...d,
+          _fbId: doc.id,
+          responsavel: d.responsavel || userName,
+          responsavelEmail: d.responsavelEmail || userEmail,
+          responsavelId: d.responsavelId || userUid,
+          responsavelFoto: d.responsavelFoto || userFoto
+        });
       });
+
+      // Se a subcoleção do usuário estiver vazia, migrar tarefas da raiz para o usuário
+      if (list.length === 0 && user && user.uid) {
+        try {
+          const rootSnap = await db.collection('activities').get();
+          if (!rootSnap.empty) {
+            const batch = db.batch();
+            rootSnap.forEach((rDoc) => {
+              const rData = rDoc.data();
+              const userActRef = getUserCollection('activities').doc(rDoc.id);
+              batch.set(userActRef, {
+                ...rData,
+                responsavel: rData.responsavel || userName,
+                responsavelEmail: rData.responsavelEmail || userEmail,
+                responsavelId: userUid,
+                responsavelFoto: userFoto
+              }, { merge: true });
+            });
+            await batch.commit();
+          }
+        } catch (mErr) {
+          console.warn('[Migration] Verificação da coleção raiz:', mErr);
+        }
+      }
+
+      // Persiste o responsável no Firestore para atividades que ainda não o possuem
+      if (user && user.uid && list.length > 0) {
+        list.forEach((act) => {
+          if (!act.responsavelEmail && act._fbId) {
+            getUserDoc('activities', act._fbId).set({
+              responsavel: userName,
+              responsavelEmail: userEmail,
+              responsavelId: userUid,
+              responsavelFoto: userFoto
+            }, { merge: true }).catch(() => {});
+          }
+        });
+      }
+
       setActivities(list);
     }, (err) => {
       console.warn('[Firestore] Error snapshot activities:', err);
@@ -430,6 +482,8 @@ export function HubProvider({ children }) {
       prazo: projectData.prazo || null,
       cor: projectData.cor || '#1279FF',
       tags: projectData.tags || ['Projeto'],
+      lider: projectData.lider || user?.displayName || 'Weverson Nascimento',
+      responsavelEmail: projectData.responsavelEmail || user?.email || MASTER_ADMIN_EMAIL,
       createdAt: new Date().toISOString()
     };
     const newProjWithFbId = { ...newProj, _fbId: docRef.id };
@@ -442,7 +496,7 @@ export function HubProvider({ children }) {
       setProjects((prev) => prev.filter((p) => p._fbId !== docRef.id));
     });
     return cleanNome;
-  }, [projects]);
+  }, [projects, user]);
 
   const allProjectsList = useMemo(() => {
     const set = new Set();
@@ -670,12 +724,20 @@ export function HubProvider({ children }) {
 
   const saveTask = (taskData) => {
     try {
+      const defaultResp = {
+        responsavel: taskData.responsavel || user?.displayName || 'Weverson Nascimento',
+        responsavelEmail: taskData.responsavelEmail || user?.email || MASTER_ADMIN_EMAIL,
+        responsavelId: taskData.responsavelId || user?.uid || 'master',
+        responsavelFoto: taskData.responsavelFoto || user?.photoURL || ''
+      };
+
       if (editTaskId) {
         const existing = getTask(editTaskId);
         if (existing) {
           const updatedTask = {
             ...existing,
             ...taskData,
+            ...defaultResp,
             concluidoEm: taskData.stage === 'concluido' ? (existing.concluidoEm || todayISO()) : null
           };
           // Atualização otimista imediata na UI
@@ -685,7 +747,7 @@ export function HubProvider({ children }) {
 
           if (existing._fbId) {
             getUserDoc('activities', existing._fbId)
-              .update(taskData)
+              .update({ ...taskData, ...defaultResp })
               .catch((err) => {
                 console.error('[Firestore] Erro ao atualizar tarefa:', err);
                 // Rollback
@@ -699,6 +761,7 @@ export function HubProvider({ children }) {
         const docRef = getUserCollection('activities').doc();
         const newTask = {
           ...taskData,
+          ...defaultResp,
           id: nextId,
           criadoEm: todayISO(),
           concluidoEm: taskData.stage === 'concluido' ? todayISO() : null

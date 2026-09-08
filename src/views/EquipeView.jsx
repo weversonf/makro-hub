@@ -4,6 +4,7 @@ import { X, UserPlus, Trash2, ShieldCheck, Mail, Phone, Crown, CheckCircle2 } fr
 
 export default function EquipeView() {
   const {
+    activities,
     registeredUsers,
     user,
     isMaster,
@@ -208,6 +209,16 @@ export default function EquipeView() {
           const memberEmail = m.email || '—';
           const memberRamal = m.ramal || '(85) 99924-1234';
 
+          const assignedCount = (activities || []).filter((a) => {
+            if (a.responsavelId && (m.id || m.uid)) {
+              return a.responsavelId === (m.id || m.uid);
+            }
+            if (a.responsavelEmail && m.email) {
+              return a.responsavelEmail.toLowerCase() === m.email.toLowerCase();
+            }
+            return isMasterUser;
+          }).length;
+
           return (
             <div
               key={m.id || m.uid || m.email}
@@ -258,6 +269,13 @@ export default function EquipeView() {
                       >
                         <span>{roleInfo.icon}</span>
                         <span>{roleInfo.label}</span>
+                      </span>
+
+                      <span
+                        className="inline-flex items-center text-[10px] font-semibold text-[var(--color-primary)] bg-[var(--color-primary-soft)] px-2 py-0.5 rounded border border-[var(--color-primary)]/20"
+                        title={`${assignedCount} demandas sob responsabilidade`}
+                      >
+                        {assignedCount} {assignedCount === 1 ? 'demanda' : 'demandas'}
                       </span>
                     </div>
 

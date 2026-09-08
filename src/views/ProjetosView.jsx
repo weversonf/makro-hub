@@ -3,7 +3,7 @@ import { useHub, fmtDate, DEFAULT_PROJECTS } from '../context/HubContext';
 import { Plus, FolderKanban, Calendar, ArrowRight, X } from 'lucide-react';
 
 export default function ProjetosView() {
-  const { activities, projects, createProject, setView, openNewTask } = useHub();
+  const { activities, projects, createProject, setView, openNewTask, user } = useHub();
 
   const [filter, setFilter] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
@@ -24,7 +24,9 @@ export default function ProjetosView() {
       prazo: novoPrazo || null,
       cor: novaCor,
       status: 'em-andamento',
-      tags: ['Projeto']
+      tags: ['Projeto'],
+      lider: user?.displayName || 'Weverson Nascimento',
+      responsavelEmail: user?.email || 'weversonf@gmail.com'
     });
     setNovoNome('');
     setNovaDescricao('');
@@ -103,7 +105,7 @@ export default function ProjetosView() {
                       style={{ background: proj.cor || '#1279FF' }}
                     />
                     <span className="text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]">
-                      {proj.lider || 'Equipe Makro'}
+                      {proj.lider || user?.displayName || 'Weverson Nascimento'}
                     </span>
                   </div>
                   <span className={`hr-pill ${proj.status === 'em-andamento' ? 'hr-pill--info' : 'hr-pill--warning'}`}>
