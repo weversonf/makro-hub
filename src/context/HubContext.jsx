@@ -40,6 +40,43 @@ export const DEFAULT_PROJECTS = [
   { id: 'proj-4', nome: 'Redesign Portal & Mídia Kit 2026', status: 'planejamento', cor: '#8B5CF6', tags: ['Branding', 'Website'] }
 ];
 
+export const MASTER_ADMIN_EMAIL = 'weversonf@gmail.com';
+
+export const USER_ROLES = {
+  admin_master: {
+    id: 'admin_master',
+    label: 'ADM Master',
+    icon: '👑',
+    color: '#F59E0B',
+    badgeClass: 'bg-amber-500/15 text-amber-500 border-amber-500/30 dark:bg-amber-500/20 dark:text-amber-400',
+    description: 'Acesso total, gerenciamento de equipe e controle de níveis'
+  },
+  admin: {
+    id: 'admin',
+    label: 'Administrador',
+    icon: '🛡️',
+    color: '#3B82F6',
+    badgeClass: 'bg-blue-500/15 text-blue-500 border-blue-500/30 dark:bg-blue-500/20 dark:text-blue-400',
+    description: 'Gestão completa de tarefas, projetos e relatórios'
+  },
+  colaborador: {
+    id: 'colaborador',
+    label: 'Colaborador',
+    icon: '👤',
+    color: '#10B981',
+    badgeClass: 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-400',
+    description: 'Criação e edição de tarefas e checklists'
+  },
+  visualizador: {
+    id: 'visualizador',
+    label: 'Visualizador',
+    icon: '👁️',
+    color: '#64748B',
+    badgeClass: 'bg-slate-500/15 text-slate-500 border-slate-500/30 dark:bg-slate-500/20 dark:text-slate-400',
+    description: 'Acesso somente leitura'
+  }
+};
+
 export function todayISO() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -97,7 +134,17 @@ export function isEditorialActivity(activity, categories = []) {
 
 export function HubProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
+  const [registeredUsers, setRegisteredUsers] = useState([]);
   const [authLoading, setAuthLoading] = useState(true);
+
+  const isMaster = Boolean(
+    user?.email && user.email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()
+  );
+  const userRole = isMaster ? 'admin_master' : (userProfile?.role || 'colaborador');
+  const isAdmin = isMaster || userRole === 'admin';
+  const userLevelInfo = USER_ROLES[userRole] || USER_ROLES.colaborador;
+
   const [activities, setActivities] = useState([]);
   const [categories, setCategories] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -215,6 +262,99 @@ export function HubProvider({ children }) {
     });
 
     return () => unsubPrefs();
+  }, [user]);
+
+  // Sincronização em tempo real dos usuários reais cadastrados e permissões
+  useEffect(() => {
+    if (!user || !user.uid) {
+      setUserProfile(null);
+      setRegisteredUsers([]);
+      return;
+    }
+
+    const isCurrentMaster = user.email?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
+
+    // 1. Sincroniza e garante integridade do perfil do usuário logado no Firestore
+    const userDocRef = db.collection('users').doc(user.uid);
+    const unsubProfile = userDocRef.onSnapshot((doc) => {
+      if (doc.exists) {
+        const data = doc.data();
+        if (isCurrentMaster && data.role !== 'admin_master') {
+          userDocRef.set({ role: 'admin_master' }, { merge: true }).catch(console.warn);
+        }
+        setUserProfile(data);
+      } else {
+        const initialProfile = {
+          uid: user.uid,
+          id: user.uid,
+          email: user.email || '',
+          displayName: user.displayName || (user.email ? user.email.split('@')[0] : 'Weverson Nascimento'),
+          nome: user.displayName || (user.email ? user.email.split('@')[0] : 'Weverson Nascimento'),
+          photoURL: user.photoURL || '',
+          foto: user.photoURL || '',
+          role: isCurrentMaster ? 'admin_master' : 'colaborador',
+          cargo: isCurrentMaster ? 'Coordenador de Marketing & Comunicação' : 'Colaborador de Marketing',
+          departamento: 'Marketing Central',
+          ramal: '',
+          online: true,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        userDocRef.set(initialProfile, { merge: true }).catch(console.warn);
+        setUserProfile(initialProfile);
+      }
+    }, (err) => {
+      console.warn('[Firestore] Erro ao sincronizar perfil do usuário:', err);
+    });
+
+    // 2. Sincroniza a lista completa de pessoas cadastradas no Makro Hub
+    const unsubAllUsers = db.collection('users').onSnapshot((snap) => {
+      const list = [];
+      snap.forEach((d) => {
+        const data = d.data();
+        const email = data.email || '';
+        const isThisMaster = email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
+        list.push({
+          ...data,
+          id: d.id,
+          uid: d.id,
+          nome: data.displayName || data.nome || email.split('@')[0] || 'Colaborador',
+          displayName: data.displayName || data.nome || email.split('@')[0] || 'Colaborador',
+          email,
+          foto: data.photoURL || data.foto || '',
+          photoURL: data.photoURL || data.foto || '',
+          cargo: data.cargo || (isThisMaster ? 'Coordenador de Marketing & Comunicação' : 'Colaborador de Marketing'),
+          departamento: data.departamento || 'Marketing Central',
+          role: isThisMaster ? 'admin_master' : (data.role || 'colaborador')
+        });
+      });
+
+      if (list.length === 0) {
+        const currentSelf = {
+          id: user.uid,
+          uid: user.uid,
+          email: user.email,
+          nome: user.displayName || (user.email ? user.email.split('@')[0] : 'Weverson Nascimento'),
+          displayName: user.displayName || (user.email ? user.email.split('@')[0] : 'Weverson Nascimento'),
+          foto: user.photoURL || '',
+          photoURL: user.photoURL || '',
+          role: isCurrentMaster ? 'admin_master' : 'colaborador',
+          cargo: isCurrentMaster ? 'Coordenador de Marketing & Comunicação' : 'Colaborador de Marketing',
+          departamento: 'Marketing Central',
+          online: true
+        };
+        setRegisteredUsers([currentSelf]);
+      } else {
+        setRegisteredUsers(list);
+      }
+    }, (err) => {
+      console.warn('[Firestore] Erro ao carregar usuários:', err);
+    });
+
+    return () => {
+      unsubProfile();
+      unsubAllUsers();
+    };
   }, [user]);
 
   // Firestore Sync
@@ -348,6 +488,96 @@ export function HubProvider({ children }) {
     await auth.signOut();
     window.location.reload();
   };
+
+  // Funções de Gestão de Usuários e Níveis (ADM Master)
+  const updateUserRole = useCallback(async (userId, newRole) => {
+    if (!isMaster) {
+      showToast('Apenas o ADM Master pode alterar níveis de acesso.', 'error');
+      return false;
+    }
+    const target = registeredUsers.find((u) => u.id === userId || u.uid === userId);
+    if (target?.email?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase() && newRole !== 'admin_master') {
+      showToast('O nível do ADM Master principal é permanente e não pode ser alterado.', 'error');
+      return false;
+    }
+    try {
+      await db.collection('users').doc(userId).set({
+        role: newRole,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+      showToast('Nível de acesso atualizado com sucesso!', 'success');
+      return true;
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao atualizar nível de acesso.', 'error');
+      return false;
+    }
+  }, [isMaster, registeredUsers, showToast]);
+
+  const addTeamMember = useCallback(async (memberData) => {
+    if (!isMaster && !isAdmin) {
+      showToast('Você não tem permissão para cadastrar colaboradores.', 'error');
+      return false;
+    }
+    try {
+      const email = memberData.email?.trim().toLowerCase();
+      if (!email) {
+        showToast('Informe um e-mail válido.', 'error');
+        return false;
+      }
+      const exists = registeredUsers.some((u) => u.email?.toLowerCase() === email);
+      if (exists) {
+        showToast('Este colaborador já está cadastrado.', 'error');
+        return false;
+      }
+
+      const assignedRole = email === MASTER_ADMIN_EMAIL.toLowerCase() ? 'admin_master' : (memberData.role || 'colaborador');
+
+      const docRef = db.collection('users').doc();
+      const newMember = {
+        uid: docRef.id,
+        id: docRef.id,
+        email,
+        nome: memberData.nome?.trim() || email.split('@')[0],
+        displayName: memberData.nome?.trim() || email.split('@')[0],
+        cargo: memberData.cargo?.trim() || 'Colaborador de Marketing',
+        departamento: memberData.departamento?.trim() || 'Marketing Central',
+        ramal: memberData.ramal?.trim() || '',
+        foto: memberData.foto?.trim() || '',
+        photoURL: memberData.foto?.trim() || '',
+        role: assignedRole,
+        online: false,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      await docRef.set(newMember);
+      showToast('Colaborador cadastrado com sucesso!', 'success');
+      return true;
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao cadastrar colaborador.', 'error');
+      return false;
+    }
+  }, [isMaster, isAdmin, registeredUsers, showToast]);
+
+  const deleteTeamMember = useCallback(async (userId, memberEmail) => {
+    if (!isMaster) {
+      showToast('Apenas o ADM Master pode remover colaboradores.', 'error');
+      return false;
+    }
+    if (memberEmail?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) {
+      showToast('O ADM Master principal não pode ser removido.', 'error');
+      return false;
+    }
+    try {
+      await db.collection('users').doc(userId).delete();
+      showToast('Colaborador removido da equipe com sucesso.', 'success');
+      return true;
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao remover colaborador.', 'error');
+      return false;
+    }
+  }, [isMaster, showToast]);
 
   // Funções de Busca e Auxiliares
   const catOf = useCallback((id) => categories.find((c) => c.id === id) || null, [categories]);
@@ -871,7 +1101,18 @@ export function HubProvider({ children }) {
         authError,
         loggingIn,
         mobileDrawerOpen,
-        setMobileDrawerOpen
+        setMobileDrawerOpen,
+        registeredUsers,
+        userProfile,
+        userRole,
+        isMaster,
+        isAdmin,
+        userLevelInfo,
+        USER_ROLES,
+        MASTER_ADMIN_EMAIL,
+        updateUserRole,
+        addTeamMember,
+        deleteTeamMember
       }}
     >
       {children}

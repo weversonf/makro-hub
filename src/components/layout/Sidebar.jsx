@@ -15,7 +15,9 @@ export default function Sidebar() {
     mobileDrawerOpen,
     setMobileDrawerOpen,
     theme,
-    toggleTheme
+    toggleTheme,
+    isMaster,
+    userLevelInfo
   } = useHub();
   const navRef = useRef(null);
   const [indicatorStyle, setIndicatorStyle] = useState({ top: 0, height: 48, opacity: 0 });
@@ -282,7 +284,20 @@ export default function Sidebar() {
             <p className="text-xs font-semibold text-white truncate">
               {user?.displayName || (user?.email ? user.email.split('@')[0] : 'Colaborador')}
             </p>
-            <p className="text-[11px] text-[var(--color-sidebar-muted)] truncate">{user?.email || 'Makro Engenharia'}</p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span
+                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border ${
+                  isMaster
+                    ? 'bg-amber-500/25 text-amber-300 border-amber-500/40 shadow-xs'
+                    : userLevelInfo?.badgeClass || 'bg-slate-500/20 text-slate-300 border-slate-500/30'
+                }`}
+                title={userLevelInfo?.description || ''}
+              >
+                <span>{userLevelInfo?.icon}</span>
+                <span>{userLevelInfo?.label}</span>
+              </span>
+            </div>
+            <p className="text-[10px] text-[var(--color-sidebar-muted)] truncate mt-0.5">{user?.email || 'Makro Engenharia'}</p>
           </div>
 
           <button

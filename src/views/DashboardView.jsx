@@ -2,7 +2,7 @@ import React from 'react';
 import { useHub, STAGES, fmtDate } from '../context/HubContext';
 
 export default function DashboardView() {
-  const { activities, setView, openEditTask, openNewTask, catOf, stageOf, isOverdue, isDueSoon, user, isEditorialActivity } = useHub();
+  const { activities, setView, openEditTask, openNewTask, catOf, stageOf, isOverdue, isDueSoon, user, isEditorialActivity, registeredUsers } = useHub();
 
   const dashActs = activities.filter((a) => !isEditorialActivity(a));
   const edActs = activities.filter((a) => isEditorialActivity(a));
@@ -38,16 +38,26 @@ export default function DashboardView() {
     return <span className="hr-pill hr-pill--warning"><span className="w-1.5 h-1.5 rounded-full bg-[var(--color-warning)]" /> A Fazer</span>;
   };
 
-  // Dados para o Timeline Project
-  const employees = [
-    { nome: 'Weverson N.', foto: user?.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100' },
-    { nome: 'Beatriz V.', foto: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100' },
-    { nome: 'Lucas M.', foto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100' },
-    { nome: 'Mariana D.', foto: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100' },
-    { nome: 'Rafael C.', foto: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100' },
-    { nome: 'Camila S.', foto: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100' },
-    { nome: 'Marcos P.', foto: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100' }
-  ];
+  // Dados para o Timeline Project baseados apenas nos colaboradores reais cadastrados
+  const employees = (registeredUsers && registeredUsers.length > 0
+    ? registeredUsers
+    : [
+        {
+          id: user?.uid || 'me',
+          nome: user?.displayName || (user?.email ? user.email.split('@')[0] : 'Weverson N.'),
+          displayName: user?.displayName || (user?.email ? user.email.split('@')[0] : 'Weverson N.'),
+          foto: user?.photoURL || '',
+          cargo: 'ADM Master',
+          role: 'admin_master'
+        }
+      ]
+  ).map((u) => ({
+    id: u.id || u.uid,
+    nome: u.displayName || u.nome || (u.email ? u.email.split('@')[0] : 'Colaborador'),
+    foto: u.photoURL || u.foto || user?.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
+    cargo: u.cargo || (u.role === 'admin_master' ? 'ADM Master' : 'Colaborador'),
+    role: u.role || 'colaborador'
+  }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -356,23 +366,28 @@ export default function DashboardView() {
             {/* Grid & Task Bars */}
             <div className="grid grid-cols-[160px_1fr] gap-3 pt-4">
               {/* Roster de Colaboradores */}
-              <div className="flex flex-col justify-between gap-3 py-1">
+              <div className="flex flex-col gap-3 py-1">
                 {employees.map((emp) => (
-                  <div key={emp.nome} className="flex items-center gap-2.5 h-12">
+                  <div key={emp.id || emp.nome} className="flex items-center gap-2.5 h-12">
                     <img
                       src={emp.foto}
                       alt={emp.nome}
                       className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-[var(--color-border)]"
                     />
-                    <span className="text-xs font-medium text-[var(--color-heading)] truncate">
-                      {emp.nome}
-                    </span>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-xs font-medium text-[var(--color-heading)] truncate block">
+                        {emp.nome}
+                      </span>
+                      <span className="text-[10px] text-[var(--color-muted)] truncate block">
+                        {emp.cargo}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
 
               {/* Timeline Track com as Barras */}
-              <div className="relative flex flex-col justify-between py-1">
+              <div className="relative flex flex-col gap-3 py-1">
                 {/* Linhas de coluna verticais */}
                 <div className="absolute inset-0 grid grid-cols-7 pointer-events-none">
                   <span className="border-l border-[var(--color-border-subtle)]" />
@@ -387,75 +402,46 @@ export default function DashboardView() {
                 {/* Linha pontilhada azul do dia 'Hoje' (Dom 13) */}
                 <div className="absolute top-0 bottom-0 left-[50%] border-l border-dashed border-[var(--color-primary)] pointer-events-none opacity-60 z-10" />
 
-                {/* Barra 1: Design System (Qui 10 - Seg 14) */}
-                <div className="h-12 flex items-center z-10" style={{ marginLeft: '0%', width: '60%' }}>
-                  <div className="w-full h-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-subtle)] px-3 flex items-center gap-2.5 shadow-sm hover:border-[var(--color-primary)] transition">
-                    <span className="w-7 h-7 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-secondary)] flex items-center justify-center flex-shrink-0">
-                      <i className="ph ph-pen-nib text-sm" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-[var(--color-heading)] truncate leading-tight">
-                        Design System Makro
-                      </p>
-                      <p className="text-[10px] text-[var(--color-muted)] truncate">
-                        Qui 10 Abr - Seg 14 Abr
-                      </p>
+                {employees.map((emp, idx) => {
+                  const empTasks = dashActs.filter((a) => {
+                    if (a.responsavelId) return a.responsavelId === emp.id;
+                    if (a.responsavel) return a.responsavel.toLowerCase().includes(emp.nome.toLowerCase());
+                    return idx === 0 && a.stage !== 'concluido';
+                  });
+
+                  const taskToShow = empTasks[0];
+
+                  return (
+                    <div key={emp.id || emp.nome} className="h-12 flex items-center relative z-10">
+                      {taskToShow ? (
+                        <div
+                          onClick={() => openEditTask(taskToShow.id)}
+                          className="w-full max-w-[90%] h-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 flex items-center gap-2.5 shadow-sm hover:border-[var(--color-primary)] hover:shadow-md transition cursor-pointer group"
+                          style={{ marginLeft: `${Math.min(idx * 15, 25)}%` }}
+                        >
+                          <span className="w-7 h-7 rounded-lg bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center flex-shrink-0">
+                            <i className="ph ph-check-square text-sm" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-semibold text-[var(--color-heading)] truncate leading-tight group-hover:text-[var(--color-primary)] transition-colors">
+                              {taskToShow.titulo}
+                            </p>
+                            <p className="text-[10px] text-[var(--color-muted)] truncate">
+                              {taskToShow.dataVencimento ? `Prazo: ${fmtDate(taskToShow.dataVencimento)}` : 'Sem prazo'} • {stageOf(taskToShow.stage)?.label || 'A Fazer'}
+                            </p>
+                          </div>
+                          <span className="text-[var(--color-muted)] group-hover:text-[var(--color-heading)] p-1">
+                            <i className="ph ph-pencil-simple text-sm" />
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="w-full h-10 rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-subtle)]/40 px-3 flex items-center justify-center text-[11px] text-[var(--color-muted)]">
+                          Nenhuma tarefa pendente agendada
+                        </div>
+                      )}
                     </div>
-                    <button type="button" className="text-[var(--color-muted)] hover:text-[var(--color-heading)] p-1">
-                      <i className="ph ph-dots-three-vertical text-sm" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Espaçador entre linhas */}
-                <div className="h-12" />
-
-                {/* Barra 2: UI/UX Design & Catálogo (Sáb 12 - Qua 16) */}
-                <div className="h-12 flex items-center z-10" style={{ marginLeft: '28.5%', width: '68%' }}>
-                  <div className="w-full h-10 rounded-xl border border-[var(--color-primary)]/40 bg-[var(--color-surface)] px-3 flex items-center gap-2.5 shadow-md">
-                    <span className="w-7 h-7 rounded-lg bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center flex-shrink-0">
-                      <i className="ph ph-stack text-sm" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-[var(--color-heading)] truncate leading-tight">
-                        UI/UX & Catálogo de Frota
-                      </p>
-                      <p className="text-[10px] text-[var(--color-primary)] truncate font-medium">
-                        Sáb 12 Abr - Qua 16 Abr
-                      </p>
-                    </div>
-                    <button type="button" className="text-[var(--color-muted)] hover:text-[var(--color-heading)] p-1">
-                      <i className="ph ph-dots-three-vertical text-sm" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Espaçador entre linhas */}
-                <div className="h-12" />
-                <div className="h-12" />
-
-                {/* Barra 3: Campanha Super Heavy Lift (Sex 11 - Ter 15) */}
-                <div className="h-12 flex items-center z-10" style={{ marginLeft: '14.2%', width: '60%' }}>
-                  <div className="w-full h-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-subtle)] px-3 flex items-center gap-2.5 shadow-sm hover:border-[var(--color-primary)] transition">
-                    <span className="w-7 h-7 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] text-indigo-500 flex items-center justify-center flex-shrink-0">
-                      <i className="ph ph-truck text-sm" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-[var(--color-heading)] truncate leading-tight">
-                        Projeto Super Heavy Lift
-                      </p>
-                      <p className="text-[10px] text-[var(--color-muted)] truncate">
-                        Sex 11 Abr - Ter 15 Abr
-                      </p>
-                    </div>
-                    <button type="button" className="text-[var(--color-muted)] hover:text-[var(--color-heading)] p-1">
-                      <i className="ph ph-dots-three-vertical text-sm" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Espaçador */}
-                <div className="h-12" />
+                  );
+                })}
               </div>
             </div>
           </div>
