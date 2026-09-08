@@ -5,7 +5,6 @@ import {
   Table as TableIcon,
   Kanban as KanbanIcon,
   Plus,
-  Edit2,
   Calendar,
   CheckSquare,
   Send,
@@ -1414,15 +1413,12 @@ export default function TarefasView() {
                         </div>
                         {renderExcelFilterMenu('responsavel')}
                       </th>
-
-                      {/* Ações */}
-                      <th className="text-center" style={{ width: '80px' }} />
                     </tr>
                   </thead>
                   <tbody>
                     {displayedTableTasks.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="py-12 text-center text-xs text-[var(--ax-text-subtle)]">
+                        <td colSpan={7} className="py-12 text-center text-xs text-[var(--ax-text-subtle)]">
                           <div className="flex flex-col items-center justify-center gap-2">
                             <Filter size={24} className="text-[var(--ax-text-muted)] opacity-50" />
                             <span className="font-semibold text-[var(--ax-text-strong)]">
@@ -1543,17 +1539,6 @@ export default function TarefasView() {
                                 <span className="text-xs font-medium text-[var(--ax-text-strong)] truncate max-w-[85px] hidden xl:inline">
                                   {a.responsavel ? a.responsavel.split(' ')[0] : 'Weverson'}
                                 </span>
-                              </div>
-                            </td>
-                            <td className="text-center">
-                              <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
-                                <button
-                                  className="ax-icon-btn w-8 h-8"
-                                  onClick={() => openEditTask(a.id)}
-                                  title="Editar"
-                                >
-                                  <Edit2 size={14} />
-                                </button>
                               </div>
                             </td>
                           </tr>
