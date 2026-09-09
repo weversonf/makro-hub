@@ -362,18 +362,11 @@ export default function EquipeView() {
                   </div>
                 )}
 
-                <div className="flex items-center justify-between gap-2 pt-1">
+                <div className="flex items-center gap-2 pt-1">
                   <span className="text-[11px] text-[var(--color-muted)] flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)]" />
                     Ativo no Makro Hub
                   </span>
-                  <a
-                    href={`mailto:${memberEmail}`}
-                    className="hr-btn hr-btn--secondary text-xs h-7 px-3 flex items-center gap-1.5"
-                  >
-                    <Mail size={13} />
-                    <span>Mensagem</span>
-                  </a>
                 </div>
               </div>
             </div>
