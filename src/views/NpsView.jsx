@@ -10,7 +10,8 @@ import {
   Cell,
   ReferenceLine
 } from 'recharts';
-import { Download, Search, AlertCircle, Filter, RotateCcw, X } from 'lucide-react';
+import { Download, Search, AlertCircle, Filter, RotateCcw, X, ShieldAlert } from 'lucide-react';
+import { useHub } from '../context/HubContext';
 
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw68DmuS_sDfZ2ozpG5bX3JQITYO2_nFdXwe9lPFD7rPE0wfxpSjV6uvxmsp0fOyHH1/exec';
 const COLORS = { critica: '#EF4136', aperfeicoamento: '#FDB913', qualidade: '#56C174', excelencia: '#00A650' };
@@ -167,6 +168,7 @@ function HorizontalNPSChart({ data, dimension, label }) {
 }
 
 export default function NpsView() {
+  const { isAdmin, isMaster } = useHub();
   const [view, setView] = useState('loading');
   const [rawData, setRawData] = useState([]);
   const [contractsList, setContractsList] = useState([]);
@@ -512,6 +514,18 @@ export default function NpsView() {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
+
+  if (!isAdmin && !isMaster) {
+    return (
+      <div className="p-8 text-center bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl max-w-lg mx-auto mt-12 shadow-xs">
+        <ShieldAlert size={40} className="mx-auto mb-3 text-red-500 opacity-80" />
+        <h3 className="text-base font-bold text-[var(--color-heading)] mb-1">Acesso Restrito</h3>
+        <p className="text-xs text-[var(--color-muted)] leading-relaxed">
+          A visualização da <strong>Pesquisa NPS Makro</strong> é exclusiva para o <strong>ADM Master</strong> e <strong>Administradores</strong>.
+        </p>
+      </div>
+    );
+  }
 
   if (view === 'loading') {
     return (

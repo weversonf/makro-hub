@@ -49,7 +49,7 @@ export const USER_ROLES = {
     icon: '👑',
     color: '#F59E0B',
     badgeClass: 'bg-amber-500/15 text-amber-500 border-amber-500/30 dark:bg-amber-500/20 dark:text-amber-400',
-    description: 'Acesso total, gerenciamento de equipe e controle de níveis'
+    description: 'Acesso total, gestão de equipe, pesquisa NPS e controle de níveis'
   },
   admin: {
     id: 'admin',
@@ -57,7 +57,7 @@ export const USER_ROLES = {
     icon: '🛡️',
     color: '#3B82F6',
     badgeClass: 'bg-blue-500/15 text-blue-500 border-blue-500/30 dark:bg-blue-500/20 dark:text-blue-400',
-    description: 'Gestão completa de tarefas, projetos e relatórios'
+    description: 'Gestão completa de tarefas, projetos, relatórios e pesquisa NPS'
   },
   colaborador: {
     id: 'colaborador',
@@ -65,7 +65,7 @@ export const USER_ROLES = {
     icon: '👤',
     color: '#10B981',
     badgeClass: 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-400',
-    description: 'Criação e edição de tarefas e checklists'
+    description: 'Execução de demandas atribuídas e controle de ponto individual'
   },
   visualizador: {
     id: 'visualizador',
@@ -73,7 +73,7 @@ export const USER_ROLES = {
     icon: '👁️',
     color: '#64748B',
     badgeClass: 'bg-slate-500/15 text-slate-500 border-slate-500/30 dark:bg-slate-500/20 dark:text-slate-400',
-    description: 'Acesso somente leitura'
+    description: 'Acesso somente leitura a tarefas'
   }
 };
 
