@@ -182,6 +182,17 @@ export default function Sidebar() {
             <span className="hr-nav-badge">{pend}</span>
           </button>
 
+          {!isAdmin && (
+            <button
+              className={`hr-nav-item ${view === 'banco-horas' ? 'hr-nav-item--active' : ''}`}
+              onClick={() => setView('banco-horas')}
+              data-tooltip="Meu Ponto"
+            >
+              <i className="ph ph-clock-user text-xl flex-shrink-0" />
+              <span className="hr-nav-label">Controle de Ponto</span>
+            </button>
+          )}
+
           {isAdmin && (
             <>
               <button
@@ -246,10 +257,10 @@ export default function Sidebar() {
             <button
               className={`hr-nav-item ${view === 'banco-horas' ? 'hr-nav-item--active' : ''}`}
               onClick={() => setView('banco-horas')}
-              data-tooltip="Banco de Horas"
+              data-tooltip="Controle de Ponto & Banco de Horas"
             >
               <i className="ph ph-clock-user text-xl flex-shrink-0" />
-              <span className="hr-nav-label">Banco de Horas</span>
+              <span className="hr-nav-label">Controle de Ponto</span>
             </button>
 
             <button

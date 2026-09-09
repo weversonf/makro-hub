@@ -73,6 +73,18 @@ export default function MobileNav() {
         </button>
       )}
 
+      {/* 4.1 Controle de Ponto (Para Colaboradores) */}
+      {!isAdmin && (
+        <button
+          type="button"
+          className={`mob-nav__item ${view === 'banco-horas' ? 'mob-nav__item--active' : ''}`}
+          onClick={() => setView('banco-horas')}
+        >
+          <i className="ph ph-clock-user text-2xl" />
+          <span>Ponto</span>
+        </button>
+      )}
+
       {/* 5. Menu / Mais (Abre o Drawer Lateral) */}
       <button
         type="button"

@@ -148,9 +148,9 @@ export default function App() {
     );
   }
 
-  // Trava de segurança: Colaboradores e visualizadores só têm acesso estrito ao módulo de Tarefas
-  const activeView = isAdmin ? view : 'lista';
-  const showFab = activeView === 'lista' || (isAdmin && activeView !== 'banco-horas' && activeView !== 'nps');
+  // Trava de segurança: Colaboradores e visualizadores têm acesso a Tarefas e ao seu Controle de Ponto
+  const activeView = isAdmin ? view : (view === 'banco-horas' ? 'banco-horas' : 'lista');
+  const showFab = activeView === 'lista';
 
   return (
     <div className="min-h-screen bg-[var(--color-bg)] font-sans antialiased text-[var(--color-text)]">
@@ -160,6 +160,7 @@ export default function App() {
       <main className="hr-main-shell">
         <div className="hr-container">
           {activeView === 'lista' && <TarefasView />}
+          {activeView === 'banco-horas' && <BancoHorasView />}
           {isAdmin && activeView === 'dash' && <DashboardView />}
           {isAdmin && activeView === 'projetos' && <ProjetosView />}
           {isAdmin && activeView === 'editorial' && <CalendarioView />}
@@ -167,7 +168,6 @@ export default function App() {
           {isAdmin && activeView === 'equipe' && <EquipeView />}
           {isAdmin && activeView === 'performance' && <PerformanceView />}
           {isAdmin && (activeView === 'categorias' || activeView === 'config') && <ConfigView />}
-          {isAdmin && activeView === 'banco-horas' && <BancoHorasView />}
           {isAdmin && activeView === 'nps' && <NpsView />}
         </div>
       </main>

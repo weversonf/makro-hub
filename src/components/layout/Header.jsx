@@ -42,7 +42,7 @@ export default function Header() {
     equipe: 'Equipe do Marketing',
     performance: 'Performance & Desempenho',
     categorias: 'Categorias de Marketing',
-    'banco-horas': 'Banco de Horas',
+    'banco-horas': 'Controle de Ponto & Banco de Horas',
     nps: 'Pesquisa de Satisfação NPS',
     config: 'Configurações'
   };

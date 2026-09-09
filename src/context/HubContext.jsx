@@ -192,14 +192,14 @@ export function HubProvider({ children }) {
   // Redirecionamento e proteção de rota com base no nível de permissão
   useEffect(() => {
     if (!authLoading && user) {
-      if (!isAdmin && currentView !== 'lista') {
+      if (!isAdmin && currentView !== 'lista' && currentView !== 'banco-horas') {
         setCurrentView('lista');
       }
     }
   }, [authLoading, user, isAdmin, currentView]);
 
   const setView = useCallback((newView) => {
-    if (!isAdmin && newView !== 'lista') {
+    if (!isAdmin && newView !== 'lista' && newView !== 'banco-horas') {
       setCurrentView('lista');
       setMobileDrawerOpen(false);
       return;
