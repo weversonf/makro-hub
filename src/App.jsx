@@ -159,45 +159,47 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[var(--color-bg)] font-sans antialiased text-[var(--color-text)]">
-      <Sidebar />
-      <Header />
+      <ErrorBoundary>
+        <Sidebar />
+        <Header />
 
-      <main className="hr-main-shell">
-        <div className="hr-container">
-          <ErrorBoundary key={activeView}>
-            {activeView === 'lista' && <TarefasView />}
-            {activeView === 'banco-horas' && <BancoHorasView />}
-            {isAdmin && activeView === 'dash' && <DashboardView />}
-            {isAdmin && activeView === 'projetos' && <ProjetosView />}
-            {isAdmin && activeView === 'editorial' && <CalendarioView />}
-            {isAdmin && activeView === 'documentos' && <DocumentosView />}
-            {isAdmin && activeView === 'equipe' && <EquipeView />}
-            {isAdmin && activeView === 'performance' && <PerformanceView />}
-            {isAdmin && (activeView === 'categorias' || activeView === 'config') && <ConfigView />}
-            {isAdmin && activeView === 'nps' && <NpsView />}
-          </ErrorBoundary>
-        </div>
-      </main>
+        <main className="hr-main-shell">
+          <div className="hr-container">
+            <ErrorBoundary key={activeView}>
+              {activeView === 'lista' && <TarefasView />}
+              {activeView === 'banco-horas' && <BancoHorasView />}
+              {isAdmin && activeView === 'dash' && <DashboardView />}
+              {isAdmin && activeView === 'projetos' && <ProjetosView />}
+              {isAdmin && activeView === 'editorial' && <CalendarioView />}
+              {isAdmin && activeView === 'documentos' && <DocumentosView />}
+              {isAdmin && activeView === 'equipe' && <EquipeView />}
+              {isAdmin && activeView === 'performance' && <PerformanceView />}
+              {isAdmin && (activeView === 'categorias' || activeView === 'config') && <ConfigView />}
+              {isAdmin && activeView === 'nps' && <NpsView />}
+            </ErrorBoundary>
+          </div>
+        </main>
 
-      {showFab && (
-        <button
-          className="hidden lg:flex fixed bottom-6 right-6 z-40 rounded-full bg-[var(--color-primary)] text-white shadow-xl hover:scale-105 transition items-center justify-center border-0 cursor-pointer"
-          style={{ width: '52px', height: '52px' }}
-          title="Nova Tarefa (N)"
-          onClick={() => openNewTask()}
-        >
-          <Plus size={24} strokeWidth={2.5} />
-        </button>
-      )}
+        {showFab && (
+          <button
+            className="hidden lg:flex fixed bottom-6 right-6 z-40 rounded-full bg-[var(--color-primary)] text-white shadow-xl hover:scale-105 transition items-center justify-center border-0 cursor-pointer"
+            style={{ width: '52px', height: '52px' }}
+            title="Nova Tarefa (N)"
+            onClick={() => openNewTask()}
+          >
+            <Plus size={24} strokeWidth={2.5} />
+          </button>
+        )}
 
-      <MobileNav />
+        <MobileNav />
 
-      {/* Modais Globais */}
-      <TaskModal />
-      <CategoryModal />
-      <NotificationsModal />
-      <ConfirmModal />
-      <Toast />
+        {/* Modais Globais */}
+        <TaskModal />
+        <CategoryModal />
+        <NotificationsModal />
+        <ConfirmModal />
+        <Toast />
+      </ErrorBoundary>
     </div>
   );
 }
