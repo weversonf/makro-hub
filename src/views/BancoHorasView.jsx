@@ -2,6 +2,11 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useHub, fmtDateFull, USER_ROLES } from '../context/HubContext';
 import { db } from '../firebase';
 import {
+  OFFICIAL_WEVERSON_CONFIG,
+  OFFICIAL_WEVERSON_REGISTROS,
+  OFFICIAL_WEVERSON_MANUAL
+} from '../data/officialPontoData';
+import {
   Clock,
   Flame,
   Gift,
@@ -225,6 +230,64 @@ export default function BancoHorasView() {
     };
   }, [selectedUserId, targetUserRef]);
 
+  const [syncingOfficial, setSyncingOfficial] = useState(false);
+
+  // Sincronização direta no banco de dados com os dados oficiais do espelho
+  const handleSyncOfficialPonto = useCallback(async (silent = false) => {
+    if (!targetUserRef) return;
+    setSyncingOfficial(true);
+    try {
+      const batch = db.batch();
+
+      // 1. Configuração com Saldo Anterior oficial (-45:26) e jornada de trabalho
+      batch.set(targetUserRef.collection('config').doc('main'), OFFICIAL_WEVERSON_CONFIG, { merge: true });
+
+      // 2. Registros diários oficiais de Agosto e Setembro 2026
+      OFFICIAL_WEVERSON_REGISTROS.forEach((rec) => {
+        const docRef = targetUserRef.collection('registros').doc(rec.date);
+        batch.set(docRef, {
+          ...rec,
+          updatedAt: new Date().toISOString(),
+          updatedBy: 'Espelho Oficial Makro'
+        }, { merge: true });
+      });
+
+      // 3. Ajuste de Fechamento oficial de Agosto (-33:12 / -78:38)
+      OFFICIAL_WEVERSON_MANUAL.forEach((m) => {
+        const docRef = targetUserRef.collection('manual').doc(String(m.id));
+        batch.set(docRef, {
+          ...m,
+          updatedAt: new Date().toISOString(),
+          updatedBy: 'Fechamento Oficial RH'
+        }, { merge: true });
+      });
+
+      await batch.commit();
+
+      if (!silent) {
+        showToast?.('Espelho de ponto oficial de Weverson sincronizado no banco de dados com sucesso!', 'success');
+      }
+    } catch (err) {
+      console.error('[SyncOfficialPonto]', err);
+      if (!silent) {
+        showToast?.('Erro ao sincronizar espelho oficial: ' + err.message, 'error');
+      }
+    } finally {
+      setSyncingOfficial(false);
+    }
+  }, [targetUserRef, showToast]);
+
+  // Auto-sincronização automática para Weverson caso ainda não carregado
+  useEffect(() => {
+    if (selectedUserObj?.email?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase() && targetUserRef) {
+      const storageKey = `makro_ponto_synced_${selectedUserId}_v3`;
+      if (!localStorage.getItem(storageKey)) {
+        handleSyncOfficialPonto(true);
+        localStorage.setItem(storageKey, 'true');
+      }
+    }
+  }, [selectedUserObj, targetUserRef, selectedUserId, handleSyncOfficialPonto, MASTER_ADMIN_EMAIL]);
+
   const expectedHours = useMemo(() => {
     const w = parseTime(config.saida) - parseTime(config.entrada) - (config.horasAlmoco || 0);
     return w > 0 ? w : 8.8;
@@ -259,6 +322,7 @@ export default function BancoHorasView() {
       .slice()
       .sort((a, b) => String(a?.date || '').localeCompare(String(b?.date || '')))
       .forEach((r) => {
+        if (r?.feriado) return;
         if (r?.entrada && r?.saida && isWorkDay(r.date)) {
           const w = parseTime(r.saida) - parseTime(r.entrada) - (config?.horasAlmoco || 0);
           const d = w - expectedHours;
@@ -300,6 +364,7 @@ export default function BancoHorasView() {
   const monthBalance = useMemo(() => {
     let b = 0;
     filteredTime.forEach((r) => {
+      if (r?.feriado) return;
       if (r?.entrada && r?.saida && isWorkDay(r.date)) {
         b += (parseTime(r.saida) - parseTime(r.entrada) - (config?.horasAlmoco || 0)) - expectedHours;
       }
@@ -779,11 +844,24 @@ export default function BancoHorasView() {
               ))}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+              {isAdmin && selectedUserObj?.email?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase() && (
+                <button
+                  type="button"
+                  onClick={() => handleSyncOfficialPonto(false)}
+                  disabled={syncingOfficial}
+                  className="h-9 px-3.5 rounded-lg text-xs font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 border border-emerald-500/30 transition flex items-center gap-1.5 shadow-xs disabled:opacity-50 whitespace-nowrap"
+                  title="Sincronizar dados oficiais de ponto de Weverson (Agosto e Setembro 2026) diretamente no banco"
+                >
+                  <RefreshCw size={14} className={syncingOfficial ? 'animate-spin' : ''} />
+                  <span>{syncingOfficial ? 'Sincronizando...' : 'Sincronizar Espelho Oficial'}</span>
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={handleExportCSV}
-                className="h-9 px-3 rounded-lg text-xs font-semibold bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-[var(--color-heading)] transition flex items-center gap-1.5 shadow-xs"
+                className="h-9 px-3 rounded-lg text-xs font-semibold bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-[var(--color-heading)] transition flex items-center gap-1.5 shadow-xs whitespace-nowrap"
                 title="Exportar folha de ponto em formato CSV"
               >
                 <Download size={14} />
@@ -968,27 +1046,42 @@ export default function BancoHorasView() {
                               )}
                             </div>
                           </td>
-                          <td className="p-3.5 text-center font-mono font-semibold text-[var(--color-heading)]">
-                            {r.entrada || '--:--'}
-                          </td>
-                          <td className="p-3.5 text-center font-mono font-semibold text-[var(--color-heading)]">
-                            {r.saida || '--:--'}
-                          </td>
-                          <td className="p-3.5 text-center font-mono text-[var(--color-muted)]">
-                            {r.entrada && r.saida
-                              ? fmtTime(parseTime(r.saida) - parseTime(r.entrada) - (config.horasAlmoco || 0))
-                              : '--:--'}
-                          </td>
+                          {r.feriado ? (
+                            <td colSpan={3} className="p-3.5 text-center">
+                              <span className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-500/15 text-amber-600 border border-amber-500/30 inline-flex items-center gap-1.5">
+                                <span>🎉</span>
+                                <span>Feriado</span>
+                              </span>
+                            </td>
+                          ) : (
+                            <>
+                              <td className="p-3.5 text-center font-mono font-semibold text-[var(--color-heading)]">
+                                {r.entrada || '--:--'}
+                              </td>
+                              <td className="p-3.5 text-center font-mono font-semibold text-[var(--color-heading)]">
+                                {r.saida || '--:--'}
+                              </td>
+                              <td className="p-3.5 text-center font-mono text-[var(--color-muted)]">
+                                {r.entrada && r.saida
+                                  ? fmtTime(parseTime(r.saida) - parseTime(r.entrada) - (config.horasAlmoco || 0))
+                                  : '--:--'}
+                              </td>
+                            </>
+                          )}
                           <td className="p-3.5 text-center font-mono font-bold">
-                            <span
-                              className="px-2 py-0.5 rounded-md text-xs inline-block"
-                              style={{
-                                color: isPos ? 'var(--color-success)' : (isNeg ? 'var(--color-danger)' : 'var(--color-muted)'),
-                                backgroundColor: isPos ? 'rgba(16, 185, 129, 0.1)' : (isNeg ? 'rgba(239, 68, 68, 0.1)' : 'transparent')
-                              }}
-                            >
-                              {r.saldo || '--'}
-                            </span>
+                            {r.feriado ? (
+                              <span className="text-xs text-[var(--color-muted)] font-mono font-normal">—</span>
+                            ) : (
+                              <span
+                                className="px-2 py-0.5 rounded-md text-xs inline-block"
+                                style={{
+                                  color: isPos ? 'var(--color-success)' : (isNeg ? 'var(--color-danger)' : 'var(--color-muted)'),
+                                  backgroundColor: isPos ? 'rgba(16, 185, 129, 0.1)' : (isNeg ? 'rgba(239, 68, 68, 0.1)' : 'transparent')
+                                }}
+                              >
+                                {r.saldo || '--'}
+                              </span>
+                            )}
                           </td>
                           <td className="p-3.5 text-right">
                             <div className="flex items-center justify-end gap-1.5">
