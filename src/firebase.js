@@ -20,6 +20,9 @@ export const db = firebase.firestore();
 export const auth = firebase.auth();
 export const storage = firebase.storage();
 export const googleProvider = new firebase.auth.GoogleAuthProvider();
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
 
 // Persistência local de autenticação
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch((e) => {

@@ -210,7 +210,15 @@ export function HubProvider({ children }) {
   const view = currentView;
   const [theme, setTheme] = useState(() => localStorage.getItem('hr-theme') || localStorage.getItem('ax:theme') || 'light');
   const [accentColor, setAccentColor] = useState(() => localStorage.getItem('ax:accent') || '#1E856C');
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('ax:collapsed') === '1');
+  const [collapsed, setCollapsed] = useState(() => {
+    const hrVal = localStorage.getItem('hr-sidebar');
+    if (hrVal) return hrVal === 'collapsed';
+    return localStorage.getItem('ax:collapsed') === '1';
+  });
+
+  const toggleSidebar = useCallback(() => {
+    setCollapsed((prev) => !prev);
+  }, []);
 
   const toggleTheme = useCallback(() => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
@@ -616,8 +624,17 @@ export function HubProvider({ children }) {
   };
 
   const signOutUser = async () => {
-    await auth.signOut();
-    window.location.reload();
+    try {
+      await auth.signOut();
+      setUser(null);
+      showToast('Sessão encerrada com sucesso.', 'info');
+      setTimeout(() => {
+        window.location.reload();
+      }, 80);
+    } catch (e) {
+      console.error('[SignOut Error]', e);
+      showToast('Erro ao encerrar sessão.', 'error');
+    }
   };
 
   // Funções de Gestão de Usuários e Níveis (ADM Master)
@@ -1215,6 +1232,7 @@ export function HubProvider({ children }) {
         setAccentColor,
         collapsed,
         setCollapsed,
+        toggleSidebar,
         listMode,
         setListMode,
         listStage,

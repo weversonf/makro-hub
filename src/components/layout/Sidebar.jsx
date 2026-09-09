@@ -11,6 +11,7 @@ export default function Sidebar() {
     signOutUser,
     collapsed,
     setCollapsed,
+    toggleSidebar,
     isEditorialActivity,
     mobileDrawerOpen,
     setMobileDrawerOpen,
@@ -32,18 +33,6 @@ export default function Sidebar() {
     const parts = name.trim().split(/\s+/);
     if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  };
-
-  const toggleSidebar = () => {
-    const next = !collapsed;
-    setCollapsed(next);
-    if (next) {
-      document.documentElement.classList.add('sidebar-collapsed');
-      localStorage.setItem('hr-sidebar', 'collapsed');
-    } else {
-      document.documentElement.classList.remove('sidebar-collapsed');
-      localStorage.setItem('hr-sidebar', 'expanded');
-    }
   };
 
   // Efeito deslizante magnético que desliza suavemente até o item selecionado
@@ -92,7 +81,7 @@ export default function Sidebar() {
           <a
             className="flex items-center gap-2 overflow-hidden cursor-pointer"
             onClick={collapsed ? toggleSidebar : () => setView(isAdmin ? 'dash' : 'lista')}
-            title={collapsed ? 'Clique para expandir o menu' : 'Makro'}
+            title={collapsed ? 'Clique para expandir o menu ( [ )' : 'Makro Engenharia'}
           >
             <img
               className="hr-sidebar__logo-full"
@@ -106,15 +95,15 @@ export default function Sidebar() {
             />
           </a>
 
-          {/* Botão recolher no Desktop */}
+          {/* Botão recolher / expandir no Desktop */}
           <button
             type="button"
             className="hidden lg:inline-flex hr-icon-btn hr-sidebar-toggle-btn w-8 h-8 rounded-lg text-[var(--color-sidebar-muted)] hover:text-white hover:bg-white/10 transition-colors"
             onClick={toggleSidebar}
-            title="Recolher Menu"
+            title={collapsed ? "Expandir Menu ( [ )" : "Recolher Menu ( [ )"}
             aria-label="Toggle sidebar"
           >
-            <i className="ph ph-sidebar-simple text-lg" />
+            <i className={`ph ${collapsed ? 'ph-caret-right' : 'ph-sidebar-simple'} text-lg`} />
           </button>
 
           {/* Ações no Mobile Drawer (Lado Direito): Alternar Tema + Fechar */}
@@ -293,7 +282,11 @@ export default function Sidebar() {
       {/* User Footer */}
       <div className="hr-sidebar__footer">
         <div className="hr-user-wrap flex items-center gap-3 w-full">
-          <div className="hr-user-avatar-wrap relative flex-shrink-0">
+          <div
+            className="hr-user-avatar-wrap relative flex-shrink-0 cursor-pointer"
+            title={`${user?.displayName || user?.email || 'Usuário'} (${userLevelInfo?.label || 'Colaborador'})`}
+            onClick={collapsed ? toggleSidebar : undefined}
+          >
             {user?.photoURL ? (
               <img src={user.photoURL} alt="" className="w-9 h-9 rounded-full object-cover" />
             ) : (
@@ -327,7 +320,7 @@ export default function Sidebar() {
           <button
             type="button"
             className="hr-user-logout-btn text-[var(--color-sidebar-muted)] hover:text-white p-1 rounded-lg transition"
-            title="Sair"
+            title="Sair da Conta (Logout)"
             onClick={signOutUser}
           >
             <i className="ph ph-sign-out text-lg" />

@@ -13,24 +13,23 @@ export default function Header() {
     activities,
     collapsed,
     setCollapsed,
+    toggleSidebar,
     user,
+    signOutUser,
     setMobileDrawerOpen,
     toggleTheme,
     openNotifModal,
     notifications,
-    isAdmin
+    isAdmin,
+    isMaster,
+    userLevelInfo
   } = useHub();
 
-  const toggleSidebar = () => {
-    const next = !collapsed;
-    setCollapsed(next);
-    if (next) {
-      document.documentElement.classList.add('sidebar-collapsed');
-      localStorage.setItem('hr-sidebar', 'collapsed');
-    } else {
-      document.documentElement.classList.remove('sidebar-collapsed');
-      localStorage.setItem('hr-sidebar', 'expanded');
-    }
+  const initials = (name) => {
+    if (!name) return 'MK';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
 
   const viewTitles = {
@@ -51,8 +50,19 @@ export default function Header() {
 
   return (
     <header className="hr-topbar hidden lg:flex" id="topbar">
-      {/* Left: Page Title & Mobile Toggle (apenas mobile) */}
-      <div className="flex items-center gap-2.5">
+      {/* Left: Page Title & Sidebar Toggle */}
+      <div className="flex items-center gap-2 sm:gap-2.5">
+        {/* Desktop Sidebar Toggle (Retrátil) */}
+        <button
+          type="button"
+          className="hidden lg:inline-flex hr-icon-btn text-[var(--color-muted)] hover:text-[var(--color-heading)] hover:bg-[var(--color-subtle)] transition"
+          onClick={toggleSidebar}
+          title={collapsed ? "Expandir menu lateral ( [ )" : "Recolher menu lateral ( [ )"}
+          aria-label="Alternar menu lateral"
+        >
+          <i className={`ph ${collapsed ? 'ph-sidebar-simple text-[var(--color-primary)] font-bold' : 'ph-sidebar-simple'} text-xl`} />
+        </button>
+
         <button
           type="button"
           className="hr-icon-btn hr-mobile-toggle"
@@ -134,6 +144,40 @@ export default function Header() {
           <i className="ph ph-plus-circle text-lg" />
           <span className="hidden sm:inline">Nova Tarefa</span>
         </button>
+
+        {/* User Profile Pill & Logout Button in Header */}
+        <div className="flex items-center gap-2 pl-2 sm:pl-3 border-l border-[var(--color-border)]">
+          <div
+            className="flex items-center gap-2 py-1 px-1.5 rounded-xl text-left"
+            title={`${user?.displayName || user?.email} (${userLevelInfo?.label || 'Colaborador'})`}
+          >
+            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-[var(--color-primary)] text-white font-bold text-xs flex items-center justify-center border border-[var(--color-border)] shadow-xs">
+              {user?.photoURL ? (
+                <img src={user.photoURL} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <span>{initials(user?.displayName || user?.email)}</span>
+              )}
+            </div>
+            <div className="hidden xl:flex flex-col text-left leading-tight">
+              <span className="text-xs font-semibold text-[var(--color-heading)] truncate max-w-[120px]">
+                {user?.displayName || user?.email?.split('@')[0]}
+              </span>
+              <span className="text-[10px] text-[var(--color-muted)] truncate max-w-[120px] mt-0.5">
+                {isMaster ? 'ADM Master' : (userLevelInfo?.label || 'Colaborador')}
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="hr-icon-btn text-[var(--color-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors"
+            onClick={signOutUser}
+            title="Sair da Conta (Logout)"
+            aria-label="Sair da Conta"
+          >
+            <i className="ph ph-sign-out text-lg" />
+          </button>
+        </div>
       </div>
     </header>
   );

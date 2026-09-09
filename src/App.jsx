@@ -130,6 +130,10 @@ export default function App() {
             <span>{loggingIn ? 'Autenticando...' : 'Entrar com Google'}</span>
           </button>
 
+          <p className="text-[11px] text-[var(--color-muted)] leading-relaxed -mt-2">
+            Acesse com sua conta corporativa <strong>@makroengenharia.com.br</strong> ou seu e-mail Google autorizado.
+          </p>
+
           {authError && (
             <div className="p-3.5 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 text-xs text-left leading-relaxed w-full">
               <p className="font-bold flex items-center gap-1.5 mb-1 text-[var(--color-heading)]">
