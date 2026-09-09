@@ -44,7 +44,7 @@ function getInitials(name = '') {
 }
 
 function parseTime(t) {
-  if (!t || !t.includes(':')) return 0;
+  if (!t || typeof t !== 'string' || !t.includes(':')) return 0;
   const parts = t.split(':').map(Number);
   return (parts[0] || 0) + (parts[1] || 0) / 60;
 }
@@ -70,6 +70,8 @@ export default function BancoHorasView() {
 
   // Seleção de Usuário: ADM Master pode selecionar qualquer membro; Colaborador fica travado no próprio
   const [selectedUserId, setSelectedUserId] = useState(() => user?.uid || null);
+
+  const isViewingSelf = !selectedUserId || (user?.uid && selectedUserId === user.uid);
 
   useEffect(() => {
     if (!selectedUserId && user?.uid) {
@@ -184,9 +186,18 @@ export default function BancoHorasView() {
     }
     setLoading(true);
 
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+    }, 3000);
+
     const unsubConfig = targetUserRef.collection('config').doc('main').onSnapshot((cfg) => {
       if (cfg.exists) {
-        setConfig({ ...defaultConfig, ...cfg.data() });
+        const data = cfg.data() || {};
+        setConfig({
+          ...defaultConfig,
+          ...data,
+          diasSemana: Array.isArray(data.diasSemana) ? data.diasSemana : defaultConfig.diasSemana
+        });
       } else {
         setConfig(defaultConfig);
       }
@@ -199,12 +210,15 @@ export default function BancoHorasView() {
     const unsubManual = targetUserRef.collection('manual').onSnapshot((snap) => {
       setManualRecords(snap.docs.map((d) => ({ ...d.data(), id: d.id })));
       setLoading(false);
+      clearTimeout(safetyTimer);
     }, (e) => {
       console.warn('[Ponto Manual]', e);
       setLoading(false);
+      clearTimeout(safetyTimer);
     });
 
     return () => {
+      clearTimeout(safetyTimer);
       unsubConfig();
       unsubRegs();
       unsubManual();
@@ -217,12 +231,17 @@ export default function BancoHorasView() {
   }, [config]);
 
   const isWorkDay = useCallback((d) => {
+    if (!d) return false;
     const dt = new Date(d + 'T12:00:00');
-    return config.diasSemana.includes(dt.getDay());
-  }, [config.diasSemana]);
+    if (isNaN(dt.getTime())) return false;
+    const dias = Array.isArray(config?.diasSemana) ? config.diasSemana : [1, 2, 3, 4, 5];
+    return dias.includes(dt.getDay());
+  }, [config?.diasSemana]);
 
   const getMonthKey = useCallback((d) => {
+    if (!d) return '';
     const dt = new Date(d + 'T12:00:00');
+    if (isNaN(dt.getTime())) return '';
     return dt.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }).toUpperCase();
   }, []);
 
@@ -233,22 +252,26 @@ export default function BancoHorasView() {
   }, []);
 
   const stats = useMemo(() => {
-    const si = (config.saldoInicialMin || 0) / 60;
-    let tb = si, xp = 0, tp = registros.length, st = 0, cs = 0;
+    const si = (config?.saldoInicialMin || 0) / 60;
+    let tb = si, xp = 0, tp = Array.isArray(registros) ? registros.length : 0, st = 0, cs = 0;
 
-    registros.slice().sort((a, b) => a.date.localeCompare(b.date)).forEach((r) => {
-      if (r.entrada && r.saida && isWorkDay(r.date)) {
-        const w = parseTime(r.saida) - parseTime(r.entrada) - (config.horasAlmoco || 0);
-        const d = w - expectedHours;
-        tb += d;
-        if (d > 0) { cs++; xp += Math.round(d * 10); } else { cs = 0; }
-        if (cs > st) st = cs;
-      }
-    });
+    (Array.isArray(registros) ? registros : [])
+      .slice()
+      .sort((a, b) => String(a?.date || '').localeCompare(String(b?.date || '')))
+      .forEach((r) => {
+        if (r?.entrada && r?.saida && isWorkDay(r.date)) {
+          const w = parseTime(r.saida) - parseTime(r.entrada) - (config?.horasAlmoco || 0);
+          const d = w - expectedHours;
+          tb += d;
+          if (d > 0) { cs++; xp += Math.round(d * 10); } else { cs = 0; }
+          if (cs > st) st = cs;
+        }
+      });
 
-    manualRecords.forEach((r) => {
-      tb += r.tipo === 'positivo' ? r.decimal : -r.decimal;
-      xp += r.tipo === 'positivo' ? Math.round(r.decimal * 5) : 0;
+    (Array.isArray(manualRecords) ? manualRecords : []).forEach((r) => {
+      const dec = Number(r?.decimal) || parseTime(r?.hrsStr);
+      tb += r?.tipo === 'positivo' ? dec : -dec;
+      xp += r?.tipo === 'positivo' ? Math.round(dec * 5) : 0;
     });
 
     xp += tp * 5;
@@ -263,22 +286,27 @@ export default function BancoHorasView() {
   }, [registros, manualRecords, config, expectedHours, isWorkDay]);
 
   const filteredTime = useMemo(() => {
-    return registros.filter((r) => getMonthKey(r.date) === filterMonth).sort((a, b) => b.date.localeCompare(a.date));
+    if (!Array.isArray(registros)) return [];
+    return registros
+      .filter((r) => r?.date && getMonthKey(r.date) === filterMonth)
+      .sort((a, b) => String(b?.date || '').localeCompare(String(a?.date || '')));
   }, [registros, filterMonth, getMonthKey]);
 
   const filteredManual = useMemo(() => {
-    return manualRecords.filter((r) => r.ref === filterMonth);
+    if (!Array.isArray(manualRecords)) return [];
+    return manualRecords.filter((r) => r?.ref === filterMonth);
   }, [manualRecords, filterMonth]);
 
   const monthBalance = useMemo(() => {
     let b = 0;
     filteredTime.forEach((r) => {
-      if (r.entrada && r.saida && isWorkDay(r.date)) {
-        b += (parseTime(r.saida) - parseTime(r.entrada) - (config.horasAlmoco || 0)) - expectedHours;
+      if (r?.entrada && r?.saida && isWorkDay(r.date)) {
+        b += (parseTime(r.saida) - parseTime(r.entrada) - (config?.horasAlmoco || 0)) - expectedHours;
       }
     });
     filteredManual.forEach((r) => {
-      b += r.tipo === 'positivo' ? r.decimal : -r.decimal;
+      const dec = Number(r?.decimal) || parseTime(r?.hrsStr);
+      b += r?.tipo === 'positivo' ? dec : -dec;
     });
     return b;
   }, [filteredTime, filteredManual, config, expectedHours, isWorkDay]);
@@ -495,7 +523,12 @@ export default function BancoHorasView() {
   ];
 
   const userRoleKey = selectedUserObj?.role || (selectedUserObj?.email === MASTER_ADMIN_EMAIL ? 'admin_master' : 'colaborador');
-  const roleConfig = USER_ROLES[userRoleKey] || USER_ROLES.colaborador;
+  const roleConfig = (USER_ROLES && USER_ROLES[userRoleKey]) || (USER_ROLES && USER_ROLES.colaborador) || {
+    badgeClass: 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30',
+    icon: '👤',
+    label: 'Colaborador',
+    description: 'Colaborador Makro'
+  };
 
   return (
     <div className="space-y-6 pb-12">
@@ -685,9 +718,9 @@ export default function BancoHorasView() {
                 <span
                   className="text-sm font-bold font-mono mt-0.5 block"
                   style={{
-                    color: todayRecord?.saldo?.startsWith('+')
+                    color: typeof todayRecord?.saldo === 'string' && todayRecord.saldo.startsWith('+')
                       ? 'var(--color-success)'
-                      : (todayRecord?.saldo?.startsWith('-') ? 'var(--color-danger)' : 'var(--color-muted)')
+                      : (typeof todayRecord?.saldo === 'string' && todayRecord.saldo.startsWith('-') ? 'var(--color-danger)' : 'var(--color-muted)')
                   }}
                 >
                   {todayRecord?.saldo || '--'}
@@ -877,17 +910,21 @@ export default function BancoHorasView() {
                   <tbody className="divide-y divide-[var(--color-border)]">
                     {filteredTime.map((r) => {
                       const d = new Date(r.date + 'T12:00:00');
-                      const isPos = r.saldo && r.saldo.startsWith('+');
-                      const isNeg = r.saldo && r.saldo.startsWith('-');
-                      const dayName = BH_DIAS[d.getDay()];
-                      const dayComplete = BH_DIAS_COMPLETO[d.getDay()];
+                      const isPos = typeof r?.saldo === 'string' && r.saldo.startsWith('+');
+                      const isNeg = typeof r?.saldo === 'string' && r.saldo.startsWith('-');
+                      const dayIdx = isNaN(d.getDay()) ? 0 : d.getDay();
+                      const dayName = BH_DIAS[dayIdx] || '';
+                      const dayComplete = BH_DIAS_COMPLETO[dayIdx] || '';
+                      const dateDisplay = !isNaN(d.getDate())
+                        ? `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+                        : (r.date || '--/--');
 
                       return (
-                        <tr key={r.date} className="hover:bg-[var(--color-surface-hover)] transition">
+                        <tr key={r.date || r.id} className="hover:bg-[var(--color-surface-hover)] transition">
                           <td className="p-3.5 font-medium text-[var(--color-heading)]">
                             <div className="flex items-center gap-2">
                               <span className="font-bold text-sm">
-                                {String(d.getDate()).padStart(2, '0')}/{String(d.getMonth() + 1).padStart(2, '0')}
+                                {dateDisplay}
                               </span>
                               <span className="text-[11px] text-[var(--color-muted)]" title={dayComplete}>
                                 ({dayName})
@@ -1346,13 +1383,14 @@ export default function BancoHorasView() {
             </label>
             <div className="flex gap-2 flex-wrap">
               {BH_DIAS.map((d, i) => {
-                const on = config.diasSemana.includes(i);
+                const activeDias = Array.isArray(config?.diasSemana) ? config.diasSemana : [1, 2, 3, 4, 5];
+                const on = activeDias.includes(i);
                 return (
                   <button
                     key={i}
                     type="button"
                     onClick={() => {
-                      const nd = on ? config.diasSemana.filter((x) => x !== i) : [...config.diasSemana, i];
+                      const nd = on ? activeDias.filter((x) => x !== i) : [...activeDias, i];
                       setConfig({ ...config, diasSemana: nd });
                     }}
                     className={`px-3.5 py-2 rounded-xl text-xs font-bold transition ${

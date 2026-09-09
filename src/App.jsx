@@ -19,6 +19,7 @@ import CategoriasView from './views/CategoriasView';
 import ConfigView from './views/ConfigView';
 import BancoHorasView from './views/BancoHorasView';
 import NpsView from './views/NpsView';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import { Plus } from 'lucide-react';
 
 export default function App() {
@@ -159,16 +160,18 @@ export default function App() {
 
       <main className="hr-main-shell">
         <div className="hr-container">
-          {activeView === 'lista' && <TarefasView />}
-          {activeView === 'banco-horas' && <BancoHorasView />}
-          {isAdmin && activeView === 'dash' && <DashboardView />}
-          {isAdmin && activeView === 'projetos' && <ProjetosView />}
-          {isAdmin && activeView === 'editorial' && <CalendarioView />}
-          {isAdmin && activeView === 'documentos' && <DocumentosView />}
-          {isAdmin && activeView === 'equipe' && <EquipeView />}
-          {isAdmin && activeView === 'performance' && <PerformanceView />}
-          {isAdmin && (activeView === 'categorias' || activeView === 'config') && <ConfigView />}
-          {isAdmin && activeView === 'nps' && <NpsView />}
+          <ErrorBoundary key={activeView}>
+            {activeView === 'lista' && <TarefasView />}
+            {activeView === 'banco-horas' && <BancoHorasView />}
+            {isAdmin && activeView === 'dash' && <DashboardView />}
+            {isAdmin && activeView === 'projetos' && <ProjetosView />}
+            {isAdmin && activeView === 'editorial' && <CalendarioView />}
+            {isAdmin && activeView === 'documentos' && <DocumentosView />}
+            {isAdmin && activeView === 'equipe' && <EquipeView />}
+            {isAdmin && activeView === 'performance' && <PerformanceView />}
+            {isAdmin && (activeView === 'categorias' || activeView === 'config') && <ConfigView />}
+            {isAdmin && activeView === 'nps' && <NpsView />}
+          </ErrorBoundary>
         </div>
       </main>
 
