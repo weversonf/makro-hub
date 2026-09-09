@@ -19,6 +19,11 @@ desktop.ini
 .DS_Store
 Thumbs.db
 
+# Credentials and keys
+*-firebase-adminsdk-*.json
+*.serviceAccountKey.json
+service-account*.json
+
 # Agent and temporary files
 .gemini/
 .system_generated/

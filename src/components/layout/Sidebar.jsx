@@ -17,6 +17,7 @@ export default function Sidebar() {
     theme,
     toggleTheme,
     isMaster,
+    isAdmin,
     userLevelInfo
   } = useHub();
   const navRef = useRef(null);
@@ -90,7 +91,7 @@ export default function Sidebar() {
         <div className="hr-sidebar__brand">
           <a
             className="flex items-center gap-2 overflow-hidden cursor-pointer"
-            onClick={collapsed ? toggleSidebar : () => setView('dash')}
+            onClick={collapsed ? toggleSidebar : () => setView(isAdmin ? 'dash' : 'lista')}
             title={collapsed ? 'Clique para expandir o menu' : 'Makro'}
           >
             <img
@@ -153,18 +154,20 @@ export default function Sidebar() {
           aria-hidden="true"
         />
         {/* Main Section */}
-        <div>
-          <p className="hr-nav-section">Principal</p>
-          <button
-            className={`hr-nav-item ${view === 'dash' ? 'hr-nav-item--active' : ''}`}
-            onClick={() => setView('dash')}
-            data-tooltip="Dashboard"
-          >
-            <i className="ph ph-squares-four text-xl flex-shrink-0" />
-            <span className="hr-nav-label">Dashboard</span>
-            <span className="hr-nav-badge">{dashActs.length}</span>
-          </button>
-        </div>
+        {isAdmin && (
+          <div>
+            <p className="hr-nav-section">Principal</p>
+            <button
+              className={`hr-nav-item ${view === 'dash' ? 'hr-nav-item--active' : ''}`}
+              onClick={() => setView('dash')}
+              data-tooltip="Dashboard"
+            >
+              <i className="ph ph-squares-four text-xl flex-shrink-0" />
+              <span className="hr-nav-label">Dashboard</span>
+              <span className="hr-nav-badge">{dashActs.length}</span>
+            </button>
+          </div>
+        )}
 
         {/* Workspace Section */}
         <div>
@@ -179,91 +182,101 @@ export default function Sidebar() {
             <span className="hr-nav-badge">{pend}</span>
           </button>
 
-          <button
-            className={`hr-nav-item ${view === 'projetos' ? 'hr-nav-item--active' : ''}`}
-            onClick={() => setView('projetos')}
-            data-tooltip="Projetos"
-          >
-            <i className="ph ph-folder-notch text-xl flex-shrink-0" />
-            <span className="hr-nav-label">Projetos</span>
-          </button>
+          {isAdmin && (
+            <>
+              <button
+                className={`hr-nav-item ${view === 'projetos' ? 'hr-nav-item--active' : ''}`}
+                onClick={() => setView('projetos')}
+                data-tooltip="Projetos"
+              >
+                <i className="ph ph-folder-notch text-xl flex-shrink-0" />
+                <span className="hr-nav-label">Projetos</span>
+              </button>
 
-          <button
-            className={`hr-nav-item ${view === 'editorial' ? 'hr-nav-item--active' : ''}`}
-            onClick={() => setView('editorial')}
-            data-tooltip="Calendário Editorial"
-          >
-            <i className="ph ph-calendar-blank text-xl flex-shrink-0" />
-            <span className="hr-nav-label">Calendário</span>
-            <span className="hr-nav-badge">{edActs.length}</span>
-          </button>
+              <button
+                className={`hr-nav-item ${view === 'editorial' ? 'hr-nav-item--active' : ''}`}
+                onClick={() => setView('editorial')}
+                data-tooltip="Calendário Editorial"
+              >
+                <i className="ph ph-calendar-blank text-xl flex-shrink-0" />
+                <span className="hr-nav-label">Calendário</span>
+                <span className="hr-nav-badge">{edActs.length}</span>
+              </button>
 
-          <button
-            className={`hr-nav-item ${view === 'documentos' ? 'hr-nav-item--active' : ''}`}
-            onClick={() => setView('documentos')}
-            data-tooltip="Documentos & Mídia Kit"
-          >
-            <i className="ph ph-files text-xl flex-shrink-0" />
-            <span className="hr-nav-label">Documentos / Mídia Kit</span>
-          </button>
+              <button
+                className={`hr-nav-item ${view === 'documentos' ? 'hr-nav-item--active' : ''}`}
+                onClick={() => setView('documentos')}
+                data-tooltip="Documentos & Mídia Kit"
+              >
+                <i className="ph ph-files text-xl flex-shrink-0" />
+                <span className="hr-nav-label">Documentos / Mídia Kit</span>
+              </button>
+            </>
+          )}
         </div>
 
         {/* Pessoas & Equipe */}
-        <div>
-          <p className="hr-nav-section">Pessoas & Equipe</p>
-          <button
-            className={`hr-nav-item ${view === 'equipe' ? 'hr-nav-item--active' : ''}`}
-            onClick={() => setView('equipe')}
-            data-tooltip="Equipe do Marketing"
-          >
-            <i className="ph ph-users-three text-xl flex-shrink-0" />
-            <span className="hr-nav-label">Equipe do Marketing</span>
-          </button>
-        </div>
+        {isAdmin && (
+          <div>
+            <p className="hr-nav-section">Pessoas & Equipe</p>
+            <button
+              className={`hr-nav-item ${view === 'equipe' ? 'hr-nav-item--active' : ''}`}
+              onClick={() => setView('equipe')}
+              data-tooltip="Equipe do Marketing"
+            >
+              <i className="ph ph-users-three text-xl flex-shrink-0" />
+              <span className="hr-nav-label">Equipe do Marketing</span>
+            </button>
+          </div>
+        )}
 
         {/* Métricas & Gestão */}
-        <div>
-          <p className="hr-nav-section">Métricas & Gestão</p>
-          <button
-            className={`hr-nav-item ${view === 'performance' ? 'hr-nav-item--active' : ''}`}
-            onClick={() => setView('performance')}
-            data-tooltip="Performance & Desempenho"
-          >
-            <i className="ph ph-chart-line-up text-xl flex-shrink-0" />
-            <span className="hr-nav-label">Performance</span>
-          </button>
+        {isAdmin && (
+          <div>
+            <p className="hr-nav-section">Métricas & Gestão</p>
+            <button
+              className={`hr-nav-item ${view === 'performance' ? 'hr-nav-item--active' : ''}`}
+              onClick={() => setView('performance')}
+              data-tooltip="Performance & Desempenho"
+            >
+              <i className="ph ph-chart-line-up text-xl flex-shrink-0" />
+              <span className="hr-nav-label">Performance</span>
+            </button>
 
-          <button
-            className={`hr-nav-item ${view === 'banco-horas' ? 'hr-nav-item--active' : ''}`}
-            onClick={() => setView('banco-horas')}
-            data-tooltip="Banco de Horas"
-          >
-            <i className="ph ph-clock-user text-xl flex-shrink-0" />
-            <span className="hr-nav-label">Banco de Horas</span>
-          </button>
+            <button
+              className={`hr-nav-item ${view === 'banco-horas' ? 'hr-nav-item--active' : ''}`}
+              onClick={() => setView('banco-horas')}
+              data-tooltip="Banco de Horas"
+            >
+              <i className="ph ph-clock-user text-xl flex-shrink-0" />
+              <span className="hr-nav-label">Banco de Horas</span>
+            </button>
 
-          <button
-            className={`hr-nav-item ${view === 'nps' ? 'hr-nav-item--active' : ''}`}
-            onClick={() => setView('nps')}
-            data-tooltip="Pesquisa NPS"
-          >
-            <i className="ph ph-medal text-xl flex-shrink-0" />
-            <span className="hr-nav-label">Pesquisa NPS</span>
-          </button>
-        </div>
+            <button
+              className={`hr-nav-item ${view === 'nps' ? 'hr-nav-item--active' : ''}`}
+              onClick={() => setView('nps')}
+              data-tooltip="Pesquisa NPS"
+            >
+              <i className="ph ph-medal text-xl flex-shrink-0" />
+              <span className="hr-nav-label">Pesquisa NPS</span>
+            </button>
+          </div>
+        )}
 
         {/* Sistema Section */}
-        <div className="mt-auto">
-          <p className="hr-nav-section">Sistema</p>
-          <button
-            className={`hr-nav-item ${view === 'config' ? 'hr-nav-item--active' : ''}`}
-            onClick={() => setView('config')}
-            data-tooltip="Configurações"
-          >
-            <i className="ph ph-gear text-xl flex-shrink-0" />
-            <span className="hr-nav-label">Configurações</span>
-          </button>
-        </div>
+        {isAdmin && (
+          <div className="mt-auto">
+            <p className="hr-nav-section">Sistema</p>
+            <button
+              className={`hr-nav-item ${view === 'config' ? 'hr-nav-item--active' : ''}`}
+              onClick={() => setView('config')}
+              data-tooltip="Configurações"
+            >
+              <i className="ph ph-gear text-xl flex-shrink-0" />
+              <span className="hr-nav-label">Configurações</span>
+            </button>
+          </div>
+        )}
       </nav>
 
       {/* User Footer */}

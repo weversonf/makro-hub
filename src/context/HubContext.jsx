@@ -137,6 +137,7 @@ export function HubProvider({ children }) {
   const [userProfile, setUserProfile] = useState(null);
   const [registeredUsers, setRegisteredUsers] = useState([]);
   const [authLoading, setAuthLoading] = useState(true);
+  const [discoveredMasterUid, setDiscoveredMasterUid] = useState(null);
 
   const isMaster = Boolean(
     user?.email && user.email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()
@@ -145,16 +146,67 @@ export function HubProvider({ children }) {
   const isAdmin = isMaster || userRole === 'admin';
   const userLevelInfo = USER_ROLES[userRole] || USER_ROLES.colaborador;
 
+  // Descobre o UID do ADM Master no banco de dados para compartilhamento do Workspace
+  useEffect(() => {
+    if (!user) return;
+    if (isMaster) {
+      setDiscoveredMasterUid(user.uid);
+      return;
+    }
+    db.collection('users')
+      .where('email', '==', MASTER_ADMIN_EMAIL)
+      .limit(1)
+      .get()
+      .then((snap) => {
+        if (!snap.empty) {
+          setDiscoveredMasterUid(snap.docs[0].id);
+        }
+      })
+      .catch((err) => console.warn('[MasterUid lookup]', err));
+  }, [user, isMaster]);
+
+  const masterUid = isMaster
+    ? user?.uid
+    : (discoveredMasterUid || registeredUsers.find(
+        (u) => u.email && u.email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()
+      )?.uid || null);
+
+  const getSharedCollection = useCallback((colName) => {
+    const targetUid = masterUid || (isMaster ? user?.uid : null);
+    if (targetUid) {
+      return db.collection('users').doc(targetUid).collection(colName);
+    }
+    return getUserCollection(colName);
+  }, [masterUid, isMaster, user]);
+
+  const getSharedDoc = useCallback((colName, docId) => {
+    return getSharedCollection(colName).doc(docId);
+  }, [getSharedCollection]);
+
   const [activities, setActivities] = useState([]);
   const [categories, setCategories] = useState([]);
   const [projects, setProjects] = useState([]);
-  const [currentView, setCurrentView] = useState('dash');
+  const [currentView, setCurrentView] = useState(() => (isAdmin ? 'dash' : 'lista'));
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
+  // Redirecionamento e proteção de rota com base no nível de permissão
+  useEffect(() => {
+    if (!authLoading && user) {
+      if (!isAdmin && currentView !== 'lista') {
+        setCurrentView('lista');
+      }
+    }
+  }, [authLoading, user, isAdmin, currentView]);
+
   const setView = useCallback((newView) => {
+    if (!isAdmin && newView !== 'lista') {
+      setCurrentView('lista');
+      setMobileDrawerOpen(false);
+      return;
+    }
     setCurrentView(newView);
     setMobileDrawerOpen(false);
-  }, []);
+  }, [isAdmin]);
   const view = currentView;
   const [theme, setTheme] = useState(() => localStorage.getItem('hr-theme') || localStorage.getItem('ax:theme') || 'light');
   const [accentColor, setAccentColor] = useState(() => localStorage.getItem('ax:accent') || '#1E856C');
@@ -375,7 +427,7 @@ export function HubProvider({ children }) {
     };
   }, [user]);
 
-  // Firestore Sync
+  // Firestore Sync com o Workspace Central (ADM Master & Colaboradores)
   useEffect(() => {
     if (!user) {
       setActivities([]);
@@ -384,7 +436,8 @@ export function HubProvider({ children }) {
       return;
     }
 
-    const unsubActs = getUserCollection('activities').onSnapshot(async (snap) => {
+    const colActs = getSharedCollection('activities');
+    const unsubActs = colActs.onSnapshot(async (snap) => {
       const list = [];
       const userName = user?.displayName || 'Weverson Nascimento';
       const userEmail = user?.email || MASTER_ADMIN_EMAIL;
@@ -403,15 +456,15 @@ export function HubProvider({ children }) {
         });
       });
 
-      // Se a subcoleção do usuário estiver vazia, migrar tarefas da raiz para o usuário
-      if (list.length === 0 && user && user.uid) {
+      // Se a coleção estiver vazia e for o Master, migrar tarefas da raiz para o workspace
+      if (list.length === 0 && isMaster && user && user.uid) {
         try {
           const rootSnap = await db.collection('activities').get();
           if (!rootSnap.empty) {
             const batch = db.batch();
             rootSnap.forEach((rDoc) => {
               const rData = rDoc.data();
-              const userActRef = getUserCollection('activities').doc(rDoc.id);
+              const userActRef = colActs.doc(rDoc.id);
               batch.set(userActRef, {
                 ...rData,
                 responsavel: rData.responsavel || userName,
@@ -427,33 +480,20 @@ export function HubProvider({ children }) {
         }
       }
 
-      // Persiste o responsável no Firestore para atividades que ainda não o possuem
-      if (user && user.uid && list.length > 0) {
-        list.forEach((act) => {
-          if (!act.responsavelEmail && act._fbId) {
-            getUserDoc('activities', act._fbId).set({
-              responsavel: userName,
-              responsavelEmail: userEmail,
-              responsavelId: userUid,
-              responsavelFoto: userFoto
-            }, { merge: true }).catch(() => {});
-          }
-        });
-      }
-
       setActivities(list);
     }, (err) => {
       console.warn('[Firestore] Error snapshot activities:', err);
     });
 
-    const unsubCats = getUserCollection('categories').onSnapshot((snap) => {
+    const colCats = getSharedCollection('categories');
+    const unsubCats = colCats.onSnapshot((snap) => {
       const cats = [];
       snap.forEach((doc) => {
         cats.push({ ...doc.data(), _fbId: doc.id });
       });
-      if (cats.length === 0) {
+      if (cats.length === 0 && isMaster) {
         // Inicializa categorias default
-        Promise.all(DEFAULT_CATS.map((c) => getUserCollection('categories').add(c)));
+        Promise.all(DEFAULT_CATS.map((c) => colCats.add(c)));
       } else {
         setCategories(cats);
       }
@@ -461,14 +501,15 @@ export function HubProvider({ children }) {
       console.warn('[Firestore] Error snapshot categories:', err);
     });
 
-    const unsubProjs = getUserCollection('projects').onSnapshot((snap) => {
+    const colProjs = getSharedCollection('projects');
+    const unsubProjs = colProjs.onSnapshot((snap) => {
       const projs = [];
       snap.forEach((doc) => {
         projs.push({ ...doc.data(), _fbId: doc.id });
       });
-      if (projs.length === 0) {
+      if (projs.length === 0 && isMaster) {
         // Inicializa projetos default
-        Promise.all(DEFAULT_PROJECTS.map((p) => getUserCollection('projects').add(p)));
+        Promise.all(DEFAULT_PROJECTS.map((p) => colProjs.add(p)));
       } else {
         setProjects(projs);
       }
@@ -481,7 +522,7 @@ export function HubProvider({ children }) {
       unsubCats();
       unsubProjs();
     };
-  }, [user]);
+  }, [user, getSharedCollection, isMaster]);
 
   // Helpers de Projetos
   const createProject = useCallback(async (projectData) => {
@@ -492,7 +533,7 @@ export function HubProvider({ children }) {
     const exists = projects.find((p) => p.nome && p.nome.toLowerCase() === cleanNome.toLowerCase());
     if (exists) return cleanNome;
 
-    const docRef = getUserCollection('projects').doc();
+    const docRef = getSharedCollection('projects').doc();
     const newProj = {
       nome: cleanNome,
       descricao: projectData.descricao || '',
@@ -764,7 +805,7 @@ export function HubProvider({ children }) {
           showToast('Tarefa atualizada com sucesso');
 
           if (existing._fbId) {
-            getUserDoc('activities', existing._fbId)
+            getSharedDoc('activities', existing._fbId)
               .update({ ...taskData, ...defaultResp })
               .catch((err) => {
                 console.error('[Firestore] Erro ao atualizar tarefa:', err);
@@ -772,11 +813,12 @@ export function HubProvider({ children }) {
                 setActivities((prev) => prev.map((a) => (a.id === editTaskId ? existing : a)));
                 showToast('Erro ao sincronizar atualização com o servidor.', 'error');
               });
+            db.collection('activities').doc(existing._fbId).set({ ...taskData, ...defaultResp }, { merge: true }).catch(() => {});
           }
         }
       } else {
         const nextId = activities.length > 0 ? Math.max(...activities.map((a) => a.id || 0)) + 1 : 1;
-        const docRef = getUserCollection('activities').doc();
+        const docRef = getSharedCollection('activities').doc();
         const newTask = {
           ...taskData,
           ...defaultResp,
@@ -794,7 +836,9 @@ export function HubProvider({ children }) {
         closeTaskModal();
         showToast('Tarefa criada com sucesso');
 
-        docRef.set(newTask).catch((err) => {
+        docRef.set(newTask).then(() => {
+          db.collection('activities').doc(docRef.id).set(newTask).catch(() => {});
+        }).catch((err) => {
           console.error('[Firestore] Erro ao salvar nova tarefa:', err);
           // Rollback
           setActivities((prev) => prev.filter((a) => a._fbId !== docRef.id));
@@ -808,6 +852,10 @@ export function HubProvider({ children }) {
   };
 
   const deleteTask = useCallback((taskId) => {
+    if (!isAdmin) {
+      showToast('Apenas administradores podem excluir tarefas.', 'error');
+      return;
+    }
     const t = getTask(taskId);
     if (!t) return;
     showConfirm('Excluir tarefa?', 'Essa ação removerá a tarefa definitivamente.', () => {
@@ -817,7 +865,7 @@ export function HubProvider({ children }) {
       showToast('Tarefa excluída');
 
       if (t._fbId) {
-        getUserDoc('activities', t._fbId)
+        getSharedDoc('activities', t._fbId)
           .delete()
           .catch((e) => {
             console.error('[Firestore] Erro ao excluir tarefa:', e);
@@ -825,9 +873,10 @@ export function HubProvider({ children }) {
             setActivities((prev) => [...prev, t]);
             showToast('Erro ao excluir tarefa no servidor.', 'error');
           });
+        db.collection('activities').doc(t._fbId).delete().catch(() => {});
       }
     });
-  }, [getTask, showConfirm, closeTaskModal, showToast]);
+  }, [isAdmin, getTask, showConfirm, closeTaskModal, showToast, getSharedDoc]);
 
   // Kanban Otimista com Rollback
   const moveTaskStage = async (taskId, newStage) => {
@@ -854,11 +903,16 @@ export function HubProvider({ children }) {
     // Sincronização remota
     if (task._fbId) {
       try {
-        await getUserDoc('activities', task._fbId).update({
+        await getSharedDoc('activities', task._fbId).update({
           stage: newStage,
           progress: updatedProgress,
           concluidoEm: updatedConcluidoEm
         });
+        db.collection('activities').doc(task._fbId).set({
+          stage: newStage,
+          progress: updatedProgress,
+          concluidoEm: updatedConcluidoEm
+        }, { merge: true }).catch(() => {});
       } catch (err) {
         console.error('[Kanban] Erro ao sincronizar nova coluna:', err);
         // Rollback
@@ -927,7 +981,7 @@ export function HubProvider({ children }) {
         const act = pendingEditorial[i];
         const newDate = dates[i];
         if (act._fbId) {
-          const ref = getUserDoc('activities', act._fbId);
+          const ref = getSharedDoc('activities', act._fbId);
           batch.update(ref, {
             dataPostagem: newDate,
             dataVencimento: newDate
@@ -979,18 +1033,19 @@ export function HubProvider({ children }) {
           showToast('Categoria atualizada');
 
           if (c._fbId) {
-            getUserDoc('categories', c._fbId)
+            getSharedDoc('categories', c._fbId)
               .update({ nome, cor })
               .catch((e) => {
                 console.error('[Firestore] Erro ao atualizar categoria:', e);
                 setCategories((prev) => prev.map((x) => (x.id === id ? c : x)));
                 showToast('Erro ao sincronizar categoria.', 'error');
               });
+            db.collection('categories').doc(c._fbId).set({ nome, cor }, { merge: true }).catch(() => {});
           }
         }
       } else {
         const nextCatId = categories.length > 0 ? Math.max(...categories.map((c) => c.id || 0)) + 1 : 1;
-        const docRef = getUserCollection('categories').doc();
+        const docRef = getSharedCollection('categories').doc();
         const newCat = { id: nextCatId, nome, cor, _fbId: docRef.id };
 
         // Atualização otimista imediata na UI
@@ -998,7 +1053,9 @@ export function HubProvider({ children }) {
         closeCategoryModal();
         showToast('Categoria criada');
 
-        docRef.set({ id: nextCatId, nome, cor }).catch((e) => {
+        docRef.set({ id: nextCatId, nome, cor }).then(() => {
+          db.collection('categories').doc(docRef.id).set({ id: nextCatId, nome, cor }).catch(() => {});
+        }).catch((e) => {
           console.error('[Firestore] Erro ao criar categoria:', e);
           setCategories((prev) => prev.filter((x) => x._fbId !== docRef.id));
           showToast('Erro ao salvar categoria no servidor.', 'error');
@@ -1011,6 +1068,10 @@ export function HubProvider({ children }) {
   };
 
   const deleteCategory = useCallback((catId) => {
+    if (!isAdmin) {
+      showToast('Apenas administradores podem remover categorias.', 'error');
+      return;
+    }
     const c = categories.find((x) => x.id === catId);
     if (!c || c.id === 1) return;
     showConfirm('Excluir categoria?', 'Tarefas dessa categoria ficarão sem categoria vinculada.', () => {
@@ -1020,16 +1081,17 @@ export function HubProvider({ children }) {
       showToast('Categoria removida');
 
       if (c._fbId) {
-        getUserDoc('categories', c._fbId)
+        getSharedDoc('categories', c._fbId)
           .delete()
           .catch((e) => {
             console.error('[Firestore] Erro ao remover categoria:', e);
             setCategories((prev) => [...prev, c]);
             showToast('Erro ao remover categoria no servidor.', 'error');
           });
+        db.collection('categories').doc(c._fbId).delete().catch(() => {});
       }
     });
-  }, [categories, showConfirm, closeCategoryModal, showToast]);
+  }, [isAdmin, categories, showConfirm, closeCategoryModal, showToast, getSharedDoc]);
 
   // Exportações
   const exportCSV = useCallback(() => {

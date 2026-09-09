@@ -39,7 +39,8 @@ export default function App() {
     confirmModal,
     closeConfirm,
     authError,
-    loggingIn
+    loggingIn,
+    isAdmin
   } = useHub();
 
   // Atalhos Globais de Teclado
@@ -147,7 +148,9 @@ export default function App() {
     );
   }
 
-  const showFab = view !== 'banco-horas' && view !== 'nps';
+  // Trava de segurança: Colaboradores e visualizadores só têm acesso estrito ao módulo de Tarefas
+  const activeView = isAdmin ? view : 'lista';
+  const showFab = activeView === 'lista' || (isAdmin && activeView !== 'banco-horas' && activeView !== 'nps');
 
   return (
     <div className="min-h-screen bg-[var(--color-bg)] font-sans antialiased text-[var(--color-text)]">
@@ -156,16 +159,16 @@ export default function App() {
 
       <main className="hr-main-shell">
         <div className="hr-container">
-          {view === 'dash' && <DashboardView />}
-          {view === 'lista' && <TarefasView />}
-          {view === 'projetos' && <ProjetosView />}
-          {view === 'editorial' && <CalendarioView />}
-          {view === 'documentos' && <DocumentosView />}
-          {view === 'equipe' && <EquipeView />}
-          {view === 'performance' && <PerformanceView />}
-          {(view === 'categorias' || view === 'config') && <ConfigView />}
-          {view === 'banco-horas' && <BancoHorasView />}
-          {view === 'nps' && <NpsView />}
+          {activeView === 'lista' && <TarefasView />}
+          {isAdmin && activeView === 'dash' && <DashboardView />}
+          {isAdmin && activeView === 'projetos' && <ProjetosView />}
+          {isAdmin && activeView === 'editorial' && <CalendarioView />}
+          {isAdmin && activeView === 'documentos' && <DocumentosView />}
+          {isAdmin && activeView === 'equipe' && <EquipeView />}
+          {isAdmin && activeView === 'performance' && <PerformanceView />}
+          {isAdmin && (activeView === 'categorias' || activeView === 'config') && <ConfigView />}
+          {isAdmin && activeView === 'banco-horas' && <BancoHorasView />}
+          {isAdmin && activeView === 'nps' && <NpsView />}
         </div>
       </main>
 

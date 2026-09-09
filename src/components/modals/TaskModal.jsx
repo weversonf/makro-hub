@@ -22,7 +22,8 @@ export default function TaskModal() {
     allProjectsList,
     registeredUsers,
     user,
-    MASTER_ADMIN_EMAIL
+    MASTER_ADMIN_EMAIL,
+    isAdmin
   } = useHub();
 
   const [titulo, setTitulo] = useState('');
@@ -826,7 +827,7 @@ export default function TaskModal() {
 
         {/* RODAPÉ FIXO DO MODAL */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-t border-[var(--color-border)] bg-[var(--color-surface)] sticky bottom-0 z-20">
-          {editTaskId ? (
+          {editTaskId && isAdmin ? (
             <button
               type="button"
               className="text-xs text-[var(--color-danger)] hover:underline flex items-center gap-1 font-semibold"

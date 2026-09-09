@@ -9,7 +9,8 @@ export default function MobileNav() {
     activities,
     isEditorialActivity,
     mobileDrawerOpen,
-    setMobileDrawerOpen
+    setMobileDrawerOpen,
+    isAdmin
   } = useHub();
 
   const dashActs = activities.filter((a) => !isEditorialActivity(a));
@@ -19,15 +20,17 @@ export default function MobileNav() {
 
   return (
     <nav className="mob-nav" aria-label="Navegação móvel">
-      {/* 1. Início (Dashboard) */}
-      <button
-        type="button"
-        className={`mob-nav__item ${view === 'dash' ? 'mob-nav__item--active' : ''}`}
-        onClick={() => setView('dash')}
-      >
-        <i className="ph ph-squares-four text-2xl" />
-        <span>Início</span>
-      </button>
+      {/* 1. Início (Dashboard - Apenas Administradores) */}
+      {isAdmin && (
+        <button
+          type="button"
+          className={`mob-nav__item ${view === 'dash' ? 'mob-nav__item--active' : ''}`}
+          onClick={() => setView('dash')}
+        >
+          <i className="ph ph-squares-four text-2xl" />
+          <span>Início</span>
+        </button>
+      )}
 
       {/* 2. Tarefas */}
       <button
@@ -48,35 +51,37 @@ export default function MobileNav() {
           type="button"
           className="mob-nav__fab"
           onClick={() => openNewTask()}
-          title="Nova Tarefa ou Post"
-          aria-label="Nova Tarefa ou Publicação"
+          title="Nova Tarefa"
+          aria-label="Nova Tarefa"
         >
           <i className="ph ph-plus text-2xl font-bold" />
         </button>
       </div>
 
-      {/* 4. Editorial (Calendário) */}
-      <button
-        type="button"
-        className={`mob-nav__item ${view === 'editorial' ? 'mob-nav__item--active' : ''}`}
-        onClick={() => setView('editorial')}
-      >
-        <div className="relative inline-flex items-center justify-center">
-          <i className="ph ph-calendar text-2xl" />
-          {pendEd > 0 && <span className="mob-nav__badge">{pendEd}</span>}
-        </div>
-        <span>Editorial</span>
-      </button>
+      {/* 4. Editorial (Calendário - Apenas Administradores) */}
+      {isAdmin && (
+        <button
+          type="button"
+          className={`mob-nav__item ${view === 'editorial' ? 'mob-nav__item--active' : ''}`}
+          onClick={() => setView('editorial')}
+        >
+          <div className="relative inline-flex items-center justify-center">
+            <i className="ph ph-calendar text-2xl" />
+            {pendEd > 0 && <span className="mob-nav__badge">{pendEd}</span>}
+          </div>
+          <span>Editorial</span>
+        </button>
+      )}
 
-      {/* 5. Menu / Mais (Abre o Drawer Lateral Completo) */}
+      {/* 5. Menu / Mais (Abre o Drawer Lateral) */}
       <button
         type="button"
         className={`mob-nav__item ${mobileDrawerOpen ? 'mob-nav__item--active' : ''}`}
         onClick={() => setMobileDrawerOpen(true)}
-        aria-label="Abrir menu completo"
+        aria-label="Abrir menu"
       >
         <i className="ph ph-list text-2xl" />
-        <span>Mais</span>
+        <span>Menu</span>
       </button>
     </nav>
   );
