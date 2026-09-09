@@ -155,7 +155,7 @@ export default function App() {
 
   // Trava de segurança: Colaboradores e visualizadores têm acesso a Tarefas e ao seu Controle de Ponto
   const activeView = isAdmin ? view : (view === 'banco-horas' ? 'banco-horas' : 'lista');
-  const showFab = activeView === 'lista';
+  const showFab = ['lista', 'dash', 'editorial', 'projetos'].includes(activeView);
 
   return (
     <div className="min-h-screen bg-[var(--color-bg)] font-sans antialiased text-[var(--color-text)]">
