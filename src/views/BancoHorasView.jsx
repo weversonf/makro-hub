@@ -388,26 +388,45 @@ export default function BancoHorasView() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDeletePonto = (d) => {
-    if (!targetUserRef) return;
+  const handleDeletePonto = (param) => {
+    if (!targetUserRef) {
+      showToast?.('Usuário não selecionado ou sessão não iniciada.', 'warning');
+      return;
+    }
+
+    const docId = typeof param === 'string' ? param : (param?.id || param?.date);
+    const dateLabel = typeof param === 'string' ? param : (param?.date || param?.id || '');
+
+    if (!docId) {
+      showToast?.('Identificador de registro não encontrado.', 'warning');
+      return;
+    }
+
     const doDelete = async () => {
       try {
-        await targetUserRef.collection('registros').doc(d).delete();
-        showToast?.('Registro de ponto removido.', 'info');
+        await targetUserRef.collection('registros').doc(docId).delete();
+        if (typeof param === 'object' && param?.date && param.date !== docId) {
+          await targetUserRef.collection('registros').doc(param.date).delete().catch(() => {});
+        }
+        showToast?.('Registro de ponto removido com sucesso.', 'info');
       } catch (err) {
+        console.error('[DeletePonto]', err);
         showToast?.('Erro ao excluir registro: ' + err.message, 'error');
       }
     };
 
+    const formattedDate = fmtDateFull(dateLabel);
+    const promptMessage = `Deseja realmente excluir o ponto do dia ${formattedDate}?`;
+
     if (showConfirm) {
       showConfirm({
         title: 'Excluir Ponto',
-        message: `Deseja realmente excluir o ponto do dia ${fmtDateFull(d)}?`,
+        message: promptMessage,
         confirmText: 'Excluir',
         confirmTone: 'danger',
         onConfirm: doDelete
       });
-    } else if (window.confirm('Excluir este registro de ponto?')) {
+    } else if (window.confirm(promptMessage)) {
       doDelete();
     }
   };
@@ -440,26 +459,39 @@ export default function BancoHorasView() {
     }
   };
 
-  const handleDeleteManual = (id) => {
-    if (!targetUserRef) return;
+  const handleDeleteManual = (param) => {
+    if (!targetUserRef) {
+      showToast?.('Usuário não selecionado ou sessão não iniciada.', 'warning');
+      return;
+    }
+
+    const docId = typeof param === 'object' && param !== null ? (param.id || param.docId) : param;
+    if (!docId) {
+      showToast?.('Identificador de lançamento não encontrado.', 'warning');
+      return;
+    }
+
     const doDelete = async () => {
       try {
-        await targetUserRef.collection('manual').doc(String(id)).delete();
-        showToast?.('Lançamento manual excluído.', 'info');
+        await targetUserRef.collection('manual').doc(String(docId)).delete();
+        showToast?.('Lançamento manual excluído com sucesso.', 'info');
       } catch (err) {
+        console.error('[DeleteManual]', err);
         showToast?.('Erro ao excluir lançamento: ' + err.message, 'error');
       }
     };
 
+    const promptMessage = 'Deseja excluir este lançamento de horas do banco?';
+
     if (showConfirm) {
       showConfirm({
         title: 'Excluir Lançamento',
-        message: 'Deseja excluir este lançamento de horas do banco?',
+        message: promptMessage,
         confirmText: 'Excluir',
         confirmTone: 'danger',
         onConfirm: doDelete
       });
-    } else if (window.confirm('Excluir este lançamento manual?')) {
+    } else if (window.confirm(promptMessage)) {
       doDelete();
     }
   };
@@ -970,7 +1002,7 @@ export default function BancoHorasView() {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleDeletePonto(r.date)}
+                                onClick={() => handleDeletePonto(r)}
                                 className="p-1.5 rounded-lg text-[var(--color-muted)] hover:text-red-500 hover:bg-[var(--color-bg)] transition"
                                 title="Excluir Ponto"
                               >
@@ -1288,7 +1320,7 @@ export default function BancoHorasView() {
                         <td className="p-3.5 text-right">
                           <button
                             type="button"
-                            onClick={() => handleDeleteManual(r.id)}
+                            onClick={() => handleDeleteManual(r)}
                             className="p-1.5 rounded-lg text-[var(--color-muted)] hover:text-red-500 hover:bg-[var(--color-bg)] transition"
                             title="Excluir Lançamento"
                           >

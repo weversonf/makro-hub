@@ -246,9 +246,27 @@ export function HubProvider({ children }) {
     }, 3200);
   }, []);
 
-  // Confirm helper
-  const showConfirm = useCallback((title, message, onConfirm) => {
-    setConfirmModal({ open: true, title, message, onConfirm });
+  // Confirm helper (suporta tanto showConfirm(title, message, onConfirm) quanto showConfirm({ title, message, onConfirm }))
+  const showConfirm = useCallback((titleOrOpts, message, onConfirm) => {
+    if (typeof titleOrOpts === 'object' && titleOrOpts !== null) {
+      setConfirmModal({
+        open: true,
+        title: typeof titleOrOpts.title === 'string' ? titleOrOpts.title : 'Confirmação',
+        message: typeof titleOrOpts.message === 'string' ? titleOrOpts.message : '',
+        onConfirm: typeof titleOrOpts.onConfirm === 'function' ? titleOrOpts.onConfirm : null,
+        confirmText: titleOrOpts.confirmText || 'Confirmar',
+        confirmTone: titleOrOpts.confirmTone || 'danger'
+      });
+    } else {
+      setConfirmModal({
+        open: true,
+        title: typeof titleOrOpts === 'string' ? titleOrOpts : 'Confirmação',
+        message: typeof message === 'string' ? message : '',
+        onConfirm: typeof onConfirm === 'function' ? onConfirm : null,
+        confirmText: 'Confirmar',
+        confirmTone: 'danger'
+      });
+    }
   }, []);
 
   const closeConfirm = useCallback(() => {

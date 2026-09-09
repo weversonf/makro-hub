@@ -12,14 +12,14 @@ export default function ConfirmModal() {
       <div className="ax-modal ax-modal--sm" onClick={(e) => e.stopPropagation()} role="dialog">
         <div className="ax-modal__head">
           <h3 className="ax-modal__title" style={{ fontSize: 'var(--ax-text-md)' }}>
-            {confirmModal.title || 'Confirmação'}
+            {typeof confirmModal.title === 'string' ? confirmModal.title : 'Confirmação'}
           </h3>
           <button className="ax-icon-btn" onClick={closeConfirm} aria-label="Fechar">
             <X size={18} />
           </button>
         </div>
         <div className="ax-modal__body" style={{ fontSize: 'var(--ax-text-sm)', color: 'var(--ax-text)' }}>
-          {confirmModal.message}
+          {typeof confirmModal.message === 'string' ? confirmModal.message : ''}
         </div>
         <div className="ax-modal__foot">
           <span className="ax-header__spacer" />
@@ -27,13 +27,13 @@ export default function ConfirmModal() {
             Cancelar
           </button>
           <button
-            className="ax-btn ax-btn--danger"
+            className={`ax-btn ax-btn--${confirmModal.confirmTone || 'danger'}`}
             onClick={() => {
-              if (confirmModal.onConfirm) confirmModal.onConfirm();
+              if (typeof confirmModal.onConfirm === 'function') confirmModal.onConfirm();
               closeConfirm();
             }}
           >
-            Confirmar
+            {confirmModal.confirmText || 'Confirmar'}
           </button>
         </div>
       </div>
