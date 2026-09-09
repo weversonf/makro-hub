@@ -274,34 +274,38 @@ export function HubProvider({ children }) {
 
     const isCurrentMaster = user.email?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
 
-    // 1. Sincroniza e garante integridade do perfil do usuário logado no Firestore
+    // 1. Sincroniza e garante integridade do perfil do usuário logado no Firestore com os dados do Google Auth
     const userDocRef = db.collection('users').doc(user.uid);
     const unsubProfile = userDocRef.onSnapshot((doc) => {
-      if (doc.exists) {
-        const data = doc.data();
-        if (isCurrentMaster && data.role !== 'admin_master') {
-          userDocRef.set({ role: 'admin_master' }, { merge: true }).catch(console.warn);
-        }
-        setUserProfile(data);
-      } else {
+      const data = doc.exists ? doc.data() : {};
+      const needsUpdate = !doc.exists ||
+        !data.email ||
+        !data.photoURL ||
+        !data.displayName ||
+        (user.photoURL && data.photoURL !== user.photoURL) ||
+        (user.displayName && data.displayName !== user.displayName) ||
+        (isCurrentMaster && data.role !== 'admin_master');
+
+      if (needsUpdate) {
         const initialProfile = {
           uid: user.uid,
           id: user.uid,
-          email: user.email || '',
-          displayName: user.displayName || (user.email ? user.email.split('@')[0] : 'Weverson Nascimento'),
-          nome: user.displayName || (user.email ? user.email.split('@')[0] : 'Weverson Nascimento'),
-          photoURL: user.photoURL || '',
-          foto: user.photoURL || '',
-          role: isCurrentMaster ? 'admin_master' : 'colaborador',
-          cargo: isCurrentMaster ? 'Coordenador de Marketing & Comunicação' : 'Colaborador de Marketing',
-          departamento: 'Marketing Central',
-          ramal: '',
+          email: user.email || data.email || (isCurrentMaster ? MASTER_ADMIN_EMAIL : ''),
+          displayName: user.displayName || data.displayName || data.nome || (isCurrentMaster ? 'Weverson Nascimento' : 'Colaborador'),
+          nome: user.displayName || data.nome || data.displayName || (isCurrentMaster ? 'Weverson Nascimento' : 'Colaborador'),
+          photoURL: user.photoURL || data.photoURL || data.foto || '',
+          foto: user.photoURL || data.foto || data.photoURL || '',
+          role: isCurrentMaster ? 'admin_master' : (data.role || 'colaborador'),
+          cargo: data.cargo || (isCurrentMaster ? 'ADM Master & Coordenador' : 'Colaborador de Marketing'),
+          departamento: data.departamento || 'Marketing Central',
+          ramal: data.ramal || '(85) 99924-1234',
           online: true,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         userDocRef.set(initialProfile, { merge: true }).catch(console.warn);
-        setUserProfile(initialProfile);
+        setUserProfile({ ...data, ...initialProfile });
+      } else {
+        setUserProfile(data);
       }
     }, (err) => {
       console.warn('[Firestore] Erro ao sincronizar perfil do usuário:', err);
@@ -310,43 +314,57 @@ export function HubProvider({ children }) {
     // 2. Sincroniza a lista completa de pessoas cadastradas no Makro Hub
     const unsubAllUsers = db.collection('users').onSnapshot((snap) => {
       const list = [];
+      let selfFound = false;
+
       snap.forEach((d) => {
         const data = d.data();
-        const email = data.email || '';
-        const isThisMaster = email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
+        const isSelf = user && (d.id === user.uid || data.uid === user.uid);
+        if (isSelf) selfFound = true;
+
+        const email = data.email || (isSelf ? user.email : '') || '';
+        const isThisMaster = isSelf ? isCurrentMaster : (email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase());
+
+        const photo = (isSelf && user.photoURL) ? user.photoURL : (data.photoURL || data.foto || '');
+        const name = (isSelf && user.displayName)
+          ? user.displayName
+          : (data.displayName || data.nome || (isThisMaster ? 'Weverson Nascimento' : (email ? email.split('@')[0] : 'Colaborador')));
+
         list.push({
           ...data,
           id: d.id,
           uid: d.id,
-          nome: data.displayName || data.nome || email.split('@')[0] || 'Colaborador',
-          displayName: data.displayName || data.nome || email.split('@')[0] || 'Colaborador',
-          email,
-          foto: data.photoURL || data.foto || '',
-          photoURL: data.photoURL || data.foto || '',
-          cargo: data.cargo || (isThisMaster ? 'Coordenador de Marketing & Comunicação' : 'Colaborador de Marketing'),
+          nome: name,
+          displayName: name,
+          email: email || (isThisMaster ? (user.email || MASTER_ADMIN_EMAIL) : '—'),
+          foto: photo,
+          photoURL: photo,
+          cargo: data.cargo || (isThisMaster ? 'ADM Master & Coordenador' : 'Colaborador de Marketing'),
           departamento: data.departamento || 'Marketing Central',
-          role: isThisMaster ? 'admin_master' : (data.role || 'colaborador')
+          ramal: data.ramal || (isThisMaster ? '(85) 99924-1234' : ''),
+          role: isThisMaster ? 'admin_master' : (data.role || 'colaborador'),
+          online: isSelf ? true : (data.online !== false)
         });
       });
 
-      if (list.length === 0) {
-        const currentSelf = {
+      // Se o usuário logado ainda não constar na lista do snapshot, insere-o garantindo visualização imediata
+      if (!selfFound && user) {
+        list.unshift({
           id: user.uid,
           uid: user.uid,
-          email: user.email,
-          nome: user.displayName || (user.email ? user.email.split('@')[0] : 'Weverson Nascimento'),
-          displayName: user.displayName || (user.email ? user.email.split('@')[0] : 'Weverson Nascimento'),
+          email: user.email || MASTER_ADMIN_EMAIL,
+          nome: user.displayName || 'Weverson Nascimento',
+          displayName: user.displayName || 'Weverson Nascimento',
           foto: user.photoURL || '',
           photoURL: user.photoURL || '',
           role: isCurrentMaster ? 'admin_master' : 'colaborador',
-          cargo: isCurrentMaster ? 'Coordenador de Marketing & Comunicação' : 'Colaborador de Marketing',
+          cargo: isCurrentMaster ? 'ADM Master & Coordenador' : 'Colaborador de Marketing',
           departamento: 'Marketing Central',
+          ramal: '(85) 99924-1234',
           online: true
-        };
-        setRegisteredUsers([currentSelf]);
-      } else {
-        setRegisteredUsers(list);
+        });
       }
+
+      setRegisteredUsers(list);
     }, (err) => {
       console.warn('[Firestore] Erro ao carregar usuários:', err);
     });

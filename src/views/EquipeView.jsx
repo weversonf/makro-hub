@@ -36,7 +36,9 @@ export default function EquipeView() {
       ? [...registeredUsers]
       : [];
 
-    // Se a lista do Firestore ainda não tiver carregado ou estiver vazia, garantir que o usuário atual (Weverson) apareça
+    const isCurrentMaster = (user?.email?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) || isMaster;
+
+    // Se a lista do Firestore ainda não tiver carregado ou estiver vazia, garantir que o usuário atual apareça
     if (list.length === 0 && user) {
       list.push({
         id: user.uid || 'master',
@@ -44,25 +46,42 @@ export default function EquipeView() {
         nome: user.displayName || 'Weverson Nascimento',
         displayName: user.displayName || 'Weverson Nascimento',
         email: user.email || MASTER_ADMIN_EMAIL,
-        cargo: 'ADM Master & Coordenador',
+        cargo: isCurrentMaster ? 'ADM Master & Coordenador' : 'Colaborador',
         departamento: 'Marketing Central',
         ramal: '(85) 99924-1234',
         foto: user.photoURL || '',
         photoURL: user.photoURL || '',
-        role: 'admin_master',
+        role: isCurrentMaster ? 'admin_master' : 'colaborador',
         online: true
       });
     }
 
-    // Normalizar papéis e garantir que weversonf@gmail.com sempre tenha o nível ADM Master
+    // Normalizar dados, garantindo que o usuário logado / ADM Master sempre tenha foto e nome atualizados do Google Auth
     return list.map((m) => {
-      const isMasterUser = m.email?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
+      const isSelf = user && ((m.id && m.id === user.uid) || (m.uid && m.uid === user.uid) || (m.email && m.email.toLowerCase() === (user.email || '').toLowerCase()));
+      const isMasterUser = isSelf ? isCurrentMaster : (m.email?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase());
+
+      const photo = (isSelf && user?.photoURL) ? user.photoURL : (m.foto || m.photoURL || (isMasterUser ? (user?.photoURL || '') : ''));
+      const name = (isSelf && user?.displayName) ? user.displayName : (m.nome || m.displayName || (isMasterUser ? (user?.displayName || 'Weverson Nascimento') : (m.email?.split('@')[0] || 'Colaborador')));
+      const email = (isSelf && user?.email) ? user.email : (m.email || (isMasterUser ? (user?.email || MASTER_ADMIN_EMAIL) : '—'));
+
       return {
         ...m,
-        role: isMasterUser ? 'admin_master' : (m.role || 'colaborador')
+        id: m.id || m.uid || (isSelf ? user.uid : 'member'),
+        uid: m.uid || m.id || (isSelf ? user.uid : 'member'),
+        foto: photo,
+        photoURL: photo,
+        nome: name,
+        displayName: name,
+        email: email,
+        cargo: m.cargo || (isMasterUser ? 'ADM Master & Coordenador' : 'Colaborador de Marketing'),
+        departamento: m.departamento || 'Marketing Central',
+        ramal: m.ramal || (isMasterUser ? '(85) 99924-1234' : ''),
+        role: isMasterUser ? 'admin_master' : (m.role || 'colaborador'),
+        online: isSelf ? true : (m.online !== false)
       };
     });
-  }, [registeredUsers, user, MASTER_ADMIN_EMAIL]);
+  }, [registeredUsers, user, MASTER_ADMIN_EMAIL, isMaster]);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -200,13 +219,15 @@ export default function EquipeView() {
       {/* Grid de Membros */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {teamList.map((m) => {
-          const isMasterUser = m.email?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
+          const isMasterUser = m.email?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase() || (user && (m.id === user.uid || m.uid === user.uid));
           const roleInfo = USER_ROLES[m.role] || USER_ROLES.colaborador;
-          const memberPhoto = m.foto || m.photoURL;
-          const memberName = m.nome || m.displayName || m.email?.split('@')[0] || 'Colaborador';
+          const memberPhoto = (isMasterUser && user?.photoURL) ? user.photoURL : (m.foto || m.photoURL || '');
+          const memberName = (isMasterUser && user?.displayName)
+            ? user.displayName
+            : (m.nome || m.displayName || (isMasterUser ? 'Weverson Nascimento' : (m.email?.split('@')[0] || 'Colaborador')));
           const memberCargo = m.cargo || (isMasterUser ? 'ADM Master & Coordenador' : 'Colaborador');
           const memberDepto = m.departamento || 'Marketing Central';
-          const memberEmail = m.email || '—';
+          const memberEmail = (isMasterUser && user?.email) ? user.email : (m.email || (isMasterUser ? MASTER_ADMIN_EMAIL : '—'));
           const memberRamal = m.ramal || '(85) 99924-1234';
 
           const assignedCount = (activities || []).filter((a) => {
@@ -232,19 +253,19 @@ export default function EquipeView() {
                       <img
                         src={memberPhoto}
                         alt={memberName}
-                        className="w-13 h-13 rounded-2xl object-cover border-2 border-[var(--color-border)] shadow-sm"
+                        className="w-13 h-13 rounded-full object-cover border-2 border-[var(--color-border)] shadow-sm"
                         style={{ width: '52px', height: '52px' }}
                       />
                     ) : (
                       <div
-                        className="rounded-2xl border-2 border-[var(--color-border)] flex items-center justify-center font-bold text-sm bg-[var(--color-primary-soft)] text-[var(--color-primary)] shadow-sm"
+                        className="rounded-full border-2 border-[var(--color-border)] flex items-center justify-center font-bold text-sm bg-[var(--color-primary-soft)] text-[var(--color-primary)] shadow-sm"
                         style={{ width: '52px', height: '52px' }}
                       >
                         {memberName.slice(0, 2).toUpperCase()}
                       </div>
                     )}
                     <span
-                      className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-[var(--color-surface)] ${
+                      className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-[var(--color-surface)] ${
                         m.online !== false ? 'bg-[var(--color-success)]' : 'bg-[var(--color-muted)]'
                       }`}
                       title={m.online !== false ? 'Online / Ativo' : 'Ausente'}
