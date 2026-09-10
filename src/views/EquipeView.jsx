@@ -15,9 +15,21 @@ export default function EquipeView() {
     addTeamMember,
     updateTeamMember,
     deleteTeamMember,
+    sendPasswordReset,
     showConfirm,
     showToast
   } = useHub();
+
+  const handleSendResetLink = async (memberEmail) => {
+    if (!memberEmail || !memberEmail.includes('@')) {
+      showToast('E-mail inválido.', 'error');
+      return;
+    }
+    const ok = await sendPasswordReset(memberEmail);
+    if (ok) {
+      showToast(`Link de acesso e redefinição de senha enviado para ${memberEmail}!`, 'success');
+    }
+  };
 
   const [modalMode, setModalMode] = useState('add'); // 'add' | 'edit'
   const [editingUserId, setEditingUserId] = useState(null);
@@ -410,6 +422,17 @@ export default function EquipeView() {
                       </span>
                     )}
 
+                    {(isMaster || isAdmin) && m.email && m.email.includes('@') && (
+                      <button
+                        type="button"
+                        onClick={() => handleSendResetLink(m.email)}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--color-muted)] hover:text-blue-500 hover:bg-blue-500/10 transition"
+                        title={`Enviar link de acesso / redefinição para ${m.email}`}
+                      >
+                        <Mail size={14} />
+                      </button>
+                    )}
+
                     {(isMaster || isAdmin) && (
                       <button
                         type="button"
@@ -591,20 +614,33 @@ export default function EquipeView() {
 
               {/* Seção de Senha Automática e Acesso por E-mail */}
               <div className="p-3.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-subtle)]/40 space-y-2.5">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div className="flex items-center gap-1.5">
                     <KeyRound size={15} className="text-[var(--color-primary)]" />
                     <span className="text-xs font-bold text-[var(--color-heading)]">
                       Acesso ao Sistema & Senha
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleGeneratePassword}
-                    className="text-[11px] font-bold text-[var(--color-primary)] hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    ⚡ Gerar Senha Automática
-                  </button>
+                  <div className="flex items-center gap-2.5">
+                    {formData.email && formData.email.includes('@') && (
+                      <button
+                        type="button"
+                        onClick={() => handleSendResetLink(formData.email)}
+                        className="text-[11px] font-bold text-blue-500 hover:underline flex items-center gap-1 cursor-pointer"
+                        title="Envia e-mail oficial para o colaborador definir sua senha pessoal"
+                      >
+                        <Mail size={12} />
+                        <span>Enviar Link por E-mail</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleGeneratePassword}
+                      className="text-[11px] font-bold text-[var(--color-primary)] hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      ⚡ Gerar Senha
+                    </button>
+                  </div>
                 </div>
 
                 <div>
@@ -617,7 +653,7 @@ export default function EquipeView() {
                         type={showPassword ? 'text' : 'password'}
                         value={formData.senha}
                         onChange={(e) => handleInputChange('senha', e.target.value)}
-                        placeholder={modalMode === 'add' ? 'Clique em "Gerar Senha Automática" ou digite' : 'Deixe em branco para manter a senha atual'}
+                        placeholder={modalMode === 'add' ? 'Clique em "Gerar Senha" ou digite' : 'Deixe em branco para manter a senha atual'}
                         className="w-full h-9 px-3 pr-8 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-xs font-mono text-[var(--color-heading)] outline-none focus:border-[var(--color-primary)] transition"
                       />
                       {formData.senha ? (
@@ -658,9 +694,15 @@ export default function EquipeView() {
                   </label>
                 ) : null}
 
-                <p className="text-[10px] text-[var(--color-muted)] leading-relaxed">
-                  Colaboradores que acessarem com <strong>"Entrar com Google"</strong> entram diretamente via conta corporativa. A senha acima é utilizada para autenticação direta por e-mail e senha.
-                </p>
+                <div className="p-2 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border-subtle)] space-y-1">
+                  <p className="text-[11px] text-[var(--color-heading)] font-semibold flex items-center gap-1">
+                    <span>💡</span> Como o colaborador pode acessar:
+                  </p>
+                  <p className="text-[10px] text-[var(--color-muted)] leading-relaxed">
+                    1. <strong>Conta Google (@makroengenharia.com):</strong> Pode clicar diretamente em <em>"Entrar com Google"</em> na tela inicial (sem necessidade de senha).<br />
+                    2. <strong>Login com E-mail e Senha:</strong> Use a senha provisória gerada acima ou clique em <em>"Enviar Link por E-mail"</em> para que ele defina sua senha no primeiro acesso.
+                  </p>
+                </div>
               </div>
 
               {/* Botões do Modal */}

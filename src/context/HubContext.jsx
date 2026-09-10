@@ -357,8 +357,36 @@ export function HubProvider({ children }) {
 
     // 1. Sincroniza e garante integridade do perfil do usuário logado no Firestore com os dados do Google Auth
     const userDocRef = db.collection('users').doc(user.uid);
-    const unsubProfile = userDocRef.onSnapshot((doc) => {
-      const data = doc.exists ? doc.data() : {};
+    const unsubProfile = userDocRef.onSnapshot(async (doc) => {
+      let data = doc.exists ? doc.data() : null;
+
+      // Se o doc com docId === user.uid não existe, busca se há doc com o mesmo email para vincular permissões
+      if (!data && user.email) {
+        try {
+          const emailSnap = await db.collection('users')
+            .where('email', '==', user.email.toLowerCase())
+            .limit(1)
+            .get();
+          if (!emailSnap.empty) {
+            const oldDoc = emailSnap.docs[0];
+            if (oldDoc.id !== user.uid) {
+              const oldData = oldDoc.data();
+              await userDocRef.set({
+                ...oldData,
+                uid: user.uid,
+                id: user.uid,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+              }, { merge: true });
+              await oldDoc.ref.delete().catch(() => {});
+              data = { ...oldData, uid: user.uid, id: user.uid };
+            }
+          }
+        } catch (migErr) {
+          console.warn('[Profile Migration by Email]', migErr);
+        }
+      }
+
+      data = data || {};
       const needsUpdate = !doc.exists ||
         !data.email ||
         !data.photoURL ||
@@ -769,6 +797,7 @@ export function HubProvider({ children }) {
       const assignedRole = email === MASTER_ADMIN_EMAIL.toLowerCase() ? 'admin_master' : (memberData.role || 'colaborador');
       const tempPassword = memberData.senha?.trim();
       let createdUid = null;
+      let existingAuth = false;
 
       if (tempPassword) {
         try {
@@ -779,14 +808,23 @@ export function HubProvider({ children }) {
         } catch (authErr) {
           console.warn('[Secondary Auth]', authErr);
           if (authErr.code === 'auth/email-already-in-use') {
-            console.log('[Auth] Usuário já existia no Firebase Auth.');
+            existingAuth = true;
+            try {
+              await auth.sendPasswordResetEmail(email);
+            } catch (rErr) {
+              console.warn('[Auto Reset Error]', rErr);
+            }
           } else {
             showToast(`Aviso de autenticação: ${authErr.message}`, 'warning');
           }
         }
       }
 
-      const docRef = createdUid ? db.collection('users').doc(createdUid) : db.collection('users').doc();
+      // Procura se já existe documento para esse e-mail no Firestore para evitar órfãos
+      const existingSnap = await db.collection('users').where('email', '==', email).limit(1).get();
+      const docRef = !existingSnap.empty
+        ? existingSnap.docs[0].ref
+        : (createdUid ? db.collection('users').doc(createdUid) : db.collection('users').doc());
       const finalUid = createdUid || docRef.id;
 
       const newMember = {
@@ -806,7 +844,12 @@ export function HubProvider({ children }) {
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await docRef.set(newMember, { merge: true });
-      showToast('Colaborador cadastrado com sucesso!', 'success');
+
+      if (existingAuth) {
+        showToast(`Colaborador cadastrado! Como ${email} já existia no Firebase, enviamos um link para ele definir sua senha.`, 'info');
+      } else {
+        showToast('Colaborador cadastrado com sucesso!', 'success');
+      }
       return true;
     } catch (err) {
       console.error(err);
@@ -826,6 +869,8 @@ export function HubProvider({ children }) {
       const assignedRole = isTargetMaster ? 'admin_master' : (memberData.role || 'colaborador');
 
       const tempPassword = memberData.senha?.trim();
+      let sentReset = false;
+
       if (tempPassword && email) {
         try {
           const secAuth = getSecondaryAuth();
@@ -833,7 +878,12 @@ export function HubProvider({ children }) {
           await secAuth.signOut();
         } catch (authErr) {
           if (authErr.code === 'auth/email-already-in-use') {
-            console.log('[Auth] Usuário já registrado no Firebase Auth.');
+            try {
+              await auth.sendPasswordResetEmail(email);
+              sentReset = true;
+            } catch (e) {
+              console.warn('[Secondary Auth Reset]', e);
+            }
           } else {
             console.warn('[Secondary Auth Edit]', authErr);
           }
@@ -857,7 +907,11 @@ export function HubProvider({ children }) {
       }
 
       await db.collection('users').doc(userId).set(payload, { merge: true });
-      showToast('Dados do colaborador atualizados com sucesso!', 'success');
+      if (sentReset) {
+        showToast(`Dados atualizados! Como ${email} já possuía cadastro, enviamos um link de redefinição de senha para ele.`, 'info');
+      } else {
+        showToast('Dados do colaborador atualizados com sucesso!', 'success');
+      }
       return true;
     } catch (err) {
       console.error(err);
