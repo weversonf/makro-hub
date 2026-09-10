@@ -7,7 +7,7 @@ const CAL_DOW_SHORT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const CAL_DOW_MINI = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
 export default function CalendarioView() {
-  const { activities, openNewTask, openEditTask, stageOf, isEditorialActivity, rescheduleUnpublishedEditorial } = useHub();
+  const { activities, allActivities, openNewTask, openEditTask, stageOf, isEditorialActivity, rescheduleUnpublishedEditorial } = useHub();
   const [calDate, setCalDate] = useState(new Date());
   const [calMode, setCalMode] = useState('month'); // 'month' | 'week'
   const [rescheduling, setRescheduling] = useState(false);
@@ -16,7 +16,7 @@ export default function CalendarioView() {
   const m = calDate.getMonth();
   const today = todayISO();
 
-  const editorialTasks = activities.filter((a) => isEditorialActivity(a));
+  const editorialTasks = (allActivities && allActivities.length > 0 ? allActivities : activities).filter((a) => isEditorialActivity(a));
 
   // Mapeamento por data
   const dayMap = {};

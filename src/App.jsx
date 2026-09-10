@@ -401,9 +401,9 @@ export default function App() {
     );
   }
 
-  // Trava de segurança: Colaboradores e visualizadores têm acesso a Tarefas, Controle de Ponto e Documentos
-  const allowedViews = ['lista', 'banco-horas', 'documentos'];
-  const activeView = isAdmin ? view : (allowedViews.includes(view) ? view : 'lista');
+  // Trava de segurança: Telas administrativas são restritas a ADM e ADM Master
+  const adminOnlyViews = ['equipe', 'performance', 'nps', 'config', 'categorias'];
+  const activeView = (!isAdmin && adminOnlyViews.includes(view)) ? 'lista' : view;
   const showFab = ['lista', 'dash', 'editorial', 'projetos'].includes(activeView);
 
   return (
@@ -415,12 +415,12 @@ export default function App() {
         <main className="hr-main-shell">
           <div className="hr-container">
             <ErrorBoundary key={activeView}>
+              {activeView === 'dash' && <DashboardView />}
               {activeView === 'lista' && <TarefasView />}
-              {activeView === 'banco-horas' && <BancoHorasView />}
+              {activeView === 'projetos' && <ProjetosView />}
+              {activeView === 'editorial' && <CalendarioView />}
               {activeView === 'documentos' && <DocumentosView />}
-              {isAdmin && activeView === 'dash' && <DashboardView />}
-              {isAdmin && activeView === 'projetos' && <ProjetosView />}
-              {isAdmin && activeView === 'editorial' && <CalendarioView />}
+              {activeView === 'banco-horas' && <BancoHorasView />}
               {isAdmin && activeView === 'equipe' && <EquipeView />}
               {isAdmin && activeView === 'performance' && <PerformanceView />}
               {isAdmin && (activeView === 'categorias' || activeView === 'config') && <ConfigView />}

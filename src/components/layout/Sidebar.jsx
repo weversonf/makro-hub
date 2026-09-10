@@ -143,20 +143,18 @@ export default function Sidebar() {
           aria-hidden="true"
         />
         {/* Main Section */}
-        {isAdmin && (
-          <div>
-            <p className="hr-nav-section">Principal</p>
-            <button
-              className={`hr-nav-item ${view === 'dash' ? 'hr-nav-item--active' : ''}`}
-              onClick={() => setView('dash')}
-              data-tooltip="Dashboard"
-            >
-              <i className="ph ph-squares-four text-xl flex-shrink-0" />
-              <span className="hr-nav-label">Dashboard</span>
-              <span className="hr-nav-badge">{dashActs.length}</span>
-            </button>
-          </div>
-        )}
+        <div>
+          <p className="hr-nav-section">Principal</p>
+          <button
+            className={`hr-nav-item ${view === 'dash' ? 'hr-nav-item--active' : ''}`}
+            onClick={() => setView('dash')}
+            data-tooltip="Dashboard"
+          >
+            <i className="ph ph-squares-four text-xl flex-shrink-0" />
+            <span className="hr-nav-label">Dashboard</span>
+            <span className="hr-nav-badge">{dashActs.length}</span>
+          </button>
+        </div>
 
         {/* Workspace Section */}
         <div>
@@ -171,6 +169,34 @@ export default function Sidebar() {
             <span className="hr-nav-badge">{pend}</span>
           </button>
 
+          <button
+            className={`hr-nav-item ${view === 'projetos' ? 'hr-nav-item--active' : ''}`}
+            onClick={() => setView('projetos')}
+            data-tooltip="Projetos"
+          >
+            <i className="ph ph-folder-notch text-xl flex-shrink-0" />
+            <span className="hr-nav-label">Projetos</span>
+          </button>
+
+          <button
+            className={`hr-nav-item ${view === 'editorial' ? 'hr-nav-item--active' : ''}`}
+            onClick={() => setView('editorial')}
+            data-tooltip="Calendário Editorial"
+          >
+            <i className="ph ph-calendar-blank text-xl flex-shrink-0" />
+            <span className="hr-nav-label">Calendário</span>
+            <span className="hr-nav-badge">{edActs.length}</span>
+          </button>
+
+          <button
+            className={`hr-nav-item ${view === 'documentos' ? 'hr-nav-item--active' : ''}`}
+            onClick={() => setView('documentos')}
+            data-tooltip="Documentos & Mídia Kit"
+          >
+            <i className="ph ph-files text-xl flex-shrink-0" />
+            <span className="hr-nav-label">Documentos / Mídia Kit</span>
+          </button>
+
           {!isAdmin && (
             <button
               className={`hr-nav-item ${view === 'banco-horas' ? 'hr-nav-item--active' : ''}`}
@@ -181,38 +207,6 @@ export default function Sidebar() {
               <span className="hr-nav-label">Controle de Ponto</span>
             </button>
           )}
-
-          {isAdmin && (
-            <>
-              <button
-                className={`hr-nav-item ${view === 'projetos' ? 'hr-nav-item--active' : ''}`}
-                onClick={() => setView('projetos')}
-                data-tooltip="Projetos"
-              >
-                <i className="ph ph-folder-notch text-xl flex-shrink-0" />
-                <span className="hr-nav-label">Projetos</span>
-              </button>
-
-              <button
-                className={`hr-nav-item ${view === 'editorial' ? 'hr-nav-item--active' : ''}`}
-                onClick={() => setView('editorial')}
-                data-tooltip="Calendário Editorial"
-              >
-                <i className="ph ph-calendar-blank text-xl flex-shrink-0" />
-                <span className="hr-nav-label">Calendário</span>
-                <span className="hr-nav-badge">{edActs.length}</span>
-              </button>
-            </>
-          )}
-
-          <button
-            className={`hr-nav-item ${view === 'documentos' ? 'hr-nav-item--active' : ''}`}
-            onClick={() => setView('documentos')}
-            data-tooltip="Documentos & Mídia Kit"
-          >
-            <i className="ph ph-files text-xl flex-shrink-0" />
-            <span className="hr-nav-label">Documentos / Mídia Kit</span>
-          </button>
         </div>
 
         {/* Pessoas & Equipe */}

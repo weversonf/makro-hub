@@ -69,17 +69,15 @@ export default function Header() {
           </kbd>
         </div>
 
-        {/* Calendar Quick Link (Apenas Administradores) */}
-        {isAdmin && (
-          <button
-            type="button"
-            className="hr-icon-btn"
-            onClick={() => setView('editorial')}
-            title="Calendário"
-          >
-            <i className="ph ph-calendar-dots text-lg sm:text-xl" />
-          </button>
-        )}
+        {/* Calendar Quick Link */}
+        <button
+          type="button"
+          className="hr-icon-btn"
+          onClick={() => setView('editorial')}
+          title="Calendário"
+        >
+          <i className="ph ph-calendar-dots text-lg sm:text-xl" />
+        </button>
 
         {/* Notifications / Alerts */}
         <button

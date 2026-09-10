@@ -176,7 +176,8 @@ export function HubProvider({ children }) {
     if (targetUid) {
       return db.collection('users').doc(targetUid).collection(colName);
     }
-    return getUserCollection(colName);
+    // Fallback para a coleção raiz caso o masterUid ainda esteja em resolução
+    return db.collection(colName);
   }, [masterUid, isMaster, user]);
 
   const getSharedDoc = useCallback((colName, docId) => {
@@ -186,7 +187,7 @@ export function HubProvider({ children }) {
   const [allActivities, setAllActivities] = useState([]);
   const [categories, setCategories] = useState([]);
   const [projects, setProjects] = useState([]);
-  const [currentView, setCurrentView] = useState(() => (isAdmin ? 'dash' : 'lista'));
+  const [currentView, setCurrentView] = useState('dash');
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   // Atividades com filtro estrito de privacidade por papel de usuário:
@@ -196,45 +197,59 @@ export function HubProvider({ children }) {
     if (!user) return [];
     if (isAdmin) return allActivities;
 
-    const userUid = String(user.uid || user.id || '').trim();
+    const userUid = String(user.uid || user.id || '').trim().toLowerCase();
+    const userProfileId = String(userProfile?.id || userProfile?.uid || '').trim().toLowerCase();
     const userEmail = String(user.email || userProfile?.email || '').trim().toLowerCase();
+    const userEmailPrefix = userEmail.includes('@') ? userEmail.split('@')[0].trim().toLowerCase() : '';
     const userDisplayName = String(userProfile?.displayName || userProfile?.nome || user.displayName || '').trim().toLowerCase();
+    const nameParts = userDisplayName.split(/\s+/).filter((p) => p.length >= 2);
 
     return allActivities.filter((a) => {
-      // 1. Pelo responsavelId
-      if (a.responsavelId && userUid && String(a.responsavelId).trim() === userUid) {
+      // 1. Pelo responsavelId ou id do usuário
+      const respId = String(a.responsavelId || '').trim().toLowerCase();
+      if (respId) {
+        if (userUid && respId === userUid) return true;
+        if (userProfileId && respId === userProfileId) return true;
+      }
+
+      // 2. Pelo responsavelEmail
+      const respEmail = String(a.responsavelEmail || '').trim().toLowerCase();
+      if (respEmail && userEmail && respEmail === userEmail) {
         return true;
       }
-      // 2. Pelo responsavelEmail
-      if (a.responsavelEmail && userEmail) {
-        if (String(a.responsavelEmail).trim().toLowerCase() === userEmail) {
-          return true;
-        }
-      }
+
       // 3. Pelo nome do responsável
-      if (a.responsavel && userDisplayName) {
-        const respName = String(a.responsavel).trim().toLowerCase();
-        if (respName === userDisplayName || respName.includes(userDisplayName) || userDisplayName.includes(respName)) {
+      const respName = String(a.responsavel || '').trim().toLowerCase();
+      if (respName) {
+        if (userDisplayName && (respName === userDisplayName || respName.includes(userDisplayName) || userDisplayName.includes(respName))) {
+          return true;
+        }
+        if (userEmailPrefix && (respName === userEmailPrefix || respName.includes(userEmailPrefix) || userEmailPrefix.includes(respName))) {
+          return true;
+        }
+        if (nameParts.length >= 2 && nameParts.every((part) => respName.includes(part))) {
           return true;
         }
       }
+
       return false;
     });
   }, [allActivities, user, userProfile, isAdmin]);
 
+  // Views administrativas que exigem perfil de ADM ou ADM Master
+  const adminOnlyViews = ['equipe', 'performance', 'nps', 'config', 'categorias'];
+
   // Redirecionamento e proteção de rota com base no nível de permissão
   useEffect(() => {
     if (!authLoading && user) {
-      const allowedViews = ['lista', 'banco-horas', 'documentos'];
-      if (!isAdmin && !allowedViews.includes(currentView)) {
+      if (!isAdmin && adminOnlyViews.includes(currentView)) {
         setCurrentView('lista');
       }
     }
   }, [authLoading, user, isAdmin, currentView]);
 
   const setView = useCallback((newView) => {
-    const allowedViews = ['lista', 'banco-horas', 'documentos'];
-    if (!isAdmin && !allowedViews.includes(newView)) {
+    if (!isAdmin && adminOnlyViews.includes(newView)) {
       setCurrentView('lista');
       setMobileDrawerOpen(false);
       return;
@@ -419,35 +434,45 @@ export function HubProvider({ children }) {
         }
       }
 
-      data = data || {};
-      const needsUpdate = !doc.exists ||
-        !data.email ||
-        !data.photoURL ||
-        !data.displayName ||
-        (user.photoURL && data.photoURL !== user.photoURL) ||
-        (user.displayName && data.displayName !== user.displayName) ||
-        (isCurrentMaster && data.role !== 'admin_master');
-
-      if (needsUpdate) {
+      if (!doc.exists && !data) {
         const initialProfile = {
           uid: user.uid,
           id: user.uid,
-          email: user.email || data.email || (isCurrentMaster ? MASTER_ADMIN_EMAIL : ''),
-          displayName: user.displayName || data.displayName || data.nome || (isCurrentMaster ? 'Weverson Nascimento' : 'Colaborador'),
-          nome: user.displayName || data.nome || data.displayName || (isCurrentMaster ? 'Weverson Nascimento' : 'Colaborador'),
-          photoURL: user.photoURL || data.photoURL || data.foto || '',
-          foto: user.photoURL || data.foto || data.photoURL || '',
-          role: isCurrentMaster ? 'admin_master' : (data.role || 'colaborador'),
-          cargo: data.cargo || (isCurrentMaster ? 'ADM Master & Coordenador' : 'Colaborador de Marketing'),
-          departamento: data.departamento || 'Marketing Central',
-          ramal: data.ramal || (isCurrentMaster ? '(85) 99924-1234' : ''),
+          email: user.email || (isCurrentMaster ? MASTER_ADMIN_EMAIL : ''),
+          displayName: user.displayName || (isCurrentMaster ? 'Weverson Nascimento' : (user.email ? user.email.split('@')[0] : 'Colaborador')),
+          nome: user.displayName || (isCurrentMaster ? 'Weverson Nascimento' : (user.email ? user.email.split('@')[0] : 'Colaborador')),
+          photoURL: user.photoURL || '',
+          foto: user.photoURL || '',
+          role: isCurrentMaster ? 'admin_master' : 'colaborador',
+          cargo: isCurrentMaster ? 'ADM Master & Coordenador' : 'Colaborador de Marketing',
+          departamento: 'Marketing Central',
+          ramal: isCurrentMaster ? '(85) 99924-1234' : '',
           online: true,
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         userDocRef.set(initialProfile, { merge: true }).catch(console.warn);
-        setUserProfile({ ...data, ...initialProfile });
+        setUserProfile(initialProfile);
       } else {
-        setUserProfile(data);
+        const currentData = data || {};
+        const updates = {};
+
+        if (user.email && !currentData.email) updates.email = user.email;
+        if (user.displayName && !currentData.displayName && !currentData.nome) {
+          updates.displayName = user.displayName;
+          updates.nome = user.displayName;
+        }
+        if (user.photoURL && !currentData.photoURL && !currentData.foto) {
+          updates.photoURL = user.photoURL;
+          updates.foto = user.photoURL;
+        }
+        if (isCurrentMaster && currentData.role !== 'admin_master') {
+          updates.role = 'admin_master';
+        }
+
+        if (Object.keys(updates).length > 0) {
+          userDocRef.set(updates, { merge: true }).catch(console.warn);
+        }
+        setUserProfile({ ...currentData, ...updates });
       }
 
       // Verifica se o usuário autenticado por e-mail/senha precisa trocar a senha temporária no primeiro login
@@ -543,37 +568,69 @@ export function HubProvider({ children }) {
 
       snap.forEach((doc) => {
         const d = doc.data();
+        let respEmail = d.responsavelEmail || '';
+        let respId = d.responsavelId || '';
+        let respName = d.responsavel || '';
+
+        // Se respEmail não constar mas tiver responsavel, busca o email do colaborador em registeredUsers
+        if (!respEmail && respName && registeredUsers && registeredUsers.length > 0) {
+          const matched = registeredUsers.find((u) => {
+            const uName = (u.displayName || u.nome || '').trim().toLowerCase();
+            const rName = respName.trim().toLowerCase();
+            return uName === rName || uName.includes(rName) || rName.includes(uName);
+          });
+          if (matched) {
+            respEmail = matched.email || '';
+            respId = respId || matched.id || matched.uid || '';
+          }
+        }
+
         list.push({
           ...d,
           _fbId: doc.id,
-          responsavel: d.responsavel || defaultRespName,
-          responsavelEmail: d.responsavelEmail || defaultRespEmail,
-          responsavelId: d.responsavelId || defaultRespUid,
+          responsavel: respName || (isMaster ? defaultRespName : ''),
+          responsavelEmail: respEmail || (respName ? '' : (isMaster ? defaultRespEmail : '')),
+          responsavelId: respId || (respName ? '' : (isMaster ? defaultRespUid : '')),
           responsavelFoto: d.responsavelFoto || ''
         });
       });
 
-      // Se a coleção estiver vazia e for o Master, migrar tarefas da raiz para o workspace
-      if (list.length === 0 && isMaster && user && user.uid) {
+      // Se a coleção estiver vazia, verifica e migra/usa da coleção raiz de atividades
+      if (list.length === 0) {
         try {
           const rootSnap = await db.collection('activities').get();
           if (!rootSnap.empty) {
-            const batch = db.batch();
-            rootSnap.forEach((rDoc) => {
-              const rData = rDoc.data();
-              const userActRef = colActs.doc(rDoc.id);
-              batch.set(userActRef, {
-                ...rData,
-                responsavel: rData.responsavel || defaultRespName,
-                responsavelEmail: rData.responsavelEmail || defaultRespEmail,
-                responsavelId: rData.responsavelId || defaultRespUid,
-                responsavelFoto: rData.responsavelFoto || ''
-              }, { merge: true });
-            });
-            await batch.commit();
+            if (isMaster && user && user.uid) {
+              const batch = db.batch();
+              rootSnap.forEach((rDoc) => {
+                const rData = rDoc.data();
+                const userActRef = colActs.doc(rDoc.id);
+                batch.set(userActRef, {
+                  ...rData,
+                  responsavel: rData.responsavel || defaultRespName,
+                  responsavelEmail: rData.responsavelEmail || defaultRespEmail,
+                  responsavelId: rData.responsavelId || defaultRespUid,
+                  responsavelFoto: rData.responsavelFoto || ''
+                }, { merge: true });
+              });
+              await batch.commit();
+            } else {
+              const fallbackList = [];
+              rootSnap.forEach((rDoc) => {
+                const rData = rDoc.data();
+                fallbackList.push({
+                  ...rData,
+                  _fbId: rDoc.id
+                });
+              });
+              if (fallbackList.length > 0) {
+                setAllActivities(fallbackList);
+                return;
+              }
+            }
           }
         } catch (mErr) {
-          console.warn('[Migration] Verificação da coleção raiz:', mErr);
+          console.warn('[Activities Sync] Verificação da coleção raiz:', mErr);
         }
       }
 
@@ -583,14 +640,28 @@ export function HubProvider({ children }) {
     });
 
     const colCats = getSharedCollection('categories');
-    const unsubCats = colCats.onSnapshot((snap) => {
+    const unsubCats = colCats.onSnapshot(async (snap) => {
       const cats = [];
       snap.forEach((doc) => {
         cats.push({ ...doc.data(), _fbId: doc.id });
       });
-      if (cats.length === 0 && isMaster) {
-        // Inicializa categorias default
-        Promise.all(DEFAULT_CATS.map((c) => colCats.add(c)));
+      if (cats.length === 0) {
+        try {
+          const rootCats = await db.collection('categories').get();
+          if (!rootCats.empty) {
+            const rCats = [];
+            rootCats.forEach((c) => rCats.push({ ...c.data(), _fbId: c.id }));
+            setCategories(rCats);
+            return;
+          }
+        } catch (cErr) {
+          console.warn('[Categories] Root fallback:', cErr);
+        }
+        if (isMaster) {
+          Promise.all(DEFAULT_CATS.map((c) => colCats.add(c)));
+        } else {
+          setCategories(DEFAULT_CATS);
+        }
       } else {
         setCategories(cats);
       }
@@ -599,14 +670,28 @@ export function HubProvider({ children }) {
     });
 
     const colProjs = getSharedCollection('projects');
-    const unsubProjs = colProjs.onSnapshot((snap) => {
+    const unsubProjs = colProjs.onSnapshot(async (snap) => {
       const projs = [];
       snap.forEach((doc) => {
         projs.push({ ...doc.data(), _fbId: doc.id });
       });
-      if (projs.length === 0 && isMaster) {
-        // Inicializa projetos default
-        Promise.all(DEFAULT_PROJECTS.map((p) => colProjs.add(p)));
+      if (projs.length === 0) {
+        try {
+          const rootProjs = await db.collection('projects').get();
+          if (!rootProjs.empty) {
+            const rProjs = [];
+            rootProjs.forEach((p) => rProjs.push({ ...p.data(), _fbId: p.id }));
+            setProjects(rProjs);
+            return;
+          }
+        } catch (pErr) {
+          console.warn('[Projects] Root fallback:', pErr);
+        }
+        if (isMaster) {
+          Promise.all(DEFAULT_PROJECTS.map((p) => colProjs.add(p)));
+        } else {
+          setProjects(DEFAULT_PROJECTS);
+        }
       } else {
         setProjects(projs);
       }
@@ -619,7 +704,7 @@ export function HubProvider({ children }) {
       unsubCats();
       unsubProjs();
     };
-  }, [user, getSharedCollection, isMaster]);
+  }, [user, getSharedCollection, isMaster, registeredUsers]);
 
   // Helpers de Projetos
   const createProject = useCallback(async (projectData) => {
@@ -1063,11 +1148,29 @@ export function HubProvider({ children }) {
 
   const saveTask = (taskData) => {
     try {
+      let respEmail = taskData.responsavelEmail || '';
+      let respId = taskData.responsavelId || '';
+      let respFoto = taskData.responsavelFoto || '';
+      const respName = taskData.responsavel || (isMaster ? 'Weverson Nascimento' : (userProfile?.displayName || userProfile?.nome || user?.displayName || 'Colaborador'));
+
+      if (!respEmail && respName && registeredUsers && registeredUsers.length > 0) {
+        const match = registeredUsers.find((u) => {
+          const uName = (u.displayName || u.nome || '').trim().toLowerCase();
+          const rName = respName.trim().toLowerCase();
+          return uName === rName || uName.includes(rName) || rName.includes(uName);
+        });
+        if (match) {
+          respEmail = match.email || '';
+          respId = respId || match.id || match.uid || '';
+          respFoto = respFoto || match.photoURL || match.foto || '';
+        }
+      }
+
       const defaultResp = {
-        responsavel: taskData.responsavel || (isMaster ? 'Weverson Nascimento' : (userProfile?.displayName || userProfile?.nome || user?.displayName || 'Colaborador')),
-        responsavelEmail: taskData.responsavelEmail || (isMaster ? MASTER_ADMIN_EMAIL : (userProfile?.email || user?.email || '')),
-        responsavelId: taskData.responsavelId || (isMaster ? 'master' : (user?.uid || '')),
-        responsavelFoto: taskData.responsavelFoto || (userProfile?.photoURL || userProfile?.foto || user?.photoURL || '')
+        responsavel: respName,
+        responsavelEmail: respEmail || (taskData.responsavel ? '' : (isMaster ? MASTER_ADMIN_EMAIL : (userProfile?.email || user?.email || ''))),
+        responsavelId: respId || (taskData.responsavel ? '' : (isMaster ? 'master' : (user?.uid || ''))),
+        responsavelFoto: respFoto || (taskData.responsavel ? '' : (userProfile?.photoURL || userProfile?.foto || user?.photoURL || ''))
       };
 
       if (editTaskId) {

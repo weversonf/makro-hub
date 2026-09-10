@@ -78,10 +78,28 @@ export default function TaskModal() {
         setIsProjeto(Boolean(task.isProjeto || task.projeto));
         setProjeto(task.projeto || '');
         setIsCreatingNewProject(false);
-        setResponsavelId(task.responsavelId || user?.uid || '');
-        setResponsavelNome(task.responsavel || user?.displayName || 'Weverson Nascimento');
-        setResponsavelEmail(task.responsavelEmail || user?.email || MASTER_ADMIN_EMAIL);
-        setResponsavelFoto(task.responsavelFoto || user?.photoURL || '');
+        let rEmail = task.responsavelEmail || '';
+        let rId = task.responsavelId || '';
+        let rNome = task.responsavel || '';
+        let rFoto = task.responsavelFoto || '';
+
+        if (!rEmail && rNome && registeredUsers && registeredUsers.length > 0) {
+          const match = registeredUsers.find((u) => {
+            const uName = (u.displayName || u.nome || '').trim().toLowerCase();
+            const target = rNome.trim().toLowerCase();
+            return uName === target || uName.includes(target) || target.includes(uName);
+          });
+          if (match) {
+            rEmail = match.email || '';
+            rId = rId || match.id || match.uid || '';
+            rFoto = rFoto || match.photoURL || match.foto || '';
+          }
+        }
+
+        setResponsavelId(rId || (isMaster ? 'master' : (user?.uid || '')));
+        setResponsavelNome(rNome || (isMaster ? 'Weverson Nascimento' : (userProfile?.displayName || user?.displayName || 'Colaborador')));
+        setResponsavelEmail(rEmail || (rNome ? '' : (isMaster ? MASTER_ADMIN_EMAIL : (user?.email || ''))));
+        setResponsavelFoto(rFoto || (rNome ? '' : (user?.photoURL || '')));
       }
     } else {
       // Nova tarefa / publicação
@@ -112,7 +130,7 @@ export default function TaskModal() {
     setLinkLabel('');
     setCopied(false);
     setIsSaving(false);
-  }, [taskModalOpen, editTaskId, taskModalInitialData, categories, getTask, user, userProfile, isMaster, MASTER_ADMIN_EMAIL]);
+  }, [taskModalOpen, editTaskId, taskModalInitialData, categories, getTask, user, userProfile, isMaster, MASTER_ADMIN_EMAIL, registeredUsers]);
 
   if (!taskModalOpen) return null;
 
