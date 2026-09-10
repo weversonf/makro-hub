@@ -183,11 +183,44 @@ export function HubProvider({ children }) {
     return getSharedCollection(colName).doc(docId);
   }, [getSharedCollection]);
 
-  const [activities, setActivities] = useState([]);
+  const [allActivities, setAllActivities] = useState([]);
   const [categories, setCategories] = useState([]);
   const [projects, setProjects] = useState([]);
   const [currentView, setCurrentView] = useState(() => (isAdmin ? 'dash' : 'lista'));
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+
+  // Atividades com filtro estrito de privacidade por papel de usuário:
+  // - Administradores e ADM Master (isAdmin === true): visualizam todas as atividades da empresa
+  // - Usuários comuns (colaborador / visualizador): visualizam EXCLUSIVAMENTE as atividades direcionadas a eles
+  const activities = useMemo(() => {
+    if (!user) return [];
+    if (isAdmin) return allActivities;
+
+    const userUid = String(user.uid || user.id || '').trim();
+    const userEmail = String(user.email || userProfile?.email || '').trim().toLowerCase();
+    const userDisplayName = String(userProfile?.displayName || userProfile?.nome || user.displayName || '').trim().toLowerCase();
+
+    return allActivities.filter((a) => {
+      // 1. Pelo responsavelId
+      if (a.responsavelId && userUid && String(a.responsavelId).trim() === userUid) {
+        return true;
+      }
+      // 2. Pelo responsavelEmail
+      if (a.responsavelEmail && userEmail) {
+        if (String(a.responsavelEmail).trim().toLowerCase() === userEmail) {
+          return true;
+        }
+      }
+      // 3. Pelo nome do responsável
+      if (a.responsavel && userDisplayName) {
+        const respName = String(a.responsavel).trim().toLowerCase();
+        if (respName === userDisplayName || respName.includes(userDisplayName) || userDisplayName.includes(respName)) {
+          return true;
+        }
+      }
+      return false;
+    });
+  }, [allActivities, user, userProfile, isAdmin]);
 
   // Redirecionamento e proteção de rota com base no nível de permissão
   useEffect(() => {
@@ -495,7 +528,7 @@ export function HubProvider({ children }) {
   // Firestore Sync com o Workspace Central (ADM Master & Colaboradores)
   useEffect(() => {
     if (!user) {
-      setActivities([]);
+      setAllActivities([]);
       setCategories([]);
       setProjects([]);
       return;
@@ -504,20 +537,19 @@ export function HubProvider({ children }) {
     const colActs = getSharedCollection('activities');
     const unsubActs = colActs.onSnapshot(async (snap) => {
       const list = [];
-      const userName = user?.displayName || 'Weverson Nascimento';
-      const userEmail = user?.email || MASTER_ADMIN_EMAIL;
-      const userUid = user?.uid || 'master';
-      const userFoto = user?.photoURL || '';
+      const defaultRespName = 'Weverson Nascimento';
+      const defaultRespEmail = MASTER_ADMIN_EMAIL;
+      const defaultRespUid = 'master';
 
       snap.forEach((doc) => {
         const d = doc.data();
         list.push({
           ...d,
           _fbId: doc.id,
-          responsavel: d.responsavel || userName,
-          responsavelEmail: d.responsavelEmail || userEmail,
-          responsavelId: d.responsavelId || userUid,
-          responsavelFoto: d.responsavelFoto || userFoto
+          responsavel: d.responsavel || defaultRespName,
+          responsavelEmail: d.responsavelEmail || defaultRespEmail,
+          responsavelId: d.responsavelId || defaultRespUid,
+          responsavelFoto: d.responsavelFoto || ''
         });
       });
 
@@ -532,10 +564,10 @@ export function HubProvider({ children }) {
               const userActRef = colActs.doc(rDoc.id);
               batch.set(userActRef, {
                 ...rData,
-                responsavel: rData.responsavel || userName,
-                responsavelEmail: rData.responsavelEmail || userEmail,
-                responsavelId: userUid,
-                responsavelFoto: userFoto
+                responsavel: rData.responsavel || defaultRespName,
+                responsavelEmail: rData.responsavelEmail || defaultRespEmail,
+                responsavelId: rData.responsavelId || defaultRespUid,
+                responsavelFoto: rData.responsavelFoto || ''
               }, { merge: true });
             });
             await batch.commit();
@@ -545,7 +577,7 @@ export function HubProvider({ children }) {
         }
       }
 
-      setActivities(list);
+      setAllActivities(list);
     }, (err) => {
       console.warn('[Firestore] Error snapshot activities:', err);
     });
@@ -1032,10 +1064,10 @@ export function HubProvider({ children }) {
   const saveTask = (taskData) => {
     try {
       const defaultResp = {
-        responsavel: taskData.responsavel || user?.displayName || 'Weverson Nascimento',
-        responsavelEmail: taskData.responsavelEmail || user?.email || MASTER_ADMIN_EMAIL,
-        responsavelId: taskData.responsavelId || user?.uid || 'master',
-        responsavelFoto: taskData.responsavelFoto || user?.photoURL || ''
+        responsavel: taskData.responsavel || (isMaster ? 'Weverson Nascimento' : (userProfile?.displayName || userProfile?.nome || user?.displayName || 'Colaborador')),
+        responsavelEmail: taskData.responsavelEmail || (isMaster ? MASTER_ADMIN_EMAIL : (userProfile?.email || user?.email || '')),
+        responsavelId: taskData.responsavelId || (isMaster ? 'master' : (user?.uid || '')),
+        responsavelFoto: taskData.responsavelFoto || (userProfile?.photoURL || userProfile?.foto || user?.photoURL || '')
       };
 
       if (editTaskId) {
@@ -1048,7 +1080,7 @@ export function HubProvider({ children }) {
             concluidoEm: taskData.stage === 'concluido' ? (existing.concluidoEm || todayISO()) : null
           };
           // Atualização otimista imediata na UI
-          setActivities((prev) => prev.map((a) => (a.id === editTaskId ? updatedTask : a)));
+          setAllActivities((prev) => prev.map((a) => (a.id === editTaskId ? updatedTask : a)));
           closeTaskModal();
           showToast('Tarefa atualizada com sucesso');
 
@@ -1058,14 +1090,14 @@ export function HubProvider({ children }) {
               .catch((err) => {
                 console.error('[Firestore] Erro ao atualizar tarefa:', err);
                 // Rollback
-                setActivities((prev) => prev.map((a) => (a.id === editTaskId ? existing : a)));
+                setAllActivities((prev) => prev.map((a) => (a.id === editTaskId ? existing : a)));
                 showToast('Erro ao sincronizar atualização com o servidor.', 'error');
               });
             db.collection('activities').doc(existing._fbId).set({ ...taskData, ...defaultResp }, { merge: true }).catch(() => {});
           }
         }
       } else {
-        const nextId = activities.length > 0 ? Math.max(...activities.map((a) => a.id || 0)) + 1 : 1;
+        const nextId = allActivities.length > 0 ? Math.max(...allActivities.map((a) => a.id || 0)) + 1 : 1;
         const docRef = getSharedCollection('activities').doc();
         const newTask = {
           ...taskData,
@@ -1080,7 +1112,7 @@ export function HubProvider({ children }) {
         };
 
         // Atualização otimista imediata na UI
-        setActivities((prev) => [...prev, newTaskWithFbId]);
+        setAllActivities((prev) => [...prev, newTaskWithFbId]);
         closeTaskModal();
         showToast('Tarefa criada com sucesso');
 
@@ -1089,7 +1121,7 @@ export function HubProvider({ children }) {
         }).catch((err) => {
           console.error('[Firestore] Erro ao salvar nova tarefa:', err);
           // Rollback
-          setActivities((prev) => prev.filter((a) => a._fbId !== docRef.id));
+          setAllActivities((prev) => prev.filter((a) => a._fbId !== docRef.id));
           showToast('Erro ao salvar tarefa no servidor.', 'error');
         });
       }
@@ -1108,7 +1140,7 @@ export function HubProvider({ children }) {
     if (!t) return;
     showConfirm('Excluir tarefa?', 'Essa ação removerá a tarefa definitivamente.', () => {
       // Atualização otimista imediata na UI
-      setActivities((prev) => prev.filter((a) => a.id !== taskId));
+      setAllActivities((prev) => prev.filter((a) => a.id !== taskId));
       closeTaskModal();
       showToast('Tarefa excluída');
 
@@ -1118,7 +1150,7 @@ export function HubProvider({ children }) {
           .catch((e) => {
             console.error('[Firestore] Erro ao excluir tarefa:', e);
             // Rollback
-            setActivities((prev) => [...prev, t]);
+            setAllActivities((prev) => [...prev, t]);
             showToast('Erro ao excluir tarefa no servidor.', 'error');
           });
         db.collection('activities').doc(t._fbId).delete().catch(() => {});
@@ -1139,7 +1171,7 @@ export function HubProvider({ children }) {
     const updatedProgress = newStage === 'concluido' ? 100 : (task.progress === 100 ? 90 : task.progress);
     const updatedConcluidoEm = newStage === 'concluido' ? todayISO() : null;
 
-    setActivities((prev) =>
+    setAllActivities((prev) =>
       prev.map((a) =>
         a.id === taskId
           ? { ...a, stage: newStage, progress: updatedProgress, concluidoEm: updatedConcluidoEm }
@@ -1415,7 +1447,7 @@ export function HubProvider({ children }) {
       if (!data || !Array.isArray(data.activities) || !Array.isArray(data.categories)) {
         throw new Error('Formato inválido');
       }
-      setActivities(data.activities);
+      setAllActivities(data.activities);
       setCategories(data.categories);
       showToast('Backup restaurado localmente');
     } catch (e) {
@@ -1430,6 +1462,7 @@ export function HubProvider({ children }) {
         authLoading,
         signInWithGoogle,
         signOutUser,
+        allActivities,
         activities,
         categories,
         projects,

@@ -22,6 +22,8 @@ export default function TaskModal() {
     allProjectsList,
     registeredUsers,
     user,
+    userProfile,
+    isMaster,
     MASTER_ADMIN_EMAIL,
     isAdmin
   } = useHub();
@@ -101,16 +103,16 @@ export default function TaskModal() {
       setProjeto(taskModalInitialData?.projeto || '');
       setIsCreatingNewProject(false);
       setResponsavelId(user?.uid || '');
-      setResponsavelNome(user?.displayName || 'Weverson Nascimento');
-      setResponsavelEmail(user?.email || MASTER_ADMIN_EMAIL);
-      setResponsavelFoto(user?.photoURL || '');
+      setResponsavelNome(isMaster ? 'Weverson Nascimento' : (userProfile?.displayName || userProfile?.nome || user?.displayName || 'Colaborador'));
+      setResponsavelEmail(isMaster ? MASTER_ADMIN_EMAIL : (userProfile?.email || user?.email || ''));
+      setResponsavelFoto(isMaster ? (user?.photoURL || '') : (userProfile?.photoURL || userProfile?.foto || user?.photoURL || ''));
     }
     setCheckInput('');
     setLinkUrl('');
     setLinkLabel('');
     setCopied(false);
     setIsSaving(false);
-  }, [taskModalOpen, editTaskId, taskModalInitialData, categories, getTask, user, MASTER_ADMIN_EMAIL]);
+  }, [taskModalOpen, editTaskId, taskModalInitialData, categories, getTask, user, userProfile, isMaster, MASTER_ADMIN_EMAIL]);
 
   if (!taskModalOpen) return null;
 
@@ -228,10 +230,10 @@ export default function TaskModal() {
       categoria: Number(categoria) || categoria || null,
       isProjeto: Boolean(cleanProjeto),
       projeto: cleanProjeto || null,
-      responsavel: responsavelNome || user?.displayName || 'Weverson Nascimento',
-      responsavelEmail: responsavelEmail || user?.email || MASTER_ADMIN_EMAIL,
-      responsavelId: responsavelId || user?.uid || 'master',
-      responsavelFoto: responsavelFoto || user?.photoURL || '',
+      responsavel: isAdmin ? (responsavelNome || user?.displayName || 'Weverson Nascimento') : (userProfile?.displayName || userProfile?.nome || user?.displayName || 'Colaborador'),
+      responsavelEmail: isAdmin ? (responsavelEmail || user?.email || MASTER_ADMIN_EMAIL) : (userProfile?.email || user?.email || ''),
+      responsavelId: isAdmin ? (responsavelId || user?.uid || 'master') : (user?.uid || ''),
+      responsavelFoto: isAdmin ? (responsavelFoto || user?.photoURL || '') : (userProfile?.photoURL || userProfile?.foto || user?.photoURL || ''),
       stage,
       prioridade,
       dataVencimento: dataVencimento || null,
@@ -489,12 +491,22 @@ export default function TaskModal() {
 
             {/* Responsável */}
             <div>
-              <label className="text-xs font-bold text-[var(--color-heading)] block mb-1 flex items-center gap-1.5">
-                <User size={13} className="text-[var(--color-primary)]" />
-                <span>Responsável</span>
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-bold text-[var(--color-heading)] flex items-center gap-1.5">
+                  <User size={13} className="text-[var(--color-primary)]" />
+                  <span>Responsável</span>
+                </label>
+                {!isAdmin && (
+                  <span className="text-[10px] text-[var(--color-primary)] font-semibold">
+                    (Atribuído a você)
+                  </span>
+                )}
+              </div>
               <select
-                className="w-full h-9 px-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-subtle)] text-xs text-[var(--color-heading)] focus:border-[var(--color-primary)] outline-none cursor-pointer"
+                disabled={!isAdmin}
+                className={`w-full h-9 px-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-subtle)] text-xs text-[var(--color-heading)] focus:border-[var(--color-primary)] outline-none ${
+                  !isAdmin ? 'opacity-70 cursor-not-allowed bg-[var(--color-surface)]' : 'cursor-pointer'
+                }`}
                 value={responsavelId || user?.uid || ''}
                 onChange={(e) => {
                   const rid = e.target.value;
@@ -505,9 +517,9 @@ export default function TaskModal() {
                     setResponsavelEmail(found.email || '');
                     setResponsavelFoto(found.photoURL || found.foto || '');
                   } else {
-                    setResponsavelNome(user?.displayName || 'Weverson Nascimento');
-                    setResponsavelEmail(user?.email || MASTER_ADMIN_EMAIL);
-                    setResponsavelFoto(user?.photoURL || '');
+                    setResponsavelNome(isMaster ? 'Weverson Nascimento' : (userProfile?.displayName || user?.displayName || 'Colaborador'));
+                    setResponsavelEmail(isMaster ? MASTER_ADMIN_EMAIL : (userProfile?.email || user?.email || ''));
+                    setResponsavelFoto(userProfile?.photoURL || user?.photoURL || '');
                   }
                 }}
               >

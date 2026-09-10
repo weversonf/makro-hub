@@ -1,0 +1,17 @@
+name: Makro Daily Insight (08:00 Fortaleza)
+on:
+  schedule:
+    - cron: '0 11 * * *' # 11 UTC = 08:00 America/Fortaleza
+  workflow_dispatch: # permite rodar manualmente no GitHub
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Makro Hub cron
+        run: |
+          curl -s -X GET "https://makrohub.vercel.app/api/cron/daily-insight?secret=${{ secrets.CRON_SECRET }}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            | head -c 2000
+          echo ""
+          echo "done"
