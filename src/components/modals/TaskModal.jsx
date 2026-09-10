@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useHub, STAGES, PRIOS, CANAIS, fmtDate, isEditorialActivity } from '../../context/HubContext';
 import { storage, auth } from '../../firebase';
-import { X, Trash2, ExternalLink, UploadCloud, Tag, Calendar, Send, Plus, Copy, Check, FolderKanban, User } from 'lucide-react';
+import { X, Trash2, ExternalLink, UploadCloud, Tag, Calendar, Send, Plus, Copy, Check, FolderKanban, User, TrendingUp, CheckSquare } from 'lucide-react';
 import HrivoDatePicker from '../common/HrivoDatePicker';
 
 export default function TaskModal() {
@@ -120,54 +120,31 @@ export default function TaskModal() {
   const currentStage = stageOf(stage);
   const currentPrio = PRIOS[prioridade] || PRIOS.baixa;
 
-  // Atualização de Checklist & Progresso
-  const updateChecklistProgress = (newChecklist) => {
-    if (syncChecklist && newChecklist.length > 0) {
-      const done = newChecklist.filter((c) => c.done).length;
-      const pct = Math.round((done / newChecklist.length) * 100);
-      setProgress(pct);
-      if (pct >= 100) setStage('concluido');
-      else if (stage === 'concluido') setStage('execucao');
-    }
-  };
-
-  const handleToggleSync = (e) => {
-    const active = e.target.checked;
-    setSyncChecklist(active);
-    if (active && checklist.length > 0) {
-      const done = checklist.filter((c) => c.done).length;
-      const pct = Math.round((done / checklist.length) * 100);
-      setProgress(pct);
-      if (pct >= 100) setStage('concluido');
-    }
-  };
-
+  // Controle Manual do Progresso da Demanda (0 a 100%)
   const handleManualProgress = (val) => {
-    setProgress(val);
-    setSyncChecklist(false);
-    if (val >= 100) setStage('concluido');
-    else if (stage === 'concluido') setStage('execucao');
+    const num = Math.max(0, Math.min(100, Number(val) || 0));
+    setProgress(num);
+    if (num >= 100) setStage('concluido');
+    else if (stage === 'concluido' && num < 100) setStage('execucao');
   };
 
+  // Checklist Independente
   const addChecklistItem = () => {
     const text = checkInput.trim();
     if (!text) return;
     const next = [...checklist, { text, done: false }];
     setChecklist(next);
     setCheckInput('');
-    updateChecklistProgress(next);
   };
 
   const toggleCheck = (idx) => {
     const next = checklist.map((item, i) => (i === idx ? { ...item, done: !item.done } : item));
     setChecklist(next);
-    updateChecklistProgress(next);
   };
 
   const removeCheck = (idx) => {
     const next = checklist.filter((_, i) => i !== idx);
     setChecklist(next);
-    updateChecklistProgress(next);
   };
 
   const addLink = () => {
@@ -278,6 +255,7 @@ export default function TaskModal() {
   const charCount = descricao.length;
   const wordCount = descricao.trim() ? descricao.trim().split(/\s+/).length : 0;
   const doneCount = checklist.filter((c) => c.done).length;
+  const checklistPercent = checklist.length > 0 ? Math.round((doneCount / checklist.length) * 100) : 0;
 
   return (
     <div className="ax-overlay open" onClick={closeTaskModal}>
@@ -416,6 +394,48 @@ export default function TaskModal() {
                     );
                   })}
                 </div>
+              </div>
+            </div>
+
+            {/* Progresso Geral da Demanda */}
+            <div className="p-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-subtle)] space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-[var(--color-heading)] flex items-center gap-1.5">
+                  <TrendingUp size={13} className="text-[var(--color-primary)]" />
+                  <span>Progresso da Demanda</span>
+                </label>
+                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-[var(--color-primary-soft)] text-[var(--color-primary)] border border-[var(--color-primary)]/20">
+                  {progress}%
+                </span>
+              </div>
+
+              {/* Slider interativo */}
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                value={progress}
+                onChange={(e) => handleManualProgress(Number(e.target.value))}
+                className="w-full h-1.5 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] accent-[var(--color-primary)] cursor-pointer"
+              />
+
+              {/* Atalhos Rápidos */}
+              <div className="grid grid-cols-5 gap-1 pt-0.5">
+                {[0, 25, 50, 75, 100].map((val) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => handleManualProgress(val)}
+                    className={`text-[10px] py-1 rounded-md font-semibold border transition text-center ${
+                      progress === val
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white shadow-sm'
+                        : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-muted)] hover:text-[var(--color-heading)]'
+                    }`}
+                  >
+                    {val}%
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -618,59 +638,71 @@ export default function TaskModal() {
               </div>
             )}
 
-            {/* Progresso & Checklist Rápido */}
+            {/* Checklist de Etapas */}
             <div className="p-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-subtle)]">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-[var(--color-heading)]">
-                  Checklist ({doneCount}/{checklist.length})
-                </span>
-                <span className="text-xs font-mono font-bold text-[var(--color-primary)]">
-                  {progress}%
+                <div className="flex items-center gap-1.5">
+                  <CheckSquare size={13} className="text-[var(--color-primary)]" />
+                  <span className="text-xs font-bold text-[var(--color-heading)]">
+                    Checklist ({doneCount}/{checklist.length})
+                  </span>
+                </div>
+                <span className="text-xs font-mono font-medium text-[var(--color-muted)]">
+                  {checklist.length > 0 ? `${checklistPercent}% concluído` : '0 itens'}
                 </span>
               </div>
 
-              {/* Barra de Progresso */}
-              <div className="w-full h-1.5 rounded-full bg-[var(--color-surface)] overflow-hidden mb-2.5">
-                <div
-                  className="h-full rounded-full bg-[var(--color-primary)] transition-all"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
+              {/* Barra de Progresso do Checklist (ativa somente quando existirem itens) */}
+              {checklist.length > 0 && (
+                <div className="w-full h-1.5 rounded-full bg-[var(--color-surface)] overflow-hidden mb-2.5">
+                  <div
+                    className="h-full rounded-full bg-[var(--color-primary)] transition-all"
+                    style={{ width: `${checklistPercent}%` }}
+                  />
+                </div>
+              )}
 
               {/* Lista dos itens do checklist */}
               <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
-                {checklist.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between text-xs p-1 rounded hover:bg-[var(--color-surface)] transition"
-                  >
-                    <label className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
-                      <input
-                        type="checkbox"
-                        checked={item.done}
-                        onChange={() => toggleCheck(idx)}
-                        className="rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-0"
-                      />
-                      <span className={`truncate ${item.done ? 'line-through text-[var(--color-muted)]' : 'text-[var(--color-heading)]'}`}>
-                        {item.text}
-                      </span>
-                    </label>
-                    <button
-                      type="button"
-                      className="text-[var(--color-muted)] hover:text-[var(--color-danger)] p-0.5 ml-1"
-                      onClick={() => removeCheck(idx)}
+                {checklist.length === 0 ? (
+                  <p className="text-[11px] text-[var(--color-muted)] italic py-1">
+                    Nenhum item adicionado ao checklist.
+                  </p>
+                ) : (
+                  checklist.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between text-xs p-1 rounded hover:bg-[var(--color-surface)] transition"
                     >
-                      <X size={13} />
-                    </button>
-                  </div>
-                ))}
+                      <label className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
+                        <input
+                          type="checkbox"
+                          checked={item.done}
+                          onChange={() => toggleCheck(idx)}
+                          className="rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-0 cursor-pointer"
+                        />
+                        <span className={`truncate ${item.done ? 'line-through text-[var(--color-muted)]' : 'text-[var(--color-heading)]'}`}>
+                          {item.text}
+                        </span>
+                      </label>
+                      <button
+                        type="button"
+                        className="text-[var(--color-muted)] hover:text-[var(--color-danger)] p-0.5 ml-1"
+                        onClick={() => removeCheck(idx)}
+                        title="Remover item"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ))
+                )}
               </div>
 
               {/* Adicionar item */}
-              <div className="flex gap-1.5 mt-2">
+              <div className="flex gap-1.5 mt-2 pt-2 border-t border-[var(--color-border)]">
                 <input
-                  className="flex-1 h-7 px-2 text-xs rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-heading)] outline-none"
-                  placeholder="Novo item..."
+                  className="flex-1 h-7 px-2 text-xs rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-heading)] outline-none focus:border-[var(--color-primary)]"
+                  placeholder="Adicionar item ao checklist..."
                   value={checkInput}
                   onChange={(e) => setCheckInput(e.target.value)}
                   onKeyDown={(e) => {
@@ -682,10 +714,11 @@ export default function TaskModal() {
                 />
                 <button
                   type="button"
-                  className="h-7 px-2 rounded bg-[var(--color-primary)] text-white text-xs font-semibold"
+                  className="h-7 px-2.5 rounded bg-[var(--color-primary)] text-white text-xs font-semibold hover:opacity-90 flex items-center justify-center"
                   onClick={addChecklistItem}
+                  title="Adicionar ao checklist"
                 >
-                  <Plus size={14} />
+                  <Plus size={13} />
                 </button>
               </div>
             </div>
