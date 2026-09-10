@@ -264,9 +264,9 @@ body {
 
 .sidebar-collapsed .hr-sidebar-toggle-btn {
   display: inline-flex !important;
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   align-items: center;
   justify-content: center;
   color: var(--color-sidebar-muted);

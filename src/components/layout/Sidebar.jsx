@@ -101,9 +101,9 @@ export default function Sidebar() {
             className="hidden lg:inline-flex hr-icon-btn hr-sidebar-toggle-btn w-8 h-8 rounded-lg text-[var(--color-sidebar-muted)] hover:text-white hover:bg-white/10 transition-colors"
             onClick={toggleSidebar}
             title={collapsed ? "Expandir Menu ( [ )" : "Recolher Menu ( [ )"}
-            aria-label="Toggle sidebar"
+            aria-label={collapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
           >
-            <i className={`ph ${collapsed ? 'ph-caret-right' : 'ph-sidebar-simple'} text-lg`} />
+            <i className="ph ph-sidebar-simple text-lg" />
           </button>
 
           {/* Ações no Mobile Drawer (Lado Direito): Alternar Tema + Fechar */}

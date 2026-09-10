@@ -8,8 +8,6 @@ export default function Header() {
     setView,
     searchQuery,
     setSearchQuery,
-    collapsed,
-    toggleSidebar,
     setMobileDrawerOpen,
     toggleTheme,
     openNotifModal,
@@ -33,18 +31,8 @@ export default function Header() {
 
   return (
     <header className="hr-topbar hidden lg:flex" id="topbar">
-      {/* Left: Page Title & Sidebar Toggle */}
+      {/* Left: Page Title */}
       <div className="flex items-center gap-2 sm:gap-2.5">
-        {/* Desktop Sidebar Toggle (Retrátil) */}
-        <button
-          type="button"
-          className="hidden lg:inline-flex hr-icon-btn text-[var(--color-muted)] hover:text-[var(--color-heading)] hover:bg-[var(--color-subtle)] transition"
-          onClick={toggleSidebar}
-          title={collapsed ? "Expandir menu lateral ( [ )" : "Recolher menu lateral ( [ )"}
-          aria-label="Alternar menu lateral"
-        >
-          <i className={`ph ${collapsed ? 'ph-sidebar-simple text-[var(--color-primary)] font-bold' : 'ph-sidebar-simple'} text-xl`} />
-        </button>
 
         <button
           type="button"
