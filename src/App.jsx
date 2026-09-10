@@ -153,8 +153,9 @@ export default function App() {
     );
   }
 
-  // Trava de segurança: Colaboradores e visualizadores têm acesso a Tarefas e ao seu Controle de Ponto
-  const activeView = isAdmin ? view : (view === 'banco-horas' ? 'banco-horas' : 'lista');
+  // Trava de segurança: Colaboradores e visualizadores têm acesso a Tarefas, Controle de Ponto e Documentos
+  const allowedViews = ['lista', 'banco-horas', 'documentos'];
+  const activeView = isAdmin ? view : (allowedViews.includes(view) ? view : 'lista');
   const showFab = ['lista', 'dash', 'editorial', 'projetos'].includes(activeView);
 
   return (
@@ -168,10 +169,10 @@ export default function App() {
             <ErrorBoundary key={activeView}>
               {activeView === 'lista' && <TarefasView />}
               {activeView === 'banco-horas' && <BancoHorasView />}
+              {activeView === 'documentos' && <DocumentosView />}
               {isAdmin && activeView === 'dash' && <DashboardView />}
               {isAdmin && activeView === 'projetos' && <ProjetosView />}
               {isAdmin && activeView === 'editorial' && <CalendarioView />}
-              {isAdmin && activeView === 'documentos' && <DocumentosView />}
               {isAdmin && activeView === 'equipe' && <EquipeView />}
               {isAdmin && activeView === 'performance' && <PerformanceView />}
               {isAdmin && (activeView === 'categorias' || activeView === 'config') && <ConfigView />}

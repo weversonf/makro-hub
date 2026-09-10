@@ -202,17 +202,17 @@ export default function Sidebar() {
                 <span className="hr-nav-label">Calendário</span>
                 <span className="hr-nav-badge">{edActs.length}</span>
               </button>
-
-              <button
-                className={`hr-nav-item ${view === 'documentos' ? 'hr-nav-item--active' : ''}`}
-                onClick={() => setView('documentos')}
-                data-tooltip="Documentos & Mídia Kit"
-              >
-                <i className="ph ph-files text-xl flex-shrink-0" />
-                <span className="hr-nav-label">Documentos / Mídia Kit</span>
-              </button>
             </>
           )}
+
+          <button
+            className={`hr-nav-item ${view === 'documentos' ? 'hr-nav-item--active' : ''}`}
+            onClick={() => setView('documentos')}
+            data-tooltip="Documentos & Mídia Kit"
+          >
+            <i className="ph ph-files text-xl flex-shrink-0" />
+            <span className="hr-nav-label">Documentos / Mídia Kit</span>
+          </button>
         </div>
 
         {/* Pessoas & Equipe */}
