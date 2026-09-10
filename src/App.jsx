@@ -27,6 +27,12 @@ export default function App() {
     user,
     authLoading,
     signInWithGoogle,
+    signInWithEmail,
+    sendPasswordReset,
+    changePassword,
+    signOutUser,
+    mustChangePasswordPrompt,
+    showToast,
     view,
     openNewTask,
     setTheme,
@@ -43,6 +49,66 @@ export default function App() {
     loggingIn,
     isAdmin
   } = useHub();
+
+  const [emailInput, setEmailInput] = React.useState('');
+  const [passwordInput, setPasswordInput] = React.useState('');
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [isResetOpen, setIsResetOpen] = React.useState(false);
+  const [resetEmail, setResetEmail] = React.useState('');
+  const [isSendingReset, setIsSendingReset] = React.useState(false);
+
+  // Estados para troca obrigatória de senha no primeiro login
+  const [newPasswordInput, setNewPasswordInput] = React.useState('');
+  const [confirmPasswordInput, setConfirmPasswordInput] = React.useState('');
+  const [isSubmittingNewPassword, setIsSubmittingNewPassword] = React.useState(false);
+
+  const handleEmailLoginSubmit = async (e) => {
+    e.preventDefault();
+    if (!emailInput.trim() || !passwordInput.trim()) {
+      showToast('Preencha seu e-mail e sua senha para entrar.', 'error');
+      return;
+    }
+    try {
+      await signInWithEmail(emailInput, passwordInput);
+    } catch (err) {
+      // toast e erro já tratados no HubContext
+    }
+  };
+
+  const handleSendResetSubmit = async () => {
+    if (!resetEmail.trim()) {
+      showToast('Informe o seu e-mail.', 'error');
+      return;
+    }
+    setIsSendingReset(true);
+    try {
+      const ok = await sendPasswordReset(resetEmail);
+      if (ok) {
+        setIsResetOpen(false);
+        setResetEmail('');
+      }
+    } finally {
+      setIsSendingReset(false);
+    }
+  };
+
+  const handleChangePasswordSubmit = async (e) => {
+    e.preventDefault();
+    if (newPasswordInput.length < 6) {
+      showToast('A nova senha deve ter no mínimo 6 caracteres.', 'error');
+      return;
+    }
+    if (newPasswordInput !== confirmPasswordInput) {
+      showToast('As senhas digitadas não coincidem.', 'error');
+      return;
+    }
+    setIsSubmittingNewPassword(true);
+    try {
+      await changePassword(newPasswordInput);
+    } finally {
+      setIsSubmittingNewPassword(false);
+    }
+  };
 
   // Atalhos Globais de Teclado
   useEffect(() => {
@@ -94,10 +160,91 @@ export default function App() {
     );
   }
 
+  // Troca de Senha Obrigatória no Primeiro Acesso (para logins com e-mail e senha)
+  if (user && mustChangePasswordPrompt) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4 bg-[var(--color-bg)]">
+        <div className="max-w-md w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-2xl p-6 sm:p-8 flex flex-col items-center text-center gap-5 z-10">
+          <img
+            src="https://makroengenharia.com.br/wp-content/uploads/2023/03/logo-1.png"
+            alt="Makro"
+            className="h-9 object-contain"
+          />
+
+          <div className="w-12 h-12 rounded-2xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center">
+            <i className="ph ph-shield-check text-2xl font-bold" />
+          </div>
+
+          <div>
+            <h2 className="font-bold text-lg text-[var(--color-heading)]">Alteração Obrigatória de Senha</h2>
+            <p className="text-xs text-[var(--color-muted)] mt-1.5 leading-relaxed">
+              Olá, <strong>{user.displayName || user.email}</strong>! Por motivos de segurança, você deve cadastrar uma nova senha pessoal para o seu primeiro acesso ao Makro Hub.
+            </p>
+          </div>
+
+          <form onSubmit={handleChangePasswordSubmit} className="w-full space-y-3.5 text-left">
+            <div>
+              <label className="block text-xs font-bold text-[var(--color-heading)] mb-1">
+                Nova Senha (mínimo 6 caracteres) *
+              </label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={newPasswordInput}
+                onChange={(e) => setNewPasswordInput(e.target.value)}
+                placeholder="Digite sua nova senha pessoal"
+                className="w-full h-10 px-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-xs text-[var(--color-heading)] outline-none focus:border-[var(--color-primary)] transition"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-[var(--color-heading)] mb-1">
+                Confirmar Nova Senha *
+              </label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={confirmPasswordInput}
+                onChange={(e) => setConfirmPasswordInput(e.target.value)}
+                placeholder="Repita sua nova senha"
+                className="w-full h-10 px-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-xs text-[var(--color-heading)] outline-none focus:border-[var(--color-primary)] transition"
+              />
+            </div>
+
+            <div className="pt-2 flex flex-col gap-2">
+              <button
+                type="submit"
+                disabled={isSubmittingNewPassword}
+                className="hr-btn hr-btn--primary w-full h-10 font-bold text-xs flex items-center justify-center gap-2 shadow-md"
+              >
+                {isSubmittingNewPassword ? (
+                  <i className="ph ph-spinner-gap animate-spin text-base" />
+                ) : (
+                  <i className="ph ph-check-circle text-base" />
+                )}
+                <span>{isSubmittingNewPassword ? 'Salvando...' : 'Salvar Nova Senha e Acessar'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={signOutUser}
+                className="hr-btn hr-btn--secondary w-full h-9 text-xs"
+              >
+                Sair / Entrar com outra conta
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4 bg-[var(--color-bg)]">
-        <div className="max-w-sm w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-2xl p-8 flex flex-col items-center text-center gap-6 z-10">
+        <div className="max-w-sm w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-2xl p-6 sm:p-8 flex flex-col items-center text-center gap-5 z-10">
           <img
             src="https://makroengenharia.com.br/wp-content/uploads/2023/03/logo-1.png"
             alt="Makro"
@@ -111,6 +258,7 @@ export default function App() {
             </p>
           </div>
 
+          {/* Botão Entrar com Google */}
           <button
             type="button"
             className="hr-btn hr-btn--primary w-full h-11 flex items-center justify-center gap-2.5 font-bold text-sm shadow-md hover:scale-[1.01] transition"
@@ -130,25 +278,125 @@ export default function App() {
             <span>{loggingIn ? 'Autenticando...' : 'Entrar com Google'}</span>
           </button>
 
-          <p className="text-[11px] text-[var(--color-muted)] leading-relaxed -mt-2">
-            Acesse com sua conta corporativa <strong>@makroengenharia.com.br</strong> ou seu e-mail Google autorizado.
-          </p>
+          {/* Divisor */}
+          <div className="flex items-center gap-3 w-full my-0.5">
+            <div className="flex-1 h-px bg-[var(--color-border)]" />
+            <span className="text-[10px] font-semibold text-[var(--color-muted)] uppercase tracking-wider">ou acesse com e-mail</span>
+            <div className="flex-1 h-px bg-[var(--color-border)]" />
+          </div>
+
+          {/* Formulário de Login por E-mail */}
+          <form onSubmit={handleEmailLoginSubmit} className="w-full space-y-3 text-left">
+            <div>
+              <label className="block text-[11px] font-semibold text-[var(--color-muted)] mb-1">
+                E-mail Corporativo
+              </label>
+              <input
+                type="email"
+                required
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                placeholder="seu.email@makroengenharia.com"
+                className="w-full h-9 px-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-xs text-[var(--color-heading)] outline-none focus:border-[var(--color-primary)] transition"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[11px] font-semibold text-[var(--color-muted)]">
+                  Senha
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsResetOpen(true)}
+                  className="text-[10px] text-[var(--color-primary)] hover:underline"
+                >
+                  Esqueceu a senha?
+                </button>
+              </div>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  placeholder="Sua senha"
+                  className="w-full h-9 px-3 pr-8 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-xs text-[var(--color-heading)] outline-none focus:border-[var(--color-primary)] transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2 top-2 text-[var(--color-muted)] hover:text-[var(--color-heading)]"
+                  title={showPassword ? 'Ocultar' : 'Mostrar'}
+                >
+                  <i className={`ph ${showPassword ? 'ph-eye-slash' : 'ph-eye'} text-sm`} />
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loggingIn}
+              className="hr-btn hr-btn--secondary w-full h-9 font-bold text-xs flex items-center justify-center gap-2 mt-1"
+            >
+              {loggingIn ? (
+                <i className="ph ph-spinner-gap animate-spin text-sm" />
+              ) : (
+                <i className="ph ph-sign-in text-sm" />
+              )}
+              <span>{loggingIn ? 'Entrando...' : 'Entrar com E-mail'}</span>
+            </button>
+          </form>
 
           {authError && (
-            <div className="p-3.5 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 text-xs text-left leading-relaxed w-full">
-              <p className="font-bold flex items-center gap-1.5 mb-1 text-[var(--color-heading)]">
+            <div className="p-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 text-xs text-left leading-relaxed w-full">
+              <p className="font-bold flex items-center gap-1.5 mb-0.5 text-[var(--color-heading)]">
                 <i className="ph ph-warning-circle text-base text-red-400" />
-                Domínio Pendente no Firebase
+                Aviso de Autenticação
               </p>
               <p className="text-[11px] leading-normal">{authError}</p>
-              {authError.includes('Firebase') && (
-                <div className="mt-2 pt-2 border-t border-red-500/20 text-[11px] text-[var(--color-muted)]">
-                  Adicione <code>makrohub.vercel.app</code> em <strong>Firebase Console &gt; Authentication &gt; Settings &gt; Authorized Domains</strong>.
-                </div>
-              )}
             </div>
           )}
         </div>
+
+        {/* Modal de Esqueci a Senha */}
+        {isResetOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+            <div className="max-w-xs w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-2xl p-5 flex flex-col gap-4">
+              <div>
+                <h3 className="text-sm font-bold text-[var(--color-heading)]">Recuperar Senha</h3>
+                <p className="text-[11px] text-[var(--color-muted)] mt-1">
+                  Informe seu e-mail cadastrado para receber o link de redefinição.
+                </p>
+              </div>
+              <input
+                type="email"
+                required
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                placeholder="seu.email@makroengenharia.com"
+                className="w-full h-9 px-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-xs text-[var(--color-heading)] outline-none focus:border-[var(--color-primary)] transition"
+              />
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsResetOpen(false)}
+                  className="hr-btn hr-btn--secondary text-xs h-8 px-3"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  disabled={isSendingReset}
+                  onClick={handleSendResetSubmit}
+                  className="hr-btn hr-btn--primary text-xs h-8 px-3"
+                >
+                  {isSendingReset ? 'Enviando...' : 'Enviar Link'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

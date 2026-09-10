@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useHub } from '../context/HubContext';
-import { X, UserPlus, Trash2, ShieldCheck, Mail, Phone, Crown, CheckCircle2 } from 'lucide-react';
+import { X, UserPlus, Trash2, ShieldCheck, Mail, Phone, Crown, CheckCircle2, Pencil, KeyRound, Copy, Check, Eye, EyeOff } from 'lucide-react';
 
 export default function EquipeView() {
   const {
@@ -13,12 +13,17 @@ export default function EquipeView() {
     MASTER_ADMIN_EMAIL,
     updateUserRole,
     addTeamMember,
+    updateTeamMember,
     deleteTeamMember,
     showConfirm,
     showToast
   } = useHub();
 
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState('add'); // 'add' | 'edit'
+  const [editingUserId, setEditingUserId] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [copiedPassword, setCopiedPassword] = useState(false);
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
@@ -26,7 +31,9 @@ export default function EquipeView() {
     departamento: 'Marketing Central',
     ramal: '',
     foto: '',
-    role: 'colaborador'
+    role: 'colaborador',
+    senha: '',
+    mustChangePassword: true
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -48,7 +55,7 @@ export default function EquipeView() {
         email: user.email || MASTER_ADMIN_EMAIL,
         cargo: isCurrentMaster ? 'ADM Master & Coordenador' : 'Colaborador',
         departamento: 'Marketing Central',
-        ramal: '(85) 99924-1234',
+        ramal: isCurrentMaster ? '(85) 99924-1234' : '',
         foto: user.photoURL || '',
         photoURL: user.photoURL || '',
         role: isCurrentMaster ? 'admin_master' : 'colaborador',
@@ -87,7 +94,32 @@ export default function EquipeView() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleGeneratePassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%';
+    let pwd = 'Mk#';
+    for (let i = 0; i < 6; i++) {
+      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setFormData((prev) => ({
+      ...prev,
+      senha: pwd,
+      mustChangePassword: true
+    }));
+    setShowPassword(true);
+    showToast('Senha provisória gerada! Copie-a para enviar ao colaborador.', 'info');
+  };
+
+  const handleCopyPassword = () => {
+    if (!formData.senha) return;
+    navigator.clipboard.writeText(formData.senha);
+    setCopiedPassword(true);
+    showToast('Senha copiada para a área de transferência!', 'success');
+    setTimeout(() => setCopiedPassword(false), 2500);
+  };
+
   const handleOpenAddModal = () => {
+    setModalMode('add');
+    setEditingUserId(null);
     setFormData({
       nome: '',
       email: '',
@@ -95,16 +127,39 @@ export default function EquipeView() {
       departamento: 'Marketing Central',
       ramal: '',
       foto: '',
-      role: 'colaborador'
+      role: 'colaborador',
+      senha: '',
+      mustChangePassword: true
     });
-    setIsAddModalOpen(true);
+    setShowPassword(false);
+    setCopiedPassword(false);
+    setIsModalOpen(true);
   };
 
-  const handleCloseAddModal = () => {
-    setIsAddModalOpen(false);
+  const handleOpenEditModal = (member) => {
+    setModalMode('edit');
+    setEditingUserId(member.id || member.uid);
+    setFormData({
+      nome: member.nome || member.displayName || '',
+      email: member.email || '',
+      cargo: member.cargo || '',
+      departamento: member.departamento || 'Marketing Central',
+      ramal: member.ramal || '',
+      foto: member.foto || member.photoURL || '',
+      role: member.role || 'colaborador',
+      senha: '',
+      mustChangePassword: member.mustChangePassword ?? true
+    });
+    setShowPassword(false);
+    setCopiedPassword(false);
+    setIsModalOpen(true);
   };
 
-  const handleAddSubmit = async (e) => {
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.nome.trim()) {
       showToast('Por favor, informe o nome do colaborador.', 'error');
@@ -117,9 +172,12 @@ export default function EquipeView() {
 
     setIsSubmitting(true);
     try {
-      const success = await addTeamMember(formData);
-      if (success) {
-        setIsAddModalOpen(false);
+      if (modalMode === 'add') {
+        const success = await addTeamMember(formData);
+        if (success) setIsModalOpen(false);
+      } else {
+        const success = await updateTeamMember(editingUserId, formData);
+        if (success) setIsModalOpen(false);
       }
     } finally {
       setIsSubmitting(false);
@@ -228,7 +286,7 @@ export default function EquipeView() {
           const memberCargo = m.cargo || (isMasterUser ? 'ADM Master & Coordenador' : 'Colaborador');
           const memberDepto = m.departamento || 'Marketing Central';
           const memberEmail = (isMasterUser && user?.email) ? user.email : (m.email || (isMasterUser ? MASTER_ADMIN_EMAIL : '—'));
-          const memberRamal = m.ramal || '(85) 99924-1234';
+          const memberRamal = m.ramal || (isMasterUser ? '(85) 99924-1234' : '');
 
           const assignedCount = (activities || []).filter((a) => {
             if (a.responsavelId && (m.id || m.uid)) {
@@ -315,52 +373,66 @@ export default function EquipeView() {
                     <Mail size={14} className="text-[var(--color-muted)] flex-shrink-0" />
                     <span className="truncate" title={memberEmail}>{memberEmail}</span>
                   </div>
-                  {memberRamal && (
+                  {memberRamal ? (
                     <div className="flex items-center gap-2">
                       <Phone size={14} className="text-[var(--color-muted)] flex-shrink-0" />
                       <span>{memberRamal}</span>
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
 
               {/* Rodapé do Card: Controle de Nível e Ações */}
               <div className="mt-4 pt-3 border-t border-[var(--color-border-subtle)] flex flex-col gap-2.5">
-                {/* Seletor de Nível (Exclusivo para o ADM Master) */}
-                {isMaster && (
-                  <div className="flex items-center justify-between gap-2 pt-1">
-                    <span className="text-[11px] font-semibold text-[var(--color-muted)]">
-                      Nível de Acesso:
-                    </span>
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <span className="text-[11px] font-semibold text-[var(--color-muted)]">
+                    Nível de Acesso:
+                  </span>
+                  <div className="flex items-center gap-1.5">
                     {isMasterUser ? (
                       <span className="text-[11px] font-semibold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
                         Permanente (Master)
                       </span>
+                    ) : isMaster ? (
+                      <select
+                        value={m.role || 'colaborador'}
+                        onChange={(e) => handleRoleChange(m.id || m.uid, e.target.value, m.email)}
+                        className="text-xs py-1 px-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-heading)] outline-none focus:border-[var(--color-primary)] cursor-pointer"
+                      >
+                        <option value="admin_master">👑 ADM Master</option>
+                        <option value="admin">🛡️ Administrador</option>
+                        <option value="colaborador">👤 Colaborador</option>
+                        <option value="visualizador">👁️ Visualizador</option>
+                      </select>
                     ) : (
-                      <div className="flex items-center gap-1.5">
-                        <select
-                          value={m.role || 'colaborador'}
-                          onChange={(e) => handleRoleChange(m.id || m.uid, e.target.value, m.email)}
-                          className="text-xs py-1 px-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-heading)] outline-none focus:border-[var(--color-primary)] cursor-pointer"
-                        >
-                          <option value="admin_master">👑 ADM Master</option>
-                          <option value="admin">🛡️ Administrador</option>
-                          <option value="colaborador">👤 Colaborador</option>
-                          <option value="visualizador">👁️ Visualizador</option>
-                        </select>
+                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${roleInfo.badgeClass}`}>
+                        {roleInfo.label}
+                      </span>
+                    )}
 
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteMember(m)}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--color-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)] transition"
-                          title="Remover colaborador"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
+                    {(isMaster || isAdmin) && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditModal(m)}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--color-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary-soft)] transition"
+                        title="Editar dados e senha do colaborador"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                    )}
+
+                    {isMaster && !isMasterUser && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteMember(m)}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--color-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)] transition"
+                        title="Remover colaborador"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     )}
                   </div>
-                )}
+                </div>
 
                 <div className="flex items-center gap-2 pt-1">
                   <span className="text-[11px] text-[var(--color-muted)] flex items-center gap-1">
@@ -374,43 +446,43 @@ export default function EquipeView() {
         })}
       </div>
 
-      {/* Modal de Adicionar Colaborador */}
-      {isAddModalOpen && (
+      {/* Modal de Cadastro / Edição de Colaborador */}
+      {isModalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/70 backdrop-blur-sm animate-fade-in"
-          onClick={handleCloseAddModal}
+          onClick={handleCloseModal}
         >
           <div
-            className="w-full max-w-lg overflow-hidden border border-[var(--color-border-strong)] bg-[var(--color-surface)] rounded-2xl shadow-2xl"
+            className="w-full max-w-lg overflow-hidden border border-[var(--color-border-strong)] bg-[var(--color-surface)] rounded-2xl shadow-2xl max-h-[92vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
           >
             {/* Header do Modal */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)] flex-shrink-0">
               <div className="flex items-center gap-2">
                 <span className="w-8 h-8 rounded-lg bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center">
-                  <UserPlus size={18} />
+                  {modalMode === 'add' ? <UserPlus size={18} /> : <Pencil size={18} />}
                 </span>
                 <div>
                   <h3 className="text-sm font-bold text-[var(--color-heading)]">
-                    Adicionar Colaborador à Equipe
+                    {modalMode === 'add' ? 'Adicionar Colaborador à Equipe' : 'Editar Colaborador'}
                   </h3>
                   <p className="text-[11px] text-[var(--color-muted)]">
-                    Defina os dados e o nível de permissão no sistema
+                    {modalMode === 'add' ? 'Defina os dados, nível de acesso e senha temporária' : 'Atualize os dados, contatos ou redefina a senha de acesso'}
                   </p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={handleCloseAddModal}
+                onClick={handleCloseModal}
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--color-muted)] hover:text-[var(--color-heading)] hover:bg-[var(--color-subtle)] transition"
               >
                 <X size={18} />
               </button>
             </div>
 
-            {/* Formulário */}
-            <form onSubmit={handleAddSubmit} className="p-5 space-y-4">
+            {/* Formulário com Scroll Interno */}
+            <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto flex-1">
               <div>
                 <label className="block text-xs font-bold text-[var(--color-heading)] mb-1">
                   Nome Completo *
@@ -427,16 +499,22 @@ export default function EquipeView() {
 
               <div>
                 <label className="block text-xs font-bold text-[var(--color-heading)] mb-1">
-                  E-mail do Colaborador (Google/Corporativo) *
+                  E-mail do Colaborador *
                 </label>
                 <input
                   type="email"
                   required
+                  disabled={modalMode === 'edit'}
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   placeholder="colaborador@makroengenharia.com.br"
-                  className="w-full h-9 px-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-xs text-[var(--color-heading)] outline-none focus:border-[var(--color-primary)] transition"
+                  className="w-full h-9 px-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-xs text-[var(--color-heading)] outline-none focus:border-[var(--color-primary)] transition disabled:opacity-60 disabled:cursor-not-allowed"
                 />
+                {modalMode === 'edit' && (
+                  <span className="text-[10px] text-[var(--color-muted)] mt-0.5 block">
+                    O e-mail de acesso é o identificador único da conta e não pode ser alterado diretamente.
+                  </span>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -476,7 +554,7 @@ export default function EquipeView() {
                     type="text"
                     value={formData.ramal}
                     onChange={(e) => handleInputChange('ramal', e.target.value)}
-                    placeholder="(85) 99812-4567"
+                    placeholder="Deixe em branco ou (85) 99812-4567"
                     className="w-full h-9 px-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-xs text-[var(--color-heading)] outline-none focus:border-[var(--color-primary)] transition"
                   />
                 </div>
@@ -511,11 +589,85 @@ export default function EquipeView() {
                 />
               </div>
 
+              {/* Seção de Senha Automática e Acesso por E-mail */}
+              <div className="p-3.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-subtle)]/40 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <KeyRound size={15} className="text-[var(--color-primary)]" />
+                    <span className="text-xs font-bold text-[var(--color-heading)]">
+                      Acesso ao Sistema & Senha
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleGeneratePassword}
+                    className="text-[11px] font-bold text-[var(--color-primary)] hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    ⚡ Gerar Senha Automática
+                  </button>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-[var(--color-muted)] mb-1">
+                    {modalMode === 'add' ? 'Senha Provisória do Usuário' : 'Nova Senha Provisória (Opcional)'}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={formData.senha}
+                        onChange={(e) => handleInputChange('senha', e.target.value)}
+                        placeholder={modalMode === 'add' ? 'Clique em "Gerar Senha Automática" ou digite' : 'Deixe em branco para manter a senha atual'}
+                        className="w-full h-9 px-3 pr-8 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-xs font-mono text-[var(--color-heading)] outline-none focus:border-[var(--color-primary)] transition"
+                      />
+                      {formData.senha ? (
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-2 top-2 text-[var(--color-muted)] hover:text-[var(--color-heading)]"
+                          title={showPassword ? 'Ocultar' : 'Mostrar'}
+                        >
+                          {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                        </button>
+                      ) : null}
+                    </div>
+
+                    {formData.senha ? (
+                      <button
+                        type="button"
+                        onClick={handleCopyPassword}
+                        className="h-9 px-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-xs font-bold text-[var(--color-heading)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] flex items-center gap-1.5 transition flex-shrink-0"
+                        title="Copiar senha gerada"
+                      >
+                        {copiedPassword ? <Check size={14} className="text-[var(--color-success)]" /> : <Copy size={14} />}
+                        <span>{copiedPassword ? 'Copiada!' : 'Copiar'}</span>
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+
+                {formData.senha ? (
+                  <label className="flex items-center gap-2 text-[11px] font-medium text-[var(--color-heading)] cursor-pointer pt-1">
+                    <input
+                      type="checkbox"
+                      checked={formData.mustChangePassword}
+                      onChange={(e) => handleInputChange('mustChangePassword', e.target.checked)}
+                      className="rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-0"
+                    />
+                    <span>Exigir troca obrigatória de senha no primeiro login</span>
+                  </label>
+                ) : null}
+
+                <p className="text-[10px] text-[var(--color-muted)] leading-relaxed">
+                  Colaboradores que acessarem com <strong>"Entrar com Google"</strong> entram diretamente via conta corporativa. A senha acima é utilizada para autenticação direta por e-mail e senha.
+                </p>
+              </div>
+
               {/* Botões do Modal */}
               <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[var(--color-border)]">
                 <button
                   type="button"
-                  onClick={handleCloseAddModal}
+                  onClick={handleCloseModal}
                   disabled={isSubmitting}
                   className="hr-btn hr-btn--secondary text-xs h-9 px-4"
                 >
@@ -527,7 +679,7 @@ export default function EquipeView() {
                   className="hr-btn hr-btn--primary text-xs h-9 px-4 flex items-center gap-1.5"
                 >
                   <CheckCircle2 size={15} />
-                  <span>{isSubmitting ? 'Cadastrando...' : 'Cadastrar Colaborador'}</span>
+                  <span>{isSubmitting ? (modalMode === 'add' ? 'Cadastrando...' : 'Salvando...') : (modalMode === 'add' ? 'Cadastrar Colaborador' : 'Salvar Alterações')}</span>
                 </button>
               </div>
             </form>

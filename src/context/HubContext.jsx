@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import firebase, { db, auth, storage, googleProvider, getUserCollection, getUserDoc } from '../firebase';
+import firebase, { db, auth, storage, googleProvider, getUserCollection, getUserDoc, getSecondaryAuth } from '../firebase';
 
 const HubContext = createContext();
 
@@ -246,6 +246,7 @@ export function HubProvider({ children }) {
 
   const [confirmModal, setConfirmModal] = useState({ open: false, title: '', message: '', onConfirm: null });
   const [toasts, setToasts] = useState([]);
+  const [mustChangePasswordPrompt, setMustChangePasswordPrompt] = useState(false);
 
   // Toast helper
   const showToast = useCallback((message, type = 'success') => {
@@ -378,7 +379,7 @@ export function HubProvider({ children }) {
           role: isCurrentMaster ? 'admin_master' : (data.role || 'colaborador'),
           cargo: data.cargo || (isCurrentMaster ? 'ADM Master & Coordenador' : 'Colaborador de Marketing'),
           departamento: data.departamento || 'Marketing Central',
-          ramal: data.ramal || '(85) 99924-1234',
+          ramal: data.ramal || (isCurrentMaster ? '(85) 99924-1234' : ''),
           online: true,
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
@@ -386,6 +387,14 @@ export function HubProvider({ children }) {
         setUserProfile({ ...data, ...initialProfile });
       } else {
         setUserProfile(data);
+      }
+
+      // Verifica se o usuário autenticado por e-mail/senha precisa trocar a senha temporária no primeiro login
+      const isPasswordUser = user.providerData?.some((p) => p.providerId === 'password');
+      if (isPasswordUser && (data.mustChangePassword === true || data.precisaTrocarSenha === true)) {
+        setMustChangePasswordPrompt(true);
+      } else {
+        setMustChangePasswordPrompt(false);
       }
     }, (err) => {
       console.warn('[Firestore] Erro ao sincronizar perfil do usuário:', err);
@@ -625,6 +634,82 @@ export function HubProvider({ children }) {
     }
   };
 
+  const signInWithEmail = async (email, password) => {
+    try {
+      setLoggingIn(true);
+      setAuthError(null);
+      const cleanEmail = email?.trim().toLowerCase();
+      await auth.signInWithEmailAndPassword(cleanEmail, password);
+    } catch (e) {
+      console.error('[Auth Error Email]', e);
+      let msg = 'Erro ao realizar login.';
+      if (e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+        msg = 'E-mail ou senha incorretos. Verifique suas credenciais.';
+      } else if (e.code === 'auth/invalid-email') {
+        msg = 'O formato do e-mail digitado é inválido.';
+      } else if (e.code === 'auth/user-disabled') {
+        msg = 'Esta conta foi desativada pelo administrador.';
+      } else if (e.code === 'auth/too-many-requests') {
+        msg = 'Muitas tentativas sem sucesso. Tente novamente mais tarde.';
+      } else {
+        msg = e.message || msg;
+      }
+      setAuthError(msg);
+      showToast(msg, 'error');
+      throw e;
+    } finally {
+      setLoggingIn(false);
+    }
+  };
+
+  const sendPasswordReset = async (email) => {
+    try {
+      const cleanEmail = email?.trim().toLowerCase();
+      if (!cleanEmail) {
+        showToast('Informe o seu e-mail para recuperar a senha.', 'error');
+        return false;
+      }
+      await auth.sendPasswordResetEmail(cleanEmail);
+      showToast('E-mail de redefinição de senha enviado com sucesso!', 'success');
+      return true;
+    } catch (e) {
+      console.error('[Reset Password Error]', e);
+      showToast('Erro ao enviar e-mail de redefinição. Verifique o endereço.', 'error');
+      return false;
+    }
+  };
+
+  const changePassword = async (newPassword) => {
+    if (!auth.currentUser) {
+      showToast('Nenhum usuário logado.', 'error');
+      return false;
+    }
+    if (!newPassword || newPassword.length < 6) {
+      showToast('A nova senha deve conter no mínimo 6 dígitos.', 'error');
+      return false;
+    }
+    try {
+      await auth.currentUser.updatePassword(newPassword);
+      const uid = auth.currentUser.uid;
+      await db.collection('users').doc(uid).set({
+        mustChangePassword: false,
+        precisaTrocarSenha: false,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+      setMustChangePasswordPrompt(false);
+      showToast('Senha alterada com sucesso! Bem-vindo ao Makro Hub.', 'success');
+      return true;
+    } catch (e) {
+      console.error('[Change Password Error]', e);
+      if (e.code === 'auth/requires-recent-login') {
+        showToast('Por segurança, faça login novamente para alterar sua senha.', 'error');
+      } else {
+        showToast(`Erro ao alterar senha: ${e.message}`, 'error');
+      }
+      return false;
+    }
+  };
+
   const signOutUser = async () => {
     try {
       await auth.signOut();
@@ -682,11 +767,31 @@ export function HubProvider({ children }) {
       }
 
       const assignedRole = email === MASTER_ADMIN_EMAIL.toLowerCase() ? 'admin_master' : (memberData.role || 'colaborador');
+      const tempPassword = memberData.senha?.trim();
+      let createdUid = null;
 
-      const docRef = db.collection('users').doc();
+      if (tempPassword) {
+        try {
+          const secAuth = getSecondaryAuth();
+          const userCred = await secAuth.createUserWithEmailAndPassword(email, tempPassword);
+          createdUid = userCred.user.uid;
+          await secAuth.signOut();
+        } catch (authErr) {
+          console.warn('[Secondary Auth]', authErr);
+          if (authErr.code === 'auth/email-already-in-use') {
+            console.log('[Auth] Usuário já existia no Firebase Auth.');
+          } else {
+            showToast(`Aviso de autenticação: ${authErr.message}`, 'warning');
+          }
+        }
+      }
+
+      const docRef = createdUid ? db.collection('users').doc(createdUid) : db.collection('users').doc();
+      const finalUid = createdUid || docRef.id;
+
       const newMember = {
-        uid: docRef.id,
-        id: docRef.id,
+        uid: finalUid,
+        id: finalUid,
         email,
         nome: memberData.nome?.trim() || email.split('@')[0],
         displayName: memberData.nome?.trim() || email.split('@')[0],
@@ -696,10 +801,11 @@ export function HubProvider({ children }) {
         foto: memberData.foto?.trim() || '',
         photoURL: memberData.foto?.trim() || '',
         role: assignedRole,
+        mustChangePassword: Boolean(memberData.mustChangePassword ?? (tempPassword ? true : false)),
         online: false,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
-      await docRef.set(newMember);
+      await docRef.set(newMember, { merge: true });
       showToast('Colaborador cadastrado com sucesso!', 'success');
       return true;
     } catch (err) {
@@ -708,6 +814,57 @@ export function HubProvider({ children }) {
       return false;
     }
   }, [isMaster, isAdmin, registeredUsers, showToast]);
+
+  const updateTeamMember = useCallback(async (userId, memberData) => {
+    if (!isMaster && !isAdmin) {
+      showToast('Você não tem permissão para editar colaboradores.', 'error');
+      return false;
+    }
+    try {
+      const email = memberData.email?.trim().toLowerCase();
+      const isTargetMaster = email === MASTER_ADMIN_EMAIL.toLowerCase() || userId === user?.uid;
+      const assignedRole = isTargetMaster ? 'admin_master' : (memberData.role || 'colaborador');
+
+      const tempPassword = memberData.senha?.trim();
+      if (tempPassword && email) {
+        try {
+          const secAuth = getSecondaryAuth();
+          await secAuth.createUserWithEmailAndPassword(email, tempPassword);
+          await secAuth.signOut();
+        } catch (authErr) {
+          if (authErr.code === 'auth/email-already-in-use') {
+            console.log('[Auth] Usuário já registrado no Firebase Auth.');
+          } else {
+            console.warn('[Secondary Auth Edit]', authErr);
+          }
+        }
+      }
+
+      const payload = {
+        nome: memberData.nome?.trim() || '',
+        displayName: memberData.nome?.trim() || '',
+        cargo: memberData.cargo?.trim() || 'Colaborador',
+        departamento: memberData.departamento?.trim() || 'Marketing Central',
+        ramal: memberData.ramal?.trim() || '',
+        foto: memberData.foto?.trim() || '',
+        photoURL: memberData.foto?.trim() || '',
+        role: assignedRole,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      if (tempPassword) {
+        payload.mustChangePassword = Boolean(memberData.mustChangePassword ?? true);
+      }
+
+      await db.collection('users').doc(userId).set(payload, { merge: true });
+      showToast('Dados do colaborador atualizados com sucesso!', 'success');
+      return true;
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao atualizar dados do colaborador.', 'error');
+      return false;
+    }
+  }, [isMaster, isAdmin, user, showToast]);
 
   const deleteTeamMember = useCallback(async (userId, memberEmail) => {
     if (!isMaster) {
@@ -1293,7 +1450,13 @@ export function HubProvider({ children }) {
         MASTER_ADMIN_EMAIL,
         updateUserRole,
         addTeamMember,
-        deleteTeamMember
+        updateTeamMember,
+        deleteTeamMember,
+        signInWithEmail,
+        sendPasswordReset,
+        changePassword,
+        mustChangePasswordPrompt,
+        setMustChangePasswordPrompt
       }}
     >
       {children}

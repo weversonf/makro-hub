@@ -3,7 +3,7 @@ import 'firebase/compat/firestore';
 import 'firebase/compat/auth';
 import 'firebase/compat/storage';
 
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyCGemp_OA8savCmLZfX7Us0nmDpdbpv4N0",
   authDomain: "mytasks-saturday.firebaseapp.com",
   projectId: "mytasks-saturday",
@@ -23,6 +23,17 @@ export const googleProvider = new firebase.auth.GoogleAuthProvider();
 googleProvider.setCustomParameters({
   prompt: 'select_account'
 });
+
+// Instância secundária do Firebase para criação administrativa de novos usuários
+// sem deslogar o usuário/administrador atualmente autenticado
+let secondaryAppInstance = null;
+export function getSecondaryAuth() {
+  if (!secondaryAppInstance) {
+    const existing = firebase.apps.find((app) => app.name === 'SecondaryAdminApp');
+    secondaryAppInstance = existing || firebase.initializeApp(firebaseConfig, 'SecondaryAdminApp');
+  }
+  return secondaryAppInstance.auth();
+}
 
 // Persistência local de autenticação
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch((e) => {
