@@ -545,7 +545,22 @@ export function HubProvider({ children }) {
         });
       }
 
-      setRegisteredUsers(list);
+      // Deduplicação por e-mail para evitar múltiplos cards da mesma pessoa caso existam docs legados
+      const uniqueByEmail = [];
+      const seenEmails = new Set();
+      list.forEach((u) => {
+        const em = (u.email || '').trim().toLowerCase();
+        if (em && em !== '—') {
+          if (!seenEmails.has(em)) {
+            seenEmails.add(em);
+            uniqueByEmail.push(u);
+          }
+        } else {
+          uniqueByEmail.push(u);
+        }
+      });
+
+      setRegisteredUsers(uniqueByEmail);
     }, (err) => {
       console.warn('[Firestore] Erro ao carregar usuários:', err);
     });

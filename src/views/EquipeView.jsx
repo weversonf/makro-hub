@@ -76,7 +76,7 @@ export default function EquipeView() {
     }
 
     // Normalizar dados, garantindo que o usuário logado / ADM Master sempre tenha foto e nome atualizados do Google Auth
-    return list.map((m) => {
+    const normalized = list.map((m) => {
       const isSelf = user && ((m.id && m.id === user.uid) || (m.uid && m.uid === user.uid) || (m.email && m.email.toLowerCase() === (user.email || '').toLowerCase()));
       const isMasterUser = isSelf ? isCurrentMaster : (m.email?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase());
 
@@ -100,6 +100,22 @@ export default function EquipeView() {
         online: isSelf ? true : (m.online !== false)
       };
     });
+
+    const unique = [];
+    const seen = new Set();
+    normalized.forEach((m) => {
+      const em = (m.email || '').trim().toLowerCase();
+      if (em && em !== '—') {
+        if (!seen.has(em)) {
+          seen.add(em);
+          unique.push(m);
+        }
+      } else {
+        unique.push(m);
+      }
+    });
+
+    return unique;
   }, [registeredUsers, user, MASTER_ADMIN_EMAIL, isMaster]);
 
   const handleInputChange = (field, value) => {
