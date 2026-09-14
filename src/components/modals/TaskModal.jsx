@@ -96,10 +96,15 @@ export default function TaskModal() {
           }
         }
 
-        setResponsavelId(rId || (isMaster ? 'master' : (user?.uid || '')));
-        setResponsavelNome(rNome || (isMaster ? 'Weverson Nascimento' : (userProfile?.displayName || user?.displayName || 'Colaborador')));
-        setResponsavelEmail(rEmail || (rNome ? '' : (isMaster ? MASTER_ADMIN_EMAIL : (user?.email || ''))));
-        setResponsavelFoto(rFoto || (rNome ? '' : (user?.photoURL || '')));
+        const fallbackId = isMaster ? 'master' : (user?.uid || '');
+        const fallbackNome = isMaster ? 'Weverson Nascimento' : (userProfile?.displayName || user?.displayName || 'Colaborador');
+        const fallbackEmail = isMaster ? MASTER_ADMIN_EMAIL : (user?.email || '');
+        const fallbackFoto = userProfile?.photoURL || user?.photoURL || '';
+
+        setResponsavelId(rId || (rNome ? (rEmail === MASTER_ADMIN_EMAIL || rNome === 'Weverson Nascimento' ? 'master' : '') : fallbackId));
+        setResponsavelNome(rNome || fallbackNome);
+        setResponsavelEmail(rEmail || (rNome ? '' : fallbackEmail));
+        setResponsavelFoto(rFoto || (rNome ? '' : fallbackFoto));
       }
     } else {
       // Nova tarefa / publicação
@@ -241,6 +246,8 @@ export default function TaskModal() {
     setIsSaving(true);
 
     const cleanProjeto = isProjeto && projeto ? projeto.trim() : '';
+    const isEditMode = Boolean(editTaskId);
+    const allowResponsibleSelection = isAdmin || isEditorial || isEditMode;
 
     const payload = {
       titulo: titulo.trim(),
@@ -248,10 +255,18 @@ export default function TaskModal() {
       categoria: Number(categoria) || categoria || null,
       isProjeto: Boolean(cleanProjeto),
       projeto: cleanProjeto || null,
-      responsavel: isAdmin ? (responsavelNome || user?.displayName || 'Weverson Nascimento') : (userProfile?.displayName || userProfile?.nome || user?.displayName || 'Colaborador'),
-      responsavelEmail: isAdmin ? (responsavelEmail || user?.email || MASTER_ADMIN_EMAIL) : (userProfile?.email || user?.email || ''),
-      responsavelId: isAdmin ? (responsavelId || user?.uid || 'master') : (user?.uid || ''),
-      responsavelFoto: isAdmin ? (responsavelFoto || user?.photoURL || '') : (userProfile?.photoURL || userProfile?.foto || user?.photoURL || ''),
+      responsavel: allowResponsibleSelection
+        ? (responsavelNome || (isMaster ? 'Weverson Nascimento' : (userProfile?.displayName || user?.displayName || 'Colaborador')))
+        : (userProfile?.displayName || userProfile?.nome || user?.displayName || 'Colaborador'),
+      responsavelEmail: allowResponsibleSelection
+        ? (responsavelEmail || (isMaster ? MASTER_ADMIN_EMAIL : (userProfile?.email || user?.email || '')))
+        : (userProfile?.email || user?.email || ''),
+      responsavelId: allowResponsibleSelection
+        ? (responsavelId || (isMaster ? 'master' : (user?.uid || '')))
+        : (user?.uid || ''),
+      responsavelFoto: allowResponsibleSelection
+        ? (responsavelFoto || (userProfile?.photoURL || user?.photoURL || ''))
+        : (userProfile?.photoURL || userProfile?.foto || user?.photoURL || ''),
       stage,
       prioridade,
       dataVencimento: dataVencimento || null,
@@ -514,18 +529,18 @@ export default function TaskModal() {
                   <User size={13} className="text-[var(--color-primary)]" />
                   <span>Responsável</span>
                 </label>
-                {!isAdmin && (
+                {(!isAdmin && !isEditorial && !editTaskId) && (
                   <span className="text-[10px] text-[var(--color-primary)] font-semibold">
                     (Atribuído a você)
                   </span>
                 )}
               </div>
               <select
-                disabled={!isAdmin}
+                disabled={!isAdmin && !isEditorial}
                 className={`w-full h-9 px-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-subtle)] text-xs text-[var(--color-heading)] focus:border-[var(--color-primary)] outline-none ${
-                  !isAdmin ? 'opacity-70 cursor-not-allowed bg-[var(--color-surface)]' : 'cursor-pointer'
+                  (!isAdmin && !isEditorial) ? 'opacity-70 cursor-not-allowed bg-[var(--color-surface)]' : 'cursor-pointer'
                 }`}
-                value={responsavelId || user?.uid || ''}
+                value={responsavelId || (isMaster ? 'master' : (user?.uid || ''))}
                 onChange={(e) => {
                   const rid = e.target.value;
                   setResponsavelId(rid);
@@ -550,6 +565,11 @@ export default function TaskModal() {
                 ) : (
                   <option value={user?.uid || 'master'}>
                     {user?.displayName || 'Weverson Nascimento'} (ADM Master)
+                  </option>
+                )}
+                {responsavelNome && !registeredUsers?.some((u) => (u.id || u.uid) === (responsavelId || (isMaster ? 'master' : user?.uid))) && (
+                  <option value={responsavelId || 'current-resp'}>
+                    {responsavelNome}
                   </option>
                 )}
               </select>

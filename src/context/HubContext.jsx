@@ -193,6 +193,7 @@ export function HubProvider({ children }) {
   // Atividades com filtro estrito de privacidade por papel de usuário:
   // - Administradores e ADM Master (isAdmin === true): visualizam todas as atividades da empresa
   // - Usuários comuns (colaborador / visualizador): visualizam EXCLUSIVAMENTE as atividades direcionadas a eles
+  // - EXCEÇÃO EDITORIAL: Toda a equipe (inclusive estagiários e colaboradores) possui acesso irrestrito ao Editorial (Calendário, visualização e edição de conteúdos)
   const activities = useMemo(() => {
     if (!user) return [];
     if (isAdmin) return allActivities;
@@ -205,20 +206,25 @@ export function HubProvider({ children }) {
     const nameParts = userDisplayName.split(/\s+/).filter((p) => p.length >= 2);
 
     return allActivities.filter((a) => {
-      // 1. Pelo responsavelId ou id do usuário
+      // 1. Conteúdo Editorial: acesso compartilhado e colaborativo para toda a equipe
+      if (isEditorialActivity(a, categories)) {
+        return true;
+      }
+
+      // 2. Pelo responsavelId ou id do usuário
       const respId = String(a.responsavelId || '').trim().toLowerCase();
       if (respId) {
         if (userUid && respId === userUid) return true;
         if (userProfileId && respId === userProfileId) return true;
       }
 
-      // 2. Pelo responsavelEmail
+      // 3. Pelo responsavelEmail
       const respEmail = String(a.responsavelEmail || '').trim().toLowerCase();
       if (respEmail && userEmail && respEmail === userEmail) {
         return true;
       }
 
-      // 3. Pelo nome do responsável
+      // 4. Pelo nome do responsável
       const respName = String(a.responsavel || '').trim().toLowerCase();
       if (respName) {
         if (userDisplayName && (respName === userDisplayName || respName.includes(userDisplayName) || userDisplayName.includes(respName))) {
@@ -234,7 +240,7 @@ export function HubProvider({ children }) {
 
       return false;
     });
-  }, [allActivities, user, userProfile, isAdmin]);
+  }, [allActivities, user, userProfile, isAdmin, categories]);
 
   // Views administrativas que exigem perfil de ADM ou ADM Master
   const adminOnlyViews = ['equipe', 'performance', 'nps', 'config', 'categorias'];
@@ -1060,7 +1066,15 @@ export function HubProvider({ children }) {
   // Funções de Busca e Auxiliares
   const catOf = useCallback((id) => categories.find((c) => c.id === id) || null, [categories]);
   const stageOf = useCallback((id) => STAGES.find((s) => s.id === id) || STAGES[0], []);
-  const getTask = useCallback((id) => activities.find((a) => a.id === id) || null, [activities]);
+  const getTask = useCallback((id) => {
+    const fromActs = activities.find((a) => a.id === id);
+    if (fromActs) return fromActs;
+    const fromAll = allActivities.find((a) => a.id === id);
+    if (fromAll && (isAdmin || isEditorialActivity(fromAll, categories))) {
+      return fromAll;
+    }
+    return null;
+  }, [activities, allActivities, isAdmin, categories]);
 
   const isOverdue = useCallback((a) => {
     return a.stage !== 'concluido' && a.dataVencimento && a.dataVencimento < todayISO();
@@ -1176,10 +1190,17 @@ export function HubProvider({ children }) {
       if (editTaskId) {
         const existing = getTask(editTaskId);
         if (existing) {
+          const finalResp = {
+            responsavel: taskData.responsavel || existing.responsavel || defaultResp.responsavel,
+            responsavelEmail: taskData.responsavelEmail || existing.responsavelEmail || defaultResp.responsavelEmail,
+            responsavelId: taskData.responsavelId || existing.responsavelId || defaultResp.responsavelId,
+            responsavelFoto: taskData.responsavelFoto || existing.responsavelFoto || defaultResp.responsavelFoto
+          };
+
           const updatedTask = {
             ...existing,
             ...taskData,
-            ...defaultResp,
+            ...finalResp,
             concluidoEm: taskData.stage === 'concluido' ? (existing.concluidoEm || todayISO()) : null
           };
           // Atualização otimista imediata na UI
@@ -1189,14 +1210,14 @@ export function HubProvider({ children }) {
 
           if (existing._fbId) {
             getSharedDoc('activities', existing._fbId)
-              .update({ ...taskData, ...defaultResp })
+              .update({ ...taskData, ...finalResp })
               .catch((err) => {
                 console.error('[Firestore] Erro ao atualizar tarefa:', err);
                 // Rollback
                 setAllActivities((prev) => prev.map((a) => (a.id === editTaskId ? existing : a)));
                 showToast('Erro ao sincronizar atualização com o servidor.', 'error');
               });
-            db.collection('activities').doc(existing._fbId).set({ ...taskData, ...defaultResp }, { merge: true }).catch(() => {});
+            db.collection('activities').doc(existing._fbId).set({ ...taskData, ...finalResp }, { merge: true }).catch(() => {});
           }
         }
       } else {
@@ -1299,7 +1320,7 @@ export function HubProvider({ children }) {
       } catch (err) {
         console.error('[Kanban] Erro ao sincronizar nova coluna:', err);
         // Rollback
-        setActivities((prev) =>
+        setAllActivities((prev) =>
           prev.map((a) =>
             a.id === taskId
               ? { ...a, stage: oldStage, progress: oldProgress, concluidoEm: oldConcluidoEm }
@@ -1314,7 +1335,8 @@ export function HubProvider({ children }) {
   // Reagendamento inteligente de conteúdos editoriais não publicados para Seg/Qua/Sex a partir de 04/09
   const rescheduleUnpublishedEditorial = async () => {
     try {
-      const pendingEditorial = activities
+      const sourceList = allActivities && allActivities.length > 0 ? allActivities : activities;
+      const pendingEditorial = sourceList
         .filter((a) => isEditorialActivity(a, categories) && a.stage !== 'concluido')
         .sort((x, y) => {
           const dx = x.dataPostagem || x.dataVencimento || '9999-99-99';
@@ -1342,7 +1364,7 @@ export function HubProvider({ children }) {
       }
 
       // Atualização otimista imediata na interface
-      setActivities((prev) =>
+      setAllActivities((prev) =>
         prev.map((act) => {
           const idx = pendingEditorial.findIndex((p) => p.id === act.id);
           if (idx !== -1) {
