@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo Makro Seminovos v06</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .makro-gradient { background: linear-gradient(90deg, #0f1740 0%, #1a237e 100%); }
+        .footer-bg { background-color: #0f1740; }
+        .btn-whatsapp { background-color: #25D366; transition: 0.3s; }
+        .btn-whatsapp:hover { background-color: #1eb954; transform: scale(1.02); }
+        .card-equip:hover { border-color: #1a237e; }
+        .hidden { display: none !important; }
+        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); z-index:9999; display:none; align-items:center; justify-content:center; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+
+    <div id="loading"><i class="fa-solid fa-spinner fa-spin text-blue-900 text-4xl"></i></div>
+
+    <div id="image-modal" class="fixed inset-0 bg-black bg-opacity-90 z-[9999] hidden flex items-center justify-center p-4">
+        <button onclick="closeModal()" class="absolute top-6 right-8 text-white text-5xl hover:text-gray-400 transition cursor-pointer">&times;</button>
+        <img id="modal-img" src="" class="max-w-full max-h-[90vh] object-contain rounded shadow-2xl">
+    </div>
+
+    <div id="screen-site">
+        <header class="makro-gradient text-white py-4 px-6 shadow-md sticky top-0 z-50">
+            <div class="container mx-auto flex justify-between items-center">
+                <div class="flex-1 flex justify-center lg:ml-40">
+                    <img src="https://makroengenharia.com.br/wp-content/uploads/2023/03/logo-1.png" class="h-12" alt="Makro Engenharia">
+                </div>
+                <div class="flex items-center space-x-4">
+                    <img src="https://flagcdn.com/w20/br.png" class="h-4" alt="PT-BR">
+                    <button class="text-2xl ml-2"><i class="fa-solid fa-bars"></i></button>
+                </div>
+            </div>
+        </header>
+
+        <main class="container mx-auto py-10 px-4 min-h-[60vh]">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-8 uppercase tracking-tight">Frota de Equipamentos</h2>
+            
+            <div id="filter-buttons" class="flex flex-wrap justify-center gap-3 mb-12">
+                <button data-cat="Todos" class="filter-btn border-2 border-blue-900 bg-blue-900 text-white px-6 py-3 rounded-lg font-bold shadow-md transition">Todos</button>
+                <button data-cat="Guindaste sob Esteira" class="filter-btn border-2 border-gray-300 bg-white px-6 py-3 rounded-lg font-bold text-gray-700 hover:border-blue-900 transition">Guindaste sob Esteira</button>
+                <button data-cat="Guindaste sob Pneus" class="filter-btn border-2 border-gray-300 bg-white px-6 py-3 rounded-lg font-bold text-gray-700 hover:border-blue-900 transition">Guindaste sob Pneus</button>
+                <button data-cat="Guindaste RT" class="filter-btn border-2 border-gray-300 bg-white px-6 py-3 rounded-lg font-bold text-gray-700 hover:border-blue-900 transition">Guindaste RT</button>
+                <button data-cat="Munck" class="filter-btn border-2 border-gray-300 bg-white px-6 py-3 rounded-lg font-bold text-gray-700 hover:border-blue-900 transition">Munck</button>
+            </div>
+
+            <div id="catalog-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+        </main>
+
+        <footer class="footer-bg text-white pt-12 pb-6 mt-20 text-center">
+            <img src="https://makroengenharia.com.br/wp-content/uploads/2023/03/logo-1.png" class="h-8 mx-auto mb-6 opacity-70" alt="Makro Engenharia">
+            <p class="text-[10px] opacity-40">© 2026 Makro Engenharia</p>
+        </footer>
+    </div>
+
+    <script>
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx5CDswLYMgCcP7THFB46cBPhv98uz-pbhLHBsW-1fImlmoSK-uCscoYe4rugo4CNEQsw/exec";
+        
+        // VARIÁVEL GLOBAL PARA OS DADOS
+        let equipamentosAtivos = [];
+
+        // ---- FUNÇÕES DO LIGHTBOX ----
+        function openModal(imgSrc) {
+            if (!imgSrc) return;
+            document.getElementById('modal-img').src = imgSrc;
+            document.getElementById('image-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('image-modal').classList.add('hidden');
+            document.getElementById('modal-img').src = '';
+        }
+
+        document.getElementById('image-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        // ---- LÓGICA DE FILTROS ----
+        function initFilters() {
+            const botoes = document.querySelectorAll('.filter-btn');
+            
+            botoes.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    // Reseta aparência de todos os botões
+                    botoes.forEach(b => {
+                        b.classList.remove('bg-blue-900', 'text-white', 'border-blue-900');
+                        b.classList.add('bg-white', 'text-gray-700', 'border-gray-300');
+                    });
+
+                    // Aplica aparência de ativo no botão clicado
+                    const target = e.currentTarget;
+                    target.classList.remove('bg-white', 'text-gray-700', 'border-gray-300');
+                    target.classList.add('bg-blue-900', 'text-white', 'border-blue-900');
+
+                    // Filtra os dados
+                    const categoria = target.getAttribute('data-cat');
+                    if (categoria === 'Todos') {
+                        renderCards(equipamentosAtivos);
+                    } else {
+                        const filtrados = equipamentosAtivos.filter(eq => eq.Categoria === categoria);
+                        renderCards(filtrados);
+                    }
+                });
+            });
+        }
+
+        // ---- CARREGAMENTO E RENDERIZAÇÃO ----
+        async function loadData() {
+            const grid = document.getElementById('catalog-grid');
+            if (!grid) return;
+            
+            grid.innerHTML = '<div class="col-span-1 md:col-span-2 lg:col-span-4 text-center py-20 text-gray-500"><i class="fa-solid fa-spinner fa-spin text-3xl mb-4 block"></i>Sincronizando frota...</div>';
+            
+            try {
+                const response = await fetch(SCRIPT_URL, { cache: 'no-store' });
+                if (!response.ok) throw new Error('Falha na resposta do servidor: ' + response.status);
+                
+                const allData = await response.json();
+                if (!Array.isArray(allData)) throw new Error('Formato de dados inválido recebido do Google Sheets');
+
+                // Atualiza a variável global apenas com os ativos
+                equipamentosAtivos = allData.filter(p => p && p.Status && p.Status.toString().trim().toLowerCase() === 'ativo');
+                
+                // Desenha todos os cards iniciais
+                renderCards(equipamentosAtivos);
+
+            } catch (e) { 
+                console.error("Erro de carregamento:", e);
+                grid.innerHTML = `
+                    <div class="col-span-1 md:col-span-2 lg:col-span-4 text-center py-20">
+                        <p class="text-red-500 font-bold mb-2">Erro de conexão com a base de dados.</p>
+                        <button onclick="loadData()" class="mt-4 bg-blue-900 text-white px-4 py-2 rounded text-xs uppercase font-bold">Tentar Novamente</button>
+                    </div>`; 
+            }
+        }
+
+        function renderCards(data) {
+            const grid = document.getElementById('catalog-grid');
+            
+            if(data.length === 0) {
+                grid.innerHTML = '<div class="col-span-1 md:col-span-2 lg:col-span-4 text-center py-20 text-gray-400 font-bold uppercase text-sm">Nenhum equipamento encontrado nesta categoria.</div>';
+                return;
+            }
+
+            grid.innerHTML = data.map(p => `
+                <div class="bg-white rounded-lg shadow-md p-5 border-t-4 border-transparent card-equip transition-all flex flex-col h-full">
+                    <div onclick="openModal('${p.URL_Imagem || ''}')" class="h-40 bg-gray-50 rounded mb-4 flex items-center justify-center overflow-hidden border cursor-pointer group relative">
+                        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center z-10">
+                            <i class="fa-solid fa-magnifying-glass-plus text-white opacity-0 group-hover:opacity-100 text-4xl drop-shadow-lg scale-50 group-hover:scale-100 transition-all duration-300"></i>
+                        </div>
+                        <img src="${p.URL_Imagem || ''}" class="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500" onerror="this.src='https://placehold.co/400x300?text=Sem+Foto'">
+                    </div>
+
+                    <span class="text-blue-700 font-bold text-[10px] uppercase tracking-widest">${p.Categoria || 'Geral'}</span>
+                    <h3 class="text-lg font-black text-gray-900 mb-3 uppercase leading-tight">${p.Modelo || 'Equipamento'}</h3>
+                    
+                    <div class="grid grid-cols-2 gap-2 text-xs text-gray-600 mb-4 bg-gray-50 p-3 rounded border border-gray-100">
+                        <p title="Ano de Fabricação"><i class="fa-regular fa-calendar text-blue-900 w-4"></i> <strong>${p.Ano || '-'}</strong></p>
+                        <p title="Horímetro"><i class="fa-solid fa-stopwatch text-blue-900 w-4"></i> <strong>${p.Horimetro || '-'}</strong></p>
+                        <p class="col-span-2" title="Hodômetro"><i class="fa-solid fa-gauge text-blue-900 w-4"></i> <strong>${p.Hodometro || '-'}</strong></p>
+                    </div>
+
+                    <div class="text-sm text-gray-700 mb-6 flex flex-col gap-1 border-t pt-3 flex-grow">
+                        <p><strong>Capacidade:</strong> ${p.Capacidade || '-'}</p>
+                        <p><strong>Lança:</strong> ${p.Lanca || '-'}</p>
+                    </div>
+                    
+                    <a href="https://wa.me/558534443000?text=Olá, gostaria de um orçamento para o equipamento: ${encodeURIComponent(p.Modelo || '')}" target="_blank" class="w-full btn-whatsapp text-white text-center py-3 rounded-lg font-bold uppercase text-sm flex items-center justify-center gap-2">
+                        <i class="fa-brands fa-whatsapp text-lg"></i> Orçamento Rápido
+                    </a>
+                </div>
+            `).join('');
+        }
+
+        // CARREGAMENTO INICIAL
+        document.addEventListener("DOMContentLoaded", () => {
+            initFilters();
+            loadData();
+        });
+    </script>
+</body>
+</html>
