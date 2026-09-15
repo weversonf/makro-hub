@@ -1,0 +1,38 @@
+.map-container {
+  width: 100%;
+  height: 400px;
+  background-color: #333;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .map-container {
+    height: 300px;
+  }
+}
+
+/* Dark Theme Styles */
+body {
+  background-color: #121212;
+  color: #ffffff;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #ffffff;
+}
+
+button {
+  background-color: #1f1f1f;
+  color: #ffffff;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #3a3a3a;
+}

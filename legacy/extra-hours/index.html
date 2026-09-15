@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExtraHours - Makro Edition v08</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { 
+            font-family: 'Montserrat', sans-serif; 
+            background-color: #010816; 
+            color: #f1f5f9; 
+            margin: 0; 
+            overflow-x: hidden;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        
+        .makro-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 40px;
+            backdrop-blur: 10px;
+        }
+
+        .timer-display {
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -4px;
+            line-height: 1;
+        }
+
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(237, 28, 36, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(237, 28, 36, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(237, 28, 36, 0); }
+        }
+        .active-timer {
+            animation: pulse-red 2s infinite;
+        }
+
+        input, select, textarea {
+            background: rgba(255, 255, 255, 0.08) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 16px !important;
+            color: white !important;
+            outline: none !important;
+            transition: all 0.3s ease;
+        }
+        input:focus { border-color: #ED1C24 !important; }
+
+        .btn-makro-primary {
+            background: #ED1C24;
+            transition: all 0.3s ease;
+        }
+        .btn-makro-primary:hover { background: #c1141b; transform: translateY(-2px); }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade { animation: fadeIn 0.4s ease forwards; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        // URL da sua Planilha Google
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxiiU8AaF65J5s5_wdewBt_18-5oOnycuseGSl_llAm3oh0mVj-w4CxJGFepCAMNBi7Kg/exec'; 
+
+        const Icon = ({ name, size = 18, className = "" }) => {
+            const iconRef = useRef(null);
+            useEffect(() => {
+                if (window.lucide && iconRef.current) {
+                    iconRef.current.innerHTML = '';
+                    const i = document.createElement('i');
+                    const lucideName = name.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+                    i.setAttribute('data-lucide', lucideName);
+                    iconRef.current.appendChild(i);
+                    window.lucide.createIcons({
+                        attrs: { width: size, height: size, class: className, 'stroke-width': 2 }
+                    });
+                }
+            }, [name, size, className]);
+            return <span ref={iconRef} className="inline-flex items-center justify-center leading-none"></span>;
+        };
+
+        const App = () => {
+            const [view, setView] = useState('dashboard');
+            const [loading, setLoading] = useState(true);
+            const [syncMode, setSyncMode] = useState('A ligar...');
+            const [logs, setLogs] = useState([]);
+            const [vacations, setVacations] = useState([]);
+            const [settings, setSettings] = useState(() => {
+                const saved = localStorage.getItem('makro_extra_settings_v8');
+                return saved ? JSON.parse(saved) : { workStart: "08:00", workEnd: "18:00", workDays: [1, 2, 3, 4, 5] };
+            });
+            const [timer, setTimer] = useState({ running: false, startTime: null, elapsed: "00:00:00" });
+            const [timerTitle, setTimerTitle] = useState("");
+            const [timerManualStart, setTimerManualStart] = useState("");
+
+            // Estados para formulários
+            const [manualEntry, setManualEntry] = useState({ title: '', start: '', end: '' });
+            const [newVacation, setNewVacation] = useState({ start: '', end: '', description: '' });
+
+            useEffect(() => {
+                fetchDataFromSheets();
+            }, []);
+
+            const fetchDataFromSheets = async () => {
+                try {
+                    const response = await fetch(`${SCRIPT_URL}?action=getData`);
+                    const result = await response.json();
+                    
+                    if (result.status === 'success') {
+                        setLogs(result.logs || []);
+                        setVacations(result.vacations || []);
+                        if (result.settings) {
+                            setSettings(result.settings);
+                            localStorage.setItem('makro_extra_settings_v8', JSON.stringify(result.settings));
+                        }
+                        setSyncMode('Planilha');
+                    }
+                } catch (error) {
+                    setSyncMode('Local (Offline)');
+                    const saved = localStorage.getItem('makro_extra_logs_v8');
+                    if (saved) setLogs(JSON.parse(saved));
+                }
+                setLoading(false);
+            };
+
+            useEffect(() => {
+                let interval;
+                if (timer.running) {
+                    interval = setInterval(() => {
+                        const diff = Date.now() - timer.startTime;
+                        const h = Math.floor(diff / 3600000);
+                        const m = Math.floor((diff % 3600000) / 60000);
+                        const s = Math.floor((diff % 60000) / 1000);
+                        setTimer(t => ({ ...t, elapsed: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` }));
+                    }, 1000);
+                }
+                return () => clearInterval(interval);
+            }, [timer.running, timer.startTime]);
+
+            const checkIsExtra = (dateStr) => {
+                const d = new Date(dateStr);
+                
+                // 1. Verificar Férias (Prioridade Máxima)
+                const isVacation = vacations.some(v => {
+                    const vStart = new Date(v.start);
+                    const vEnd = new Date(v.end);
+                    vEnd.setHours(23, 59, 59);
+                    return d >= vStart && d <= vEnd;
+                });
+                if (isVacation) return true;
+
+                // 2. Horário Padrão Makro
+                const time = d.getHours() * 60 + d.getMinutes();
+                const [sh, sm] = settings.workStart.split(':').map(Number);
+                const [eh, em] = settings.workEnd.split(':').map(Number);
+                const wStart = sh * 60 + sm;
+                const wEnd = eh * 60 + em;
+                
+                if (!settings.workDays.includes(d.getDay())) return true;
+                return time < wStart || time >= wEnd;
+            };
+
+            const stats = useMemo(() => {
+                const now = new Date();
+                let totalMins = 0;
+                logs.forEach(l => {
+                    const start = new Date(l.start);
+                    if (start.getMonth() === now.getMonth() && start.getFullYear() === now.getFullYear() && checkIsExtra(l.start)) {
+                        totalMins += (new Date(l.end) - start) / 60000;
+                    }
+                });
+                return { 
+                    hours: String(Math.floor(totalMins / 60)).padStart(2, '0'),
+                    mins: String(Math.round(totalMins % 60)).padStart(2, '0'),
+                    isExtraNow: checkIsExtra(new Date().toISOString())
+                };
+            }, [logs, settings, vacations]);
+
+            const handleToggleTimer = async () => {
+                if (!timer.running) {
+                    const startTs = timerManualStart ? new Date(timerManualStart).getTime() : Date.now();
+                    setTimer({ running: true, startTime: startTs, elapsed: "00:00:00" });
+                } else {
+                    const log = {
+                        id: Date.now().toString(),
+                        title: timerTitle || "Atividade Pessoal",
+                        start: new Date(timer.startTime).toISOString(),
+                        end: new Date().toISOString(),
+                        createdAt: new Date().toISOString()
+                    };
+                    await saveLog(log);
+                    setTimer({ running: false, startTime: null, elapsed: "00:00:00" });
+                    setTimerTitle("");
+                    setTimerManualStart("");
+                }
+            };
+
+            const saveLog = async (log) => {
+                const updatedLogs = [log, ...logs];
+                setLogs(updatedLogs);
+                localStorage.setItem('makro_extra_logs_v8', JSON.stringify(updatedLogs));
+                try {
+                    await fetch(`${SCRIPT_URL}?action=addLog&data=${encodeURIComponent(JSON.stringify(log))}`, { mode: 'no-cors' });
+                } catch (e) { console.error(e); }
+            };
+
+            const handleRetroSubmit = async (e) => {
+                e.preventDefault();
+                const log = {
+                    id: Date.now().toString(),
+                    title: manualEntry.title || "Registo Retroativo",
+                    start: new Date(manualEntry.start).toISOString(),
+                    end: new Date(manualEntry.end).toISOString(),
+                    createdAt: new Date().toISOString()
+                };
+                await saveLog(log);
+                setManualEntry({ title: '', start: '', end: '' });
+                alert("Lançado com sucesso!");
+            };
+
+            const deleteLog = async (id) => {
+                if(!confirm("Eliminar este registo?")) return;
+                const updatedLogs = logs.filter(l => l.id !== id);
+                setLogs(updatedLogs);
+                localStorage.setItem('makro_extra_logs_v8', JSON.stringify(updatedLogs));
+                try {
+                    await fetch(`${SCRIPT_URL}?action=deleteLog&id=${id}`, { mode: 'no-cors' });
+                } catch (e) { console.error(e); }
+            };
+
+            const handleAddVacation = async (e) => {
+                e.preventDefault();
+                const v = { id: Date.now().toString(), ...newVacation };
+                setVacations(prev => [...prev, v]);
+                try {
+                    await fetch(`${SCRIPT_URL}?action=addVacation&data=${encodeURIComponent(JSON.stringify(v))}`, { mode: 'no-cors' });
+                } catch (e) { console.error(e); }
+                setNewVacation({ start: '', end: '', description: '' });
+                alert("Férias registadas!");
+            };
+
+            const deleteVacation = async (id) => {
+                setVacations(prev => prev.filter(v => v.id !== id));
+                try {
+                    await fetch(`${SCRIPT_URL}?action=deleteVacation&id=${id}`, { mode: 'no-cors' });
+                } catch (e) { console.error(e); }
+            };
+
+            const saveSettings = async () => {
+                const ws = document.getElementById('work-start').value;
+                const we = document.getElementById('work-end').value;
+                const wd = Array.from(document.querySelectorAll('.work-day:checked')).map(c => parseInt(c.value));
+                const newSettings = { workStart: ws, workEnd: we, workDays: wd };
+                setSettings(newSettings);
+                localStorage.setItem('makro_extra_settings_v8', JSON.stringify(newSettings));
+                try {
+                    await fetch(`${SCRIPT_URL}?action=saveSettings&data=${encodeURIComponent(JSON.stringify(newSettings))}`, { mode: 'no-cors' });
+                } catch (e) { console.error(e); }
+                alert("Configurações atualizadas!");
+            };
+
+            if (loading) return <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#010816]"><div className="w-12 h-12 border-4 border-[#ED1C24] border-t-transparent rounded-full animate-spin mb-4"></div><p className="text-[10px] font-black uppercase tracking-[3px] opacity-40">A ligar à planilha...</p></div>;
+
+            return (
+                <div className="min-h-screen flex flex-col">
+                    <header className="p-6 flex flex-col items-center bg-black/40 border-b border-white/5 backdrop-blur-md sticky top-0 z-50">
+                        <img src="https://makroengenharia.com.br/wp-content/uploads/2023/03/logo-1.png" className="h-10 mb-2" />
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] tracking-[5px] font-bold uppercase opacity-40">ExtraHours | Makro Edition</span>
+                            <span className={`text-[8px] px-2 py-0.5 rounded font-black uppercase tracking-widest ${syncMode === 'Planilha' ? 'bg-green-500/20 text-green-500' : 'bg-blue-500/20 text-blue-500'}`}>{syncMode}</span>
+                        </div>
+                        
+                        <nav className="flex gap-8 mt-6 text-[11px] font-black uppercase tracking-widest">
+                            <button onClick={() => setView('dashboard')} className={`pb-1 border-b-2 transition ${view === 'dashboard' ? 'border-[#ED1C24] text-white' : 'border-transparent text-white/40'}`}>Painel</button>
+                            <button onClick={() => setView('history')} className={`pb-1 border-b-2 transition ${view === 'history' ? 'border-[#ED1C24] text-white' : 'border-transparent text-white/40'}`}>Registos</button>
+                            <button onClick={() => setView('settings')} className={`pb-1 border-b-2 transition ${view === 'settings' ? 'border-[#ED1C24] text-white' : 'border-transparent text-white/40'}`}>Perfil</button>
+                        </nav>
+                    </header>
+
+                    <main className="flex-1 p-6 md:p-12 max-w-7xl mx-auto w-full space-y-10">
+                        
+                        {view === 'dashboard' && (
+                            <div className="space-y-10 animate-fade">
+                                {/* Relógio Gigante (Layout Solicitado) */}
+                                <div className="grid lg:grid-cols-3 gap-10">
+                                    <div className={`makro-card p-10 lg:col-span-2 flex flex-col items-center justify-center transition-all ${timer.running ? 'active-timer border-[#ED1C24]/30' : ''}`}>
+                                        <div className="timer-display text-8xl md:text-[10rem] font-black mb-12 text-white text-center">
+                                            {timer.elapsed}
+                                        </div>
+                                        
+                                        <div className="w-full max-w-2xl space-y-6">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="O que está a fazer?" 
+                                                    className="w-full p-5 text-sm"
+                                                    value={timerTitle}
+                                                    onChange={e => setTimerTitle(e.target.value)}
+                                                    disabled={timer.running}
+                                                />
+                                                <input 
+                                                    type="datetime-local" 
+                                                    className="w-full p-5 text-sm"
+                                                    value={timerManualStart}
+                                                    onChange={e => setTimerManualStart(e.target.value)}
+                                                    disabled={timer.running}
+                                                />
+                                            </div>
+                                            <button 
+                                                onClick={handleToggleTimer}
+                                                className="btn-makro-primary w-full py-6 rounded-3xl font-black uppercase tracking-[4px] text-sm shadow-2xl transition active:scale-[0.98]"
+                                            >
+                                                {timer.running ? 'PARAR E GUARDAR' : 'INICIAR ATIVIDADE'}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Registo Retroativo */}
+                                    <div className="makro-card p-8 flex flex-col border-t-4 border-white/20">
+                                        <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-6">Lançamento Retroativo</h3>
+                                        <form onSubmit={handleRetroSubmit} className="space-y-4 flex-1">
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] font-bold text-gray-500 uppercase ml-1">Descrição</label>
+                                                <input required type="text" className="w-full p-4 text-xs" value={manualEntry.title} onChange={e => setManualEntry({...manualEntry, title: e.target.value})} placeholder="Viagem Fazer 250..."/>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] font-bold text-gray-500 uppercase ml-1">Início da Jornada</label>
+                                                <input required type="datetime-local" className="w-full p-4 text-xs" value={manualEntry.start} onChange={e => setManualEntry({...manualEntry, start: e.target.value})}/>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] font-bold text-gray-500 uppercase ml-1">Fim da Jornada</label>
+                                                <input required type="datetime-local" className="w-full p-4 text-xs" value={manualEntry.end} onChange={e => setManualEntry({...manualEntry, end: e.target.value})}/>
+                                            </div>
+                                            <button type="submit" className="w-full py-5 bg-white/10 hover:bg-white/20 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all mt-4">REGISTAR JORNADA PASSADA</button>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                {/* KPIs */}
+                                <div className="grid md:grid-cols-2 gap-10">
+                                    <div className="makro-card p-10 text-center">
+                                        <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Acumulado Extra (Mês)</h3>
+                                        <div className="text-6xl font-black text-[#ED1C24]">{stats.hours}<span className="text-xl opacity-30">H</span> {stats.mins}<span className="text-xl opacity-30">M</span></div>
+                                        <p className="text-[9px] font-bold text-gray-600 mt-4 uppercase">Horas líquidas fora da Makro Engenharia</p>
+                                    </div>
+                                    <div className="makro-card p-10 text-center flex flex-col items-center justify-center">
+                                        <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4">Status da Janela</h3>
+                                        <div className={`px-8 py-3 rounded-full text-[11px] font-black tracking-widest ${stats.isExtraNow ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                                            {stats.isExtraNow ? '✓ JANELA LIBERADA' : '⚠ HORÁRIO CORPORATIVO'}
+                                        </div>
+                                        <p className="text-[10px] text-gray-400 mt-4 font-bold uppercase">{new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'history' && (
+                            <div className="makro-card overflow-hidden animate-fade">
+                                <div className="p-10 border-b border-white/5 flex justify-between items-center bg-white/5">
+                                    <h2 className="font-black text-white uppercase text-xs tracking-widest">Logs de Performance</h2>
+                                </div>
+                                <div className="overflow-x-auto custom-scrollbar">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead className="bg-black/20 text-[10px] uppercase text-gray-500 font-black">
+                                            <tr>
+                                                <th className="px-10 py-6">Data</th>
+                                                <th className="px-10 py-6">Atividade</th>
+                                                <th className="px-10 py-6">Duração</th>
+                                                <th className="px-10 py-6">Status</th>
+                                                <th className="px-10 py-6 text-right">Ação</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="text-sm divide-y divide-white/5">
+                                            {logs.map(log => {
+                                                const m = Math.floor((new Date(log.end) - new Date(log.start)) / 60000);
+                                                const isExtra = checkIsExtra(log.start);
+                                                return (
+                                                    <tr key={log.id} className="hover:bg-white/5 transition-colors">
+                                                        <td className="px-10 py-6 text-gray-500 text-[11px] font-bold">{new Date(log.start).toLocaleString('pt-BR')}</td>
+                                                        <td className="px-10 py-6 font-bold">{log.title}</td>
+                                                        <td className="px-10 py-6 font-black text-[#ED1C24]">{Math.floor(m/60)}h {m%60}m</td>
+                                                        <td className="px-10 py-6">
+                                                            <span className={`text-[9px] font-black px-3 py-1 rounded-full ${isExtra ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                                                                {isExtra ? '✓ EXTRA' : '⚠ TRABALHO'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-10 py-6 text-right">
+                                                            <button onClick={() => deleteLog(log.id)} className="text-gray-600 hover:text-red-500 transition"><Icon name="Trash2" size={16}/></button>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'settings' && (
+                            <div className="grid lg:grid-cols-2 gap-10 animate-fade">
+                                {/* Configurações Makro */}
+                                <div className="makro-card p-10 space-y-10 border-t-8 border-[#ED1C24]">
+                                    <h2 className="text-xl font-black text-white uppercase tracking-tight">Expediente Makro</h2>
+                                    <div className="space-y-6">
+                                        <div className="grid grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Início</label>
+                                                <input type="time" id="work-start" defaultValue={settings.workStart} className="w-full p-4"/>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Fim</label>
+                                                <input type="time" id="work-end" defaultValue={settings.workEnd} className="w-full p-4"/>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Dias de Trabalho</label>
+                                            <div className="grid grid-cols-4 gap-2">
+                                                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day, i) => (
+                                                    <label key={i} className="flex flex-col items-center gap-1 bg-white/5 p-4 rounded-2xl cursor-pointer border border-white/5 hover:bg-white/10 transition">
+                                                        <input type="checkbox" className="work-day" value={i} defaultChecked={settings.workDays.includes(i)} />
+                                                        <span className="text-[9px] font-bold uppercase">{day}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <button onClick={saveSettings} className="btn-makro-primary w-full py-5 rounded-3xl font-black uppercase text-xs tracking-widest shadow-xl">Salvar Definições</button>
+                                    </div>
+                                </div>
+
+                                {/* Gestão de Férias (Novo) */}
+                                <div className="makro-card p-10 space-y-10 border-t-8 border-green-500">
+                                    <h2 className="text-xl font-black text-white uppercase tracking-tight">Registar Férias</h2>
+                                    <form onSubmit={handleAddVacation} className="space-y-4">
+                                        <input required type="text" placeholder="Descrição (Ex: Férias Ceará)" className="w-full p-4 text-sm" value={newVacation.description} onChange={e => setNewVacation({...newVacation, description: e.target.value})}/>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <input required type="date" className="w-full p-4 text-sm" value={newVacation.start} onChange={e => setNewVacation({...newVacation, start: e.target.value})}/>
+                                            <input required type="date" className="w-full p-4 text-sm" value={newVacation.end} onChange={e => setNewVacation({...newVacation, end: e.target.value})}/>
+                                        </div>
+                                        <button type="submit" className="w-full py-4 bg-green-600 hover:bg-green-700 rounded-2xl font-black uppercase text-xs tracking-widest transition shadow-lg">Adicionar Período</button>
+                                    </form>
+
+                                    <div className="space-y-3 max-h-[250px] overflow-y-auto custom-scrollbar pr-2">
+                                        {vacations.map(v => (
+                                            <div key={v.id} className="p-5 bg-white/5 rounded-2xl flex justify-between items-center border border-white/5 hover:border-green-500/30 transition">
+                                                <div>
+                                                    <p className="text-[10px] font-black text-white uppercase tracking-wider">{v.description || 'Férias'}</p>
+                                                    <p className="text-[9px] text-gray-500 font-bold mt-1 uppercase">{new Date(v.start).toLocaleDateString()} — {new Date(v.end).toLocaleDateString()}</p>
+                                                </div>
+                                                <button onClick={() => deleteVacation(v.id)} className="text-red-500 opacity-40 hover:opacity-100 transition">
+                                                    <Icon name="Trash2" size={16}/>
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+                    <footer className="p-8 text-center opacity-20 text-[9px] font-black uppercase tracking-[5px]">Marketing & Performance | Makro Engenharia</footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
