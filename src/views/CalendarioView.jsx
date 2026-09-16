@@ -18,6 +18,16 @@ export default function CalendarioView() {
 
   const editorialTasks = (allActivities && allActivities.length > 0 ? allActivities : activities).filter((a) => isEditorialActivity(a));
 
+  // Cor do evento por status:
+  // - Concluído / Postado = verde
+  // - Em andamento (execução, espera, validando) = amarelo
+  // - A fazer = cinza
+  const calEventColor = (stage) => {
+    if (stage === 'concluido') return 'var(--ax-viz-emerald)';
+    if (stage === 'afazer') return 'var(--ax-text-muted)';
+    return 'var(--ax-viz-amber)';
+  };
+
   // Mapeamento por data
   const dayMap = {};
   editorialTasks.forEach((t) => {
@@ -107,7 +117,7 @@ export default function CalendarioView() {
                 <span
                   key={ev.id}
                   className="ax-cal-event"
-                  style={{ '--c': ev.stage === 'concluido' ? 'var(--ax-viz-emerald)' : 'var(--ax-accent)' }}
+                  style={{ '--c': calEventColor(ev.stage) }}
                   onClick={(e) => {
                     e.stopPropagation();
                     openEditTask(ev.id);
@@ -136,7 +146,7 @@ export default function CalendarioView() {
                 <span
                   key={ev.id}
                   className="ax-cal-event"
-                  style={{ '--c': ev.stage === 'concluido' ? 'var(--ax-viz-emerald)' : 'var(--ax-accent)' }}
+                  style={{ '--c': calEventColor(ev.stage) }}
                   onClick={(e) => {
                     e.stopPropagation();
                     openEditTask(ev.id);
@@ -166,7 +176,7 @@ export default function CalendarioView() {
                 <span
                   key={ev.id}
                   className="ax-cal-event"
-                  style={{ '--c': ev.stage === 'concluido' ? 'var(--ax-viz-emerald)' : 'var(--ax-accent)' }}
+                  style={{ '--c': calEventColor(ev.stage) }}
                   onClick={(e) => {
                     e.stopPropagation();
                     openEditTask(ev.id);
@@ -223,6 +233,7 @@ export default function CalendarioView() {
                   <div
                     key={ev.id}
                     className="ax-card ax-card--interactive p-2.5 bg-[var(--ax-surface-solid)]"
+                    style={{ borderInlineStart: `3px solid ${calEventColor(ev.stage)}` }}
                     onClick={(e) => {
                       e.stopPropagation();
                       openEditTask(ev.id);
@@ -379,6 +390,21 @@ export default function CalendarioView() {
                 </div>
               </div>
             </div>
+
+          <div className="flex items-center gap-4 px-4 py-2 text-[11px] text-[var(--ax-text-muted)] border-b border-[var(--ax-border)]">
+            <span className="flex items-center gap-1.5">
+              <i className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: 'var(--ax-viz-emerald)' }} />
+              Postado / OK
+            </span>
+            <span className="flex items-center gap-1.5">
+              <i className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: 'var(--ax-viz-amber)' }} />
+              Em andamento
+            </span>
+            <span className="flex items-center gap-1.5">
+              <i className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: 'var(--ax-text-muted)' }} />
+              A fazer
+            </span>
+          </div>
 
           <div className="ax-card__body p-3">
             {calMode === 'month' ? (
