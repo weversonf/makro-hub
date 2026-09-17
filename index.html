@@ -10,6 +10,9 @@
 
   <!-- Anti-flash script restore -->
   <script>
+    if (window.location.hostname === 'makrohub.vercel.app') {
+      window.location.replace('https://my-saturday.vercel.app' + window.location.pathname + window.location.search + window.location.hash);
+    }
     (function () {
       var D = document.documentElement, LS = null;
       try { LS = window.localStorage; } catch (e) {}
@@ -23,6 +26,13 @@
       try {
         var acc = LS && LS.getItem('ax:accent');
         if (acc) D.style.setProperty('--ax-accent', acc);
+      } catch (e) {}
+      try {
+        var fav = LS && LS.getItem('hr-logo-icon');
+        if (fav) {
+          var fi = document.querySelector("link[rel*='icon']");
+          if (fi) fi.href = fav;
+        }
       } catch (e) {}
     })();
   </script>

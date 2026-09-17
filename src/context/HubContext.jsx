@@ -41,6 +41,8 @@ export const DEFAULT_PROJECTS = [
 ];
 
 export const MASTER_ADMIN_EMAIL = 'weversonf@gmail.com';
+export const DEFAULT_LOGO_FULL = 'https://makroengenharia.com.br/wp-content/uploads/2023/03/logo-1.png';
+export const DEFAULT_LOGO_ICON = 'https://makroengenharia.com.br/wp-content/uploads/2026/08/ICONE-ESTRELA-LOGO-MAKRO-VERMELHA.png';
 
 export const USER_ROLES = {
   admin_master: {
@@ -266,6 +268,8 @@ export function HubProvider({ children }) {
   const view = currentView;
   const [theme, setTheme] = useState(() => localStorage.getItem('hr-theme') || localStorage.getItem('ax:theme') || 'light');
   const [accentColor, setAccentColor] = useState(() => localStorage.getItem('ax:accent') || '#1E856C');
+  const [logoFull, setLogoFull] = useState(() => localStorage.getItem('hr-logo-full') || DEFAULT_LOGO_FULL);
+  const [logoIcon, setLogoIcon] = useState(() => localStorage.getItem('hr-logo-icon') || DEFAULT_LOGO_ICON);
   const [collapsed, setCollapsed] = useState(() => {
     const hrVal = localStorage.getItem('hr-sidebar');
     if (hrVal) return hrVal === 'collapsed';
@@ -371,6 +375,42 @@ export function HubProvider({ children }) {
     localStorage.setItem('ax:collapsed', collapsed ? '1' : '0');
     localStorage.setItem('hr-sidebar', collapsed ? 'collapsed' : 'expanded');
   }, [collapsed]);
+
+  // Sincronização em tempo real da Identidade Visual (Logos & Favicon)
+  useEffect(() => {
+    const unsubBranding = db.collection('settings').doc('branding').onSnapshot((doc) => {
+      if (doc.exists) {
+        const data = doc.data();
+        if (data && data.logoFull) {
+          setLogoFull(data.logoFull);
+          localStorage.setItem('hr-logo-full', data.logoFull);
+        }
+        if (data && data.logoIcon) {
+          setLogoIcon(data.logoIcon);
+          localStorage.setItem('hr-logo-icon', data.logoIcon);
+        }
+      }
+    }, (err) => {
+      console.warn('[Firestore] Aviso ao sincronizar branding:', err);
+    });
+    return () => unsubBranding();
+  }, []);
+
+  // Atualização dinâmica do Favicon do navegador
+  useEffect(() => {
+    if (!logoIcon) return;
+    try {
+      let link = document.querySelector("link[rel*='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.href = logoIcon;
+    } catch (e) {
+      console.warn('[Favicon] Erro ao atualizar favicon:', e);
+    }
+  }, [logoIcon]);
 
   // Auth observer
   useEffect(() => {
@@ -1595,6 +1635,47 @@ export function HubProvider({ children }) {
     }
   }, [showToast]);
 
+  const updateBranding = useCallback(async ({ full, icon }) => {
+    const newFull = (full !== undefined && String(full).trim() !== '') ? String(full).trim() : logoFull;
+    const newIcon = (icon !== undefined && String(icon).trim() !== '') ? String(icon).trim() : logoIcon;
+
+    setLogoFull(newFull);
+    setLogoIcon(newIcon);
+    localStorage.setItem('hr-logo-full', newFull);
+    localStorage.setItem('hr-logo-icon', newIcon);
+
+    try {
+      await db.collection('settings').doc('branding').set({
+        logoFull: newFull,
+        logoIcon: newIcon,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedBy: user?.email || 'admin'
+      }, { merge: true });
+      showToast('Identidade visual salva e sincronizada!', 'success');
+    } catch (e) {
+      console.warn('[Branding] Salvo localmente:', e);
+      showToast('Logotipos salvos localmente neste navegador.', 'info');
+    }
+  }, [logoFull, logoIcon, user, showToast]);
+
+  const resetBranding = useCallback(async () => {
+    setLogoFull(DEFAULT_LOGO_FULL);
+    setLogoIcon(DEFAULT_LOGO_ICON);
+    localStorage.removeItem('hr-logo-full');
+    localStorage.removeItem('hr-logo-icon');
+
+    try {
+      await db.collection('settings').doc('branding').set({
+        logoFull: DEFAULT_LOGO_FULL,
+        logoIcon: DEFAULT_LOGO_ICON,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+      showToast('Logotipos restaurados para o padrão Makro!', 'success');
+    } catch (e) {
+      showToast('Padrão restaurado localmente.', 'info');
+    }
+  }, [showToast]);
+
   return (
     <HubContext.Provider
       value={{
@@ -1616,6 +1697,14 @@ export function HubProvider({ children }) {
         toggleTheme,
         accentColor,
         setAccentColor,
+        logoFull,
+        setLogoFull,
+        logoIcon,
+        setLogoIcon,
+        updateBranding,
+        resetBranding,
+        DEFAULT_LOGO_FULL,
+        DEFAULT_LOGO_ICON,
         collapsed,
         setCollapsed,
         toggleSidebar,

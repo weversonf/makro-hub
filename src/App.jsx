@@ -47,7 +47,9 @@ export default function App() {
     closeConfirm,
     authError,
     loggingIn,
-    isAdmin
+    isAdmin,
+    logoFull,
+    DEFAULT_LOGO_FULL
   } = useHub();
 
   const [emailInput, setEmailInput] = React.useState('');
@@ -166,8 +168,8 @@ export default function App() {
       <div className="flex min-h-screen items-center justify-center p-4 bg-[var(--color-bg)]">
         <div className="max-w-md w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-2xl p-6 sm:p-8 flex flex-col items-center text-center gap-5 z-10">
           <img
-            src="https://makroengenharia.com.br/wp-content/uploads/2023/03/logo-1.png"
-            alt="Makro"
+            src={logoFull || DEFAULT_LOGO_FULL}
+            alt="Logo"
             className="h-9 object-contain"
           />
 
@@ -246,8 +248,8 @@ export default function App() {
       <div className="flex min-h-screen items-center justify-center p-4 bg-[var(--color-bg)]">
         <div className="max-w-sm w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-2xl p-6 sm:p-8 flex flex-col items-center text-center gap-5 z-10">
           <img
-            src="https://makroengenharia.com.br/wp-content/uploads/2023/03/logo-1.png"
-            alt="Makro"
+            src={logoFull || DEFAULT_LOGO_FULL}
+            alt="Logo"
             className="h-9 object-contain"
           />
 

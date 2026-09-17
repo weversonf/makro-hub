@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useHub } from '../context/HubContext';
 
 const ACCENTS = [
@@ -16,6 +16,13 @@ export default function ConfigView() {
     setTheme,
     accentColor,
     setAccentColor,
+    logoFull,
+    logoIcon,
+    updateBranding,
+    resetBranding,
+    DEFAULT_LOGO_FULL,
+    DEFAULT_LOGO_ICON,
+    showToast,
     exportCSV,
     exportBackup,
     importBackup,
@@ -27,6 +34,58 @@ export default function ConfigView() {
 
   const [activeTab, setActiveTab] = useState('categorias');
   const fileInputRef = useRef(null);
+
+  // Estados e refs para personalização de Logos e Favicon
+  const [inputLogoFull, setInputLogoFull] = useState(logoFull || DEFAULT_LOGO_FULL);
+  const [inputLogoIcon, setInputLogoIcon] = useState(logoIcon || DEFAULT_LOGO_ICON);
+  const [isSavingBranding, setIsSavingBranding] = useState(false);
+  const fileInputFullRef = useRef(null);
+  const fileInputIconRef = useRef(null);
+
+  useEffect(() => {
+    if (logoFull) setInputLogoFull(logoFull);
+  }, [logoFull]);
+
+  useEffect(() => {
+    if (logoIcon) setInputLogoIcon(logoIcon);
+  }, [logoIcon]);
+
+  const handleLogoUpload = (e, type) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast('Selecione uma imagem válida (PNG, SVG, JPG, WEBP, ICO).', 'error');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('A imagem deve ter no máximo 2MB.', 'warning');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      if (type === 'full') setInputLogoFull(dataUrl);
+      if (type === 'icon') setInputLogoIcon(dataUrl);
+      showToast('Imagem carregada! Clique em "Salvar Logotipos" para aplicar em todo o sistema.', 'info');
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleSaveBranding = async () => {
+    setIsSavingBranding(true);
+    try {
+      await updateBranding({ full: inputLogoFull, icon: inputLogoIcon });
+    } finally {
+      setIsSavingBranding(false);
+    }
+  };
+
+  const handleResetBranding = async () => {
+    await resetBranding();
+    setInputLogoFull(DEFAULT_LOGO_FULL);
+    setInputLogoIcon(DEFAULT_LOGO_ICON);
+  };
 
   const countCat = (id) => activities.filter((a) => a.categoria === id).length;
 
@@ -82,6 +141,15 @@ export default function ConfigView() {
           >
             <i className="ph ph-palette text-base" />
             <span>Aparência</span>
+          </button>
+
+          <button
+            type="button"
+            className={`hr-btn text-xs h-8 px-3 ${activeTab === 'marca' ? 'hr-btn--primary' : 'hr-btn--secondary'}`}
+            onClick={() => setActiveTab('marca')}
+          >
+            <i className="ph ph-image text-base" />
+            <span>Logos & Marca</span>
           </button>
 
           <button
@@ -246,6 +314,225 @@ export default function ConfigView() {
                     </button>
                   );
                 })}
+              </div>
+            </div>
+          </div>
+        </div>
+      {/* CONTEÚDO DA ABA: LOGOS & MARCA */}
+      {activeTab === 'marca' && (
+        <div className="flex flex-col gap-5">
+          <div className="hr-card flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--color-border-subtle)]">
+              <div>
+                <h3 className="text-base font-bold text-[var(--color-heading)]">
+                  Personalização de Logotipos & Favicon
+                </h3>
+                <p className="text-xs text-[var(--color-muted)] mt-0.5">
+                  Configure as imagens exibidas no topo do menu lateral (aberto e recolhido) e na aba do navegador
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="hr-btn hr-btn--secondary text-xs h-8 px-3"
+                  onClick={handleResetBranding}
+                  title="Restaurar imagens padrão da Makro"
+                >
+                  <i className="ph ph-arrow-counter-clockwise text-base" />
+                  <span>Restaurar Padrão Makro</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="hr-btn hr-btn--primary text-xs h-8 px-4 font-semibold"
+                  onClick={handleSaveBranding}
+                  disabled={isSavingBranding}
+                >
+                  {isSavingBranding ? (
+                    <i className="ph ph-spinner-gap animate-spin text-base" />
+                  ) : (
+                    <i className="ph ph-check-circle text-base" />
+                  )}
+                  <span>{isSavingBranding ? 'Salvando...' : 'Salvar Logotipos'}</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 pt-1">
+              {/* 1. Logo Aberta (Completa) */}
+              <div className="p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col justify-between gap-4">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-primary)]">
+                      1. Versão Sidebar Aberta (Completa)
+                    </span>
+                    <span className="text-[11px] px-2 py-0.5 rounded bg-[var(--color-subtle)] text-[var(--color-muted)] border border-[var(--color-border)]">
+                      Horizontal (PNG/SVG)
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-[var(--color-muted)]">
+                    Exibida no topo da barra de navegação expandida e nas telas de login/troca de senha do Hub.
+                  </p>
+
+                  {/* Preview da Logo Aberta */}
+                  <div className="p-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] flex items-center justify-center min-h-[96px]">
+                    {inputLogoFull ? (
+                      <img
+                        src={inputLogoFull}
+                        alt="Preview Logo Completa"
+                        className="max-h-11 max-w-full object-contain"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      />
+                    ) : (
+                      <span className="text-xs text-[var(--color-muted)] italic">Nenhuma imagem definida</span>
+                    )}
+                  </div>
+
+                  {/* URL Input */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-[var(--color-heading)]">
+                      URL da Imagem Direta
+                    </label>
+                    <input
+                      type="url"
+                      value={inputLogoFull}
+                      onChange={(e) => setInputLogoFull(e.target.value)}
+                      placeholder="https://exemplo.com/sua-logo-horizontal.png"
+                      className="w-full h-9 px-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-xs text-[var(--color-heading)] outline-none focus:border-[var(--color-primary)] transition"
+                    />
+                  </div>
+                </div>
+
+                {/* Upload Button */}
+                <div className="flex items-center gap-2 pt-2 border-t border-[var(--color-border-subtle)]">
+                  <button
+                    type="button"
+                    onClick={() => fileInputFullRef.current?.click()}
+                    className="hr-btn hr-btn--secondary text-xs h-8 px-3 w-full justify-center"
+                  >
+                    <i className="ph ph-upload-simple text-base" />
+                    <span>Upload do Computador</span>
+                  </button>
+                  <input
+                    ref={fileInputFullRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                    className="hidden"
+                    onChange={(e) => handleLogoUpload(e, 'full')}
+                  />
+                  {inputLogoFull !== DEFAULT_LOGO_FULL && (
+                    <button
+                      type="button"
+                      onClick={() => setInputLogoFull(DEFAULT_LOGO_FULL)}
+                      className="hr-btn hr-btn--secondary text-xs h-8 px-2.5 flex-shrink-0"
+                      title="Voltar para a logo padrão Makro"
+                    >
+                      <i className="ph ph-arrow-counter-clockwise text-sm" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* 2. Logo Comprimida / Ícone (Favicon + Sidebar Fechada) */}
+              <div className="p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col justify-between gap-4">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-primary)]">
+                      2. Versão Sidebar Fechada & Favicon
+                    </span>
+                    <span className="text-[11px] px-2 py-0.5 rounded bg-[var(--color-subtle)] text-[var(--color-muted)] border border-[var(--color-border)]">
+                      Quadrado (PNG/ICO/SVG)
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-[var(--color-muted)]">
+                    Exibida no modo recolhido da sidebar e aplicada instantaneamente como o <strong>Favicon da aba do navegador</strong>.
+                  </p>
+
+                  {/* Previews do Ícone: Sidebar e Aba do Navegador */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Mockup Sidebar Fechada */}
+                    <div className="p-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] flex flex-col items-center justify-center gap-1 min-h-[96px]">
+                      <span className="text-[10px] uppercase font-bold text-[var(--color-muted)]">Menu Recolhido</span>
+                      <div className="w-10 h-10 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center p-1.5 shadow-sm">
+                        {inputLogoIcon ? (
+                          <img
+                            src={inputLogoIcon}
+                            alt="Ícone Sidebar"
+                            className="w-full h-full object-contain"
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                          />
+                        ) : (
+                          <i className="ph ph-image text-lg text-[var(--color-muted)]" />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Mockup Aba do Navegador */}
+                    <div className="p-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] flex flex-col items-center justify-center gap-1.5 min-h-[96px]">
+                      <span className="text-[10px] uppercase font-bold text-[var(--color-muted)]">Favicon da Aba</span>
+                      <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-t-lg bg-[var(--color-surface)] border border-b-0 border-[var(--color-border)] shadow-sm max-w-[150px]">
+                        {inputLogoIcon ? (
+                          <img
+                            src={inputLogoIcon}
+                            alt="Favicon"
+                            className="w-4 h-4 object-contain flex-shrink-0"
+                          />
+                        ) : (
+                          <i className="ph ph-globe text-xs text-[var(--color-muted)]" />
+                        )}
+                        <span className="text-[11px] font-medium text-[var(--color-heading)] truncate">
+                          Makro Hub
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* URL Input */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-[var(--color-heading)]">
+                      URL da Imagem Direta
+                    </label>
+                    <input
+                      type="url"
+                      value={inputLogoIcon}
+                      onChange={(e) => setInputLogoIcon(e.target.value)}
+                      placeholder="https://exemplo.com/icone-quadrado.png"
+                      className="w-full h-9 px-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-xs text-[var(--color-heading)] outline-none focus:border-[var(--color-primary)] transition"
+                    />
+                  </div>
+                </div>
+
+                {/* Upload Button */}
+                <div className="flex items-center gap-2 pt-2 border-t border-[var(--color-border-subtle)]">
+                  <button
+                    type="button"
+                    onClick={() => fileInputIconRef.current?.click()}
+                    className="hr-btn hr-btn--secondary text-xs h-8 px-3 w-full justify-center"
+                  >
+                    <i className="ph ph-upload-simple text-base" />
+                    <span>Upload do Computador</span>
+                  </button>
+                  <input
+                    ref={fileInputIconRef}
+                    type="file"
+                    accept="image/png,image/x-icon,image/svg+xml,image/webp,image/jpeg"
+                    className="hidden"
+                    onChange={(e) => handleLogoUpload(e, 'icon')}
+                  />
+                  {inputLogoIcon !== DEFAULT_LOGO_ICON && (
+                    <button
+                      type="button"
+                      onClick={() => setInputLogoIcon(DEFAULT_LOGO_ICON)}
+                      className="hr-btn hr-btn--secondary text-xs h-8 px-2.5 flex-shrink-0"
+                      title="Voltar para o ícone padrão Makro"
+                    >
+                      <i className="ph ph-arrow-counter-clockwise text-sm" />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>

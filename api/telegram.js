@@ -1,6 +1,6 @@
 /**
  * Vercel Serverless - Telegram Webhook
- * Rota: POST https://makrohub.vercel.app/api/telegram
+ * Rota: POST https://my-saturday.vercel.app/api/telegram
  * Configure no BotFather e via setWebhook
  */
 import { sendMessage, sendTyping, isAuthorized } from './_lib/telegram.js';
@@ -147,7 +147,7 @@ async function handleCalendario(chatId) {
     `• Frequência: *3x/semana* (Seg / Qua / Sex) às 08:00 Fortaleza\n` +
     `• Próximo slot livre: *${next.split('-').reverse().join('/')}*\n` +
     `• Reagendamento inteligente: /ideias gera já nos slots corretos\n\n` +
-    `Acesse o Hub para ver em grade: https://makrohub.vercel.app/ (menu Editorial)`, { parse_mode: 'Markdown' });
+    `Acesse o Hub para ver em grade: https://my-saturday.vercel.app/ (menu Editorial)`, { parse_mode: 'Markdown' });
 }
 
 async function handleCriar(chatId, resto) {
@@ -184,7 +184,7 @@ async function handleCriar(chatId, resto) {
       responsavel: 'Weverson Nascimento',
     };
     await docRef.set(payload);
-    await sendMessage(chatId, `✅ Tarefa editorial criada!\n\n*${payload.titulo}*\n📅 ${slot.split('-').reverse().join('/')} — Seg/Qua/Sex\n📂 Editorial (ID ${payload.id})\n\nVeja em: https://makrohub.vercel.app/`, { parse_mode: 'Markdown' });
+    await sendMessage(chatId, `✅ Tarefa editorial criada!\n\n*${payload.titulo}*\n📅 ${slot.split('-').reverse().join('/')} — Seg/Qua/Sex\n📂 Editorial (ID ${payload.id})\n\nVeja em: https://my-saturday.vercel.app/`, { parse_mode: 'Markdown' });
   } catch (e) {
     await sendMessage(chatId, `Erro ao criar tarefa: ${e.message}`);
   }

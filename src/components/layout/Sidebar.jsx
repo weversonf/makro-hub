@@ -19,7 +19,11 @@ export default function Sidebar() {
     toggleTheme,
     isMaster,
     isAdmin,
-    userLevelInfo
+    userLevelInfo,
+    logoFull,
+    logoIcon,
+    DEFAULT_LOGO_FULL,
+    DEFAULT_LOGO_ICON
   } = useHub();
   const navRef = useRef(null);
   const [indicatorStyle, setIndicatorStyle] = useState({ top: 0, height: 48, opacity: 0 });
@@ -85,13 +89,13 @@ export default function Sidebar() {
           >
             <img
               className="hr-sidebar__logo-full"
-              src="https://makroengenharia.com.br/wp-content/uploads/2023/03/logo-1.png"
-              alt="Makro Engenharia"
+              src={logoFull || DEFAULT_LOGO_FULL}
+              alt="Logo"
             />
             <img
               className="hr-sidebar__logo-icon"
-              src="https://makroengenharia.com.br/wp-content/uploads/2026/08/ICONE-ESTRELA-LOGO-MAKRO-VERMELHA.png"
-              alt="Makro"
+              src={logoIcon || DEFAULT_LOGO_ICON}
+              alt="Logo"
             />
           </a>
 

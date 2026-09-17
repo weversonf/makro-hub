@@ -43,7 +43,7 @@ export const COMPETITORS = [
   },
 ];
 
-const UA = 'Mozilla/5.0 (compatible; MakroHubBot/1.0; +https://makrohub.vercel.app)';
+const UA = 'Mozilla/5.0 (compatible; MakroHubBot/1.0; +https://my-saturday.vercel.app)';
 
 async function fetchText(url, timeoutMs = 8000) {
   const ctrl = new AbortController();

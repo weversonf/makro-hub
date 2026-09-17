@@ -1,6 +1,6 @@
 /**
  * Vercel Cron - Daily Insight (08:00 Fortaleza)
- * Rota: GET https://makrohub.vercel.app/api/cron/daily-insight
+ * Rota: GET https://my-saturday.vercel.app/api/cron/daily-insight
  * Protegido por CRON_SECRET (header Authorization: Bearer <secret>)
  * Vercel chama automaticamente via crons em vercel.json
  */

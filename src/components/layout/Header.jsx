@@ -12,7 +12,9 @@ export default function Header() {
     toggleTheme,
     openNotifModal,
     notifications,
-    isAdmin
+    isAdmin,
+    logoIcon,
+    DEFAULT_LOGO_ICON
   } = useHub();
 
   const viewTitles = {
@@ -43,8 +45,8 @@ export default function Header() {
           <i className="ph ph-list text-xl" />
         </button>
         <img
-          src="https://makroengenharia.com.br/wp-content/uploads/2026/08/ICONE-ESTRELA-LOGO-MAKRO-VERMELHA.png"
-          alt="Makro"
+          src={logoIcon || DEFAULT_LOGO_ICON}
+          alt="Logo"
           className="w-6 h-6 object-contain sm:hidden flex-shrink-0"
         />
         <h1 className="text-base sm:text-xl font-bold text-[var(--color-heading)] m-0 truncate max-w-[160px] sm:max-w-none">
