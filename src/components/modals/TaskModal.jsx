@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useHub, STAGES, PRIOS, CANAIS, fmtDate, isEditorialActivity, isComemorativa } from '../../context/HubContext';
 import { storage, auth } from '../../firebase';
 import { X, Trash2, ExternalLink, UploadCloud, Tag, Calendar, Send, Plus, Copy, Check, FolderKanban, User, TrendingUp, CheckSquare, Sparkles } from 'lucide-react';
