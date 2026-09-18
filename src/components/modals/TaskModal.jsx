@@ -58,12 +58,61 @@ export default function TaskModal() {
   const [responsavelFoto, setResponsavelFoto] = useState('');
 
   const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved'
+  const openedModalKeyRef = useRef(null);
+  const lastSavedSnapshotRef = useRef('');
   const isLoadedRef = useRef(false);
   const autoSaveTimeoutRef = useRef(null);
+  const savedStatusTimeoutRef = useRef(null);
   const currentFieldsRef = useRef({});
 
+  const serializeSnapshot = (f) => {
+    if (!f) return '';
+    return JSON.stringify({
+      titulo: (f.titulo || '').trim(),
+      descricao: (f.descricao || '').trim(),
+      categoria: String(f.categoria ?? ''),
+      tipo: f.tipo === 'comemorativa' ? 'comemorativa' : 'padrao',
+      stage: f.stage || 'afazer',
+      prioridade: f.prioridade || 'baixa',
+      dataVencimento: f.dataVencimento || '',
+      dataPostagem: f.dataPostagem || '',
+      progress: Number(f.progress) || 0,
+      syncChecklist: Boolean(f.syncChecklist),
+      checklist: (f.checklist || f.idCheck || []).map((c) => ({ text: c.text, done: Boolean(c.done) })),
+      canais: [...(f.canais || [])].sort(),
+      imagens: (f.imagens || []).map((img) => img.url || img.name || img),
+      supportLinks: (f.supportLinks || []).map((l) => ({ url: l.url, label: l.label })),
+      isProjeto: Boolean(f.isProjeto || f.projeto),
+      projeto: (f.projeto || '').trim(),
+      responsavelId: String(f.responsavelId || ''),
+      responsavelNome: String(f.responsavelNome || f.responsavel || '').trim(),
+      responsavelEmail: String(f.responsavelEmail || '').trim()
+    });
+  };
+
   useEffect(() => {
-    if (!taskModalOpen) return;
+    if (!taskModalOpen) {
+      openedModalKeyRef.current = null;
+      isLoadedRef.current = false;
+      lastSavedSnapshotRef.current = '';
+      setSaveStatus('idle');
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+        autoSaveTimeoutRef.current = null;
+      }
+      if (savedStatusTimeoutRef.current) {
+        clearTimeout(savedStatusTimeoutRef.current);
+        savedStatusTimeoutRef.current = null;
+      }
+      return;
+    }
+
+    const currentKey = editTaskId ? `edit_${editTaskId}` : `new_${taskModalInitialData?.id || 'new'}`;
+    if (openedModalKeyRef.current === currentKey) {
+      return;
+    }
+    openedModalKeyRef.current = currentKey;
+    isLoadedRef.current = false;
 
     if (editTaskId) {
       const task = getTask(editTaskId);
@@ -109,15 +158,42 @@ export default function TaskModal() {
         const fallbackEmail = isMaster ? MASTER_ADMIN_EMAIL : (user?.email || '');
         const fallbackFoto = userProfile?.photoURL || user?.photoURL || '';
 
-        setResponsavelId(rId || (rNome ? (rEmail === MASTER_ADMIN_EMAIL || rNome === 'Weverson Nascimento' ? 'master' : '') : fallbackId));
-        setResponsavelNome(rNome || fallbackNome);
-        setResponsavelEmail(rEmail || (rNome ? '' : fallbackEmail));
-        setResponsavelFoto(rFoto || (rNome ? '' : fallbackFoto));
+        const finalRId = rId || (rNome ? (rEmail === MASTER_ADMIN_EMAIL || rNome === 'Weverson Nascimento' ? 'master' : '') : fallbackId);
+        const finalRNome = rNome || fallbackNome;
+        const finalREmail = rEmail || (rNome ? '' : fallbackEmail);
+        const finalRFoto = rFoto || (rNome ? '' : fallbackFoto);
+
+        setResponsavelId(finalRId);
+        setResponsavelNome(finalRNome);
+        setResponsavelEmail(finalREmail);
+        setResponsavelFoto(finalRFoto);
+
+        lastSavedSnapshotRef.current = serializeSnapshot({
+          titulo: task.titulo || '',
+          descricao: task.descricao || '',
+          categoria: task.categoria || '',
+          tipo: isCom ? 'comemorativa' : (task.tipo || 'padrao'),
+          stage: task.stage || 'afazer',
+          prioridade: task.prioridade || 'baixa',
+          dataVencimento: task.dataVencimento || '',
+          dataPostagem: task.dataPostagem || '',
+          progress: task.progress || 0,
+          syncChecklist: !!task.syncChecklist,
+          checklist: task.idCheck ? JSON.parse(JSON.stringify(task.idCheck)) : [],
+          canais: task.canais ? [...task.canais] : [],
+          imagens: task.imagens ? JSON.parse(JSON.stringify(task.imagens)) : [],
+          supportLinks: task.supportLinks ? JSON.parse(JSON.stringify(task.supportLinks)) : [],
+          isProjeto: Boolean(task.isProjeto || task.projeto),
+          projeto: task.projeto || '',
+          responsavelId: finalRId,
+          responsavelNome: finalRNome,
+          responsavelEmail: finalREmail
+        });
 
         setSaveStatus('idle');
         const timer = setTimeout(() => {
           isLoadedRef.current = true;
-        }, 200);
+        }, 150);
         return () => clearTimeout(timer);
       }
     } else {
@@ -155,7 +231,7 @@ export default function TaskModal() {
     setLinkLabel('');
     setCopied(false);
     setIsSaving(false);
-  }, [taskModalOpen, editTaskId, taskModalInitialData, categories, getTask, user, userProfile, isMaster, MASTER_ADMIN_EMAIL, registeredUsers]);
+  }, [taskModalOpen, editTaskId, taskModalInitialData]);
 
   const currentTaskMock = { categoria, canais, dataPostagem };
   const isEditorial = isEditorialActivity(currentTaskMock, categories);
@@ -321,7 +397,14 @@ export default function TaskModal() {
 
   const triggerAutoSave = (immediate = false) => {
     if (!editTaskId || !isLoadedRef.current) return;
+
+    const currentSnapshot = serializeSnapshot(currentFieldsRef.current);
+    if (!currentSnapshot || currentSnapshot === lastSavedSnapshotRef.current) {
+      return;
+    }
+
     if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+    if (savedStatusTimeoutRef.current) clearTimeout(savedStatusTimeoutRef.current);
 
     const execute = () => {
       const payload = buildPayload();
@@ -331,8 +414,15 @@ export default function TaskModal() {
       }
       if (payload.titulo) {
         setSaveStatus('saving');
+        lastSavedSnapshotRef.current = serializeSnapshot(currentFieldsRef.current);
         saveTask(payload, { keepOpen: true, silent: true });
-        setTimeout(() => setSaveStatus('saved'), 350);
+        if (savedStatusTimeoutRef.current) clearTimeout(savedStatusTimeoutRef.current);
+        savedStatusTimeoutRef.current = setTimeout(() => {
+          setSaveStatus('saved');
+          savedStatusTimeoutRef.current = setTimeout(() => {
+            setSaveStatus((prev) => (prev === 'saved' ? 'idle' : prev));
+          }, 2500);
+        }, 200);
       }
     };
 
@@ -340,18 +430,17 @@ export default function TaskModal() {
       execute();
     } else {
       setSaveStatus('saving');
-      autoSaveTimeoutRef.current = setTimeout(execute, 500);
+      autoSaveTimeoutRef.current = setTimeout(execute, 800);
     }
   };
 
   // Efeito disparado ao alterar qualquer campo da tarefa existente (auto-save contínuo)
   useEffect(() => {
-    if (!taskModalOpen) return;
-    if (editTaskId && isLoadedRef.current) {
-      triggerAutoSave(false);
-    }
+    if (!taskModalOpen || !editTaskId || !isLoadedRef.current) return;
+    triggerAutoSave(false);
   }, [
     taskModalOpen,
+    editTaskId,
     titulo, descricao, categoria, tipo, stage, prioridade,
     dataVencimento, dataPostagem, progress, syncChecklist,
     checklist, canais, imagens, supportLinks, isProjeto, projeto,
@@ -361,16 +450,21 @@ export default function TaskModal() {
   // Fechamento garantindo que qualquer alteração pendente seja salva antes de sair
   const handleCloseModal = () => {
     if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+    if (savedStatusTimeoutRef.current) clearTimeout(savedStatusTimeoutRef.current);
     if (editTaskId && isLoadedRef.current) {
-      const payload = buildPayload();
-      const existing = getTask(editTaskId);
-      if (!payload.titulo && existing?.titulo) {
-        payload.titulo = existing.titulo;
-      }
-      if (payload.titulo) {
-        saveTask(payload, { keepOpen: false, silent: true });
-        isLoadedRef.current = false;
-        return;
+      const currentSnapshot = serializeSnapshot(currentFieldsRef.current);
+      if (currentSnapshot && currentSnapshot !== lastSavedSnapshotRef.current) {
+        const payload = buildPayload();
+        const existing = getTask(editTaskId);
+        if (!payload.titulo && existing?.titulo) {
+          payload.titulo = existing.titulo;
+        }
+        if (payload.titulo) {
+          lastSavedSnapshotRef.current = currentSnapshot;
+          saveTask(payload, { keepOpen: false, silent: true });
+          isLoadedRef.current = false;
+          return;
+        }
       }
     }
     isLoadedRef.current = false;
@@ -396,6 +490,9 @@ export default function TaskModal() {
       showToast('Informe um título para a tarefa.', 'error');
       return;
     }
+
+    if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+    if (savedStatusTimeoutRef.current) clearTimeout(savedStatusTimeoutRef.current);
 
     setIsSaving(true);
     const payload = buildPayload();
@@ -1121,14 +1218,19 @@ export default function TaskModal() {
             {editTaskId && (
               <span className="text-xs text-[var(--color-muted)] hidden sm:inline-block mr-1.5 font-medium">
                 {saveStatus === 'saving' ? (
-                  <span className="text-amber-400 flex items-center gap-1">
+                  <span className="text-amber-400 inline-flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                     Salvando alterações...
                   </span>
-                ) : (
-                  <span className="text-emerald-400 flex items-center gap-1">
+                ) : saveStatus === 'saved' ? (
+                  <span className="text-emerald-400 inline-flex items-center gap-1">
                     <Check size={12} />
                     Salvo automaticamente
+                  </span>
+                ) : (
+                  <span className="text-[var(--color-muted)] inline-flex items-center gap-1 opacity-60">
+                    <Check size={12} />
+                    Salvo
                   </span>
                 )}
               </span>
