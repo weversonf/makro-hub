@@ -7,10 +7,9 @@ const CAL_DOW_SHORT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const CAL_DOW_MINI = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
 export default function CalendarioView() {
-  const { activities, allActivities, openNewTask, openEditTask, stageOf, isEditorialActivity, rescheduleUnpublishedEditorial } = useHub();
+  const { activities, allActivities, openNewTask, openEditTask, stageOf, isEditorialActivity } = useHub();
   const [calDate, setCalDate] = useState(new Date());
   const [calMode, setCalMode] = useState('month'); // 'month' | 'week'
-  const [rescheduling, setRescheduling] = useState(false);
 
   const y = calDate.getFullYear();
   const m = calDate.getMonth();
@@ -279,208 +278,108 @@ export default function CalendarioView() {
     return cols;
   };
 
-  // Próximas publicações
-  const upcomingPosts = editorialTasks
-    .filter((a) => {
-      const k = a.dataPostagem || a.dataVencimento;
-      return k && k >= today && a.stage !== 'concluido';
-    })
-    .sort((x, y) => {
-      const kx = x.dataPostagem || x.dataVencimento;
-      const ky = y.dataPostagem || y.dataVencimento;
-      return kx < ky ? -1 : 1;
-    })
-    .slice(0, 5);
-
   const pubCount = editorialTasks.filter((a) => a.stage === 'concluido').length;
   const pendCount = editorialTasks.length - pubCount;
 
-  const handleReschedule = async () => {
-    try {
-      setRescheduling(true);
-      await rescheduleUnpublishedEditorial();
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setRescheduling(false);
-    }
-  };
-
   return (
-    <div className="flex flex-col gap-5">
-      {/* Banner de Reagendamento Editorial Inteligente (3x/semana: Seg, Qua e Sex) */}
-      {pendCount > 0 && (
-        <div className="p-4 rounded-2xl border border-[var(--color-primary)]/30 bg-[var(--color-primary-soft)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
-          <div className="flex items-center gap-3">
-            <span className="w-10 h-10 rounded-xl bg-[var(--color-primary)] text-white flex items-center justify-center flex-shrink-0 shadow-md">
-              <i className="ph ph-calendar-check text-2xl" />
-            </span>
-            <div>
-              <h3 className="text-sm font-bold text-[var(--color-heading)] flex items-center gap-2">
-                <span>Planejamento Editorial:</span>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[var(--color-surface)] text-[var(--color-primary)] border border-[var(--color-border)]">
-                  {pendCount} conteúdos não publicados
-                </span>
-              </h3>
-              <p className="text-xs text-[var(--color-muted)] mt-0.5">
-                Reorganizar automaticamente em 3 publicações por semana (<strong>Segunda, Quarta e Sexta</strong> a partir de <strong>04/09</strong>).
-              </p>
+    <div className="flex flex-col gap-5 w-full">
+      <div className="ax-card w-full">
+        <div className="ax-card__header flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="ax-card__title text-base sm:text-lg">
+              {calMode === 'month' ? `${CAL_MONTHS[m]} ${y}` : getWeekRange(calDate).label}
+            </h2>
+            <div className="flex items-center gap-1 sm:hidden">
+              <button className="ax-btn ax-btn--secondary ax-btn--sm px-2" onClick={calPrev} title="Mês Anterior">
+                <ChevronLeft size={16} />
+              </button>
+              <button className="ax-btn ax-btn--secondary ax-btn--sm px-2.5" onClick={calToday}>
+                Hoje
+              </button>
+              <button className="ax-btn ax-btn--secondary ax-btn--sm px-2" onClick={calNext} title="Próximo Mês">
+                <ChevronRight size={16} />
+              </button>
             </div>
           </div>
 
-          <button
-            type="button"
-            className="hr-btn hr-btn--primary text-xs h-9 px-4 flex-shrink-0 font-semibold shadow-md hover:scale-[1.02] transition w-full sm:w-auto justify-center"
-            onClick={handleReschedule}
-            disabled={rescheduling}
-          >
-            <i className={`ph ${rescheduling ? 'ph-spinner-gap animate-spin' : 'ph-magic-wand'} text-base`} />
-            <span>{rescheduling ? 'Reagendando...' : 'Reagendar para Seg / Qua / Sex'}</span>
-          </button>
-        </div>
-      )}
-
-      <div className="ax-dash-grid">
-        <div className="ax-col--9">
-          <div className="ax-card">
-            <div className="ax-card__header flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="ax-card__title text-base sm:text-lg">
-                  {calMode === 'month' ? `${CAL_MONTHS[m]} ${y}` : getWeekRange(calDate).label}
-                </h2>
-                <div className="flex items-center gap-1 sm:hidden">
-                  <button className="ax-btn ax-btn--secondary ax-btn--sm px-2" onClick={calPrev} title="Mês Anterior">
-                    <ChevronLeft size={16} />
-                  </button>
-                  <button className="ax-btn ax-btn--secondary ax-btn--sm px-2.5" onClick={calToday}>
-                    Hoje
-                  </button>
-                  <button className="ax-btn ax-btn--secondary ax-btn--sm px-2" onClick={calNext} title="Próximo Mês">
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between sm:justify-end gap-2">
-                <div className="ax-segment">
-                  <button
-                    className={`ax-segment__option ${calMode === 'month' ? 'is-active' : ''}`}
-                    onClick={() => setCalMode('month')}
-                  >
-                    Mensal
-                  </button>
-                  <button
-                    className={`ax-segment__option ${calMode === 'week' ? 'is-active' : ''}`}
-                    onClick={() => setCalMode('week')}
-                  >
-                    Semanal
-                  </button>
-                </div>
-
-                <div className="hidden sm:flex items-center gap-1.5">
-                  <button className="ax-btn ax-btn--secondary ax-btn--sm" onClick={calPrev} title="Anterior">
-                    <ChevronLeft size={16} />
-                  </button>
-                  <button className="ax-btn ax-btn--secondary ax-btn--sm" onClick={calToday}>
-                    Hoje
-                  </button>
-                  <button className="ax-btn ax-btn--secondary ax-btn--sm" onClick={calNext} title="Próximo">
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              </div>
+          <div className="flex items-center justify-between sm:justify-end gap-2">
+            <div className="ax-segment">
+              <button
+                className={`ax-segment__option ${calMode === 'month' ? 'is-active' : ''}`}
+                onClick={() => setCalMode('month')}
+              >
+                Mensal
+              </button>
+              <button
+                className={`ax-segment__option ${calMode === 'week' ? 'is-active' : ''}`}
+                onClick={() => setCalMode('week')}
+              >
+                Semanal
+              </button>
             </div>
 
-          <div className="flex items-center gap-4 px-4 py-2 text-[11px] text-[var(--ax-text-muted)] border-b border-[var(--ax-border)]">
-            <span className="flex items-center gap-1.5">
+            <div className="hidden sm:flex items-center gap-1.5">
+              <button className="ax-btn ax-btn--secondary ax-btn--sm" onClick={calPrev} title="Anterior">
+                <ChevronLeft size={16} />
+              </button>
+              <button className="ax-btn ax-btn--secondary ax-btn--sm" onClick={calToday}>
+                Hoje
+              </button>
+              <button className="ax-btn ax-btn--secondary ax-btn--sm" onClick={calNext} title="Próximo">
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 text-xs text-[var(--ax-text-muted)] border-b border-[var(--ax-border)]">
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1.5 font-medium">
               <i className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: 'var(--ax-viz-emerald)' }} />
               Postado / OK
             </span>
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5 font-medium">
               <i className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: 'var(--ax-viz-amber)' }} />
               Em andamento
             </span>
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5 font-medium">
               <i className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: 'var(--ax-text-muted)' }} />
               A fazer
             </span>
           </div>
 
-          <div className="ax-card__body p-3">
-            {calMode === 'month' ? (
-              <div>
-                <div className="grid grid-cols-7 border-b border-[var(--ax-border)]">
-                  {CAL_DOW_SHORT.map((dow, i) => (
-                    <div
-                      key={dow}
-                      className={`p-2 text-[11px] font-semibold tracking-wider uppercase text-[var(--ax-text-subtle)] text-center bg-[var(--ax-surface-subtle)] ${
-                        i < 6 ? 'border-r border-[var(--ax-border)]' : ''
-                      }`}
-                    >
-                      {dow}
-                    </div>
-                  ))}
-                </div>
-                <div className="grid grid-cols-7">{renderMonthlyGrid()}</div>
-              </div>
-            ) : (
-              <div className="ax-cal-week">{renderWeeklyGrid()}</div>
-            )}
+          <div className="flex items-center gap-3 text-xs">
+            <span className="px-2.5 py-1 rounded-lg bg-[var(--ax-surface-subtle)] border border-[var(--ax-border)]">
+              Agendadas: <strong className="text-[var(--ax-viz-cyan)] ax-num">{pendCount}</strong>
+            </span>
+            <span className="px-2.5 py-1 rounded-lg bg-[var(--ax-surface-subtle)] border border-[var(--ax-border)]">
+              Publicadas: <strong className="text-[var(--ax-viz-emerald)] ax-num">{pubCount}</strong>
+            </span>
           </div>
         </div>
-      </div>
 
-      {/* Sidebar do Calendário */}
-      <div className="ax-col--3 flex flex-col gap-4">
-        {/* Próximas Publicações */}
-        <div className="ax-card">
-          <div className="ax-card__header">
-            <h3 className="ax-card__title text-sm">Próximas Publicações</h3>
-          </div>
-          <div className="ax-card__body p-3 flex flex-col gap-2">
-            {upcomingPosts.length === 0 ? (
-              <p className="text-xs text-[var(--ax-text-subtle)] py-2">Nenhuma publicação agendada.</p>
-            ) : (
-              upcomingPosts.map((a) => {
-                const pDate = a.dataPostagem || a.dataVencimento;
-                const st = stageOf(a.stage);
-                return (
+        <div className="ax-card__body p-3">
+          {calMode === 'month' ? (
+            <div>
+              <div className="grid grid-cols-7 border-b border-[var(--ax-border)]">
+                {CAL_DOW_SHORT.map((dow, i) => (
                   <div
-                    key={a.id}
-                    className="flex items-center gap-2 p-2 rounded-xl hover:bg-[var(--ax-surface-subtle)] cursor-pointer transition"
-                    onClick={() => openEditTask(a.id)}
+                    key={dow}
+                    className={`p-2 text-[11px] font-semibold tracking-wider uppercase text-[var(--ax-text-subtle)] text-center bg-[var(--ax-surface-subtle)] ${
+                      i < 6 ? 'border-r border-[var(--ax-border)]' : ''
+                    }`}
                   >
-                    <span className="ax-avatar ax-avatar--xs ax-avatar--squircle text-[9px] font-bold bg-[var(--ax-surface-2)] text-[var(--ax-accent)]">
-                      {a.dataPostagem ? 'POST' : 'VENC'}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-xs font-bold text-[var(--ax-text-strong)] truncate">{a.titulo}</div>
-                      <div className="text-[10px] text-[var(--ax-text-subtle)]">
-                        {fmtDate(pDate)} · {st.label}
-                      </div>
-                    </div>
+                    {dow}
                   </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-
-        {/* Contadores */}
-        <div className="ax-card">
-          <div className="ax-card__body flex justify-around text-center py-4">
-            <div>
-              <div className="text-[10px] uppercase text-[var(--ax-text-subtle)]">Agendadas</div>
-              <div className="ax-num text-xl font-bold text-[var(--ax-viz-cyan)] mt-0.5">{pendCount}</div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7">{renderMonthlyGrid()}</div>
             </div>
-            <div>
-              <div className="text-[10px] uppercase text-[var(--ax-text-subtle)]">Publicadas</div>
-              <div className="ax-num text-xl font-bold text-[var(--ax-viz-emerald)] mt-0.5">{pubCount}</div>
-            </div>
-          </div>
+          ) : (
+            <div className="ax-cal-week">{renderWeeklyGrid()}</div>
+          )}
         </div>
       </div>
     </div>
-  </div>
   );
 }
