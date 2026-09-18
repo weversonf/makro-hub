@@ -414,8 +414,8 @@ export default function App() {
         <Sidebar />
         <Header />
 
-        <main className="hr-main-shell">
-          <div className="hr-container">
+        <main className={`hr-main-shell ${activeView === 'editorial' ? 'hr-main-shell--calendar' : ''}`}>
+          <div className={`hr-container ${activeView === 'editorial' ? 'hr-container--calendar' : ''}`}>
             <ErrorBoundary key={activeView}>
               {activeView === 'dash' && <DashboardView />}
               {activeView === 'lista' && <TarefasView />}

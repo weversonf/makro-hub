@@ -15,6 +15,7 @@ export default function CalendarioView() {
   const y = calDate.getFullYear();
   const m = calDate.getMonth();
   const today = todayISO();
+  const numRows = Math.ceil((new Date(y, m, 1).getDay() + new Date(y, m + 1, 0).getDate()) / 7);
 
   const editorialTasks = (allActivities && allActivities.length > 0 ? allActivities : activities).filter((a) => isEditorialActivity(a));
 
@@ -147,21 +148,25 @@ export default function CalendarioView() {
               className={`ax-cal-cell ${isWeekend ? 'ax-cal-cell--weekend' : ''}`}
               onClick={() => handleOpenNewAtDate(pDate)}
             >
-              <span className="ax-cal-cell__n ax-cal-cell__n--muted ax-num">{pDay}</span>
-              {evts.slice(0, 2).map((ev) => (
-                <span
-                  key={ev.id}
-                  className="ax-cal-event"
-                  style={{ '--c': calEventColor(ev) }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openEditTask(ev.id);
-                  }}
-                  title={ev.titulo}
-                >
-                  {ev.titulo}
-                </span>
-              ))}
+              <div className="flex items-center justify-between w-full shrink-0">
+                <span className="ax-cal-cell__n ax-cal-cell__n--muted ax-num">{pDay}</span>
+              </div>
+              <div className="ax-cal-cell-events">
+                {evts.map((ev) => (
+                  <span
+                    key={ev.id}
+                    className="ax-cal-event opacity-60"
+                    style={{ '--c': calEventColor(ev) }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEditTask(ev.id);
+                    }}
+                    title={ev.titulo}
+                  >
+                    {ev.titulo}
+                  </span>
+                ))}
+              </div>
             </button>
           );
         } else if (day > daysInMonth) {
@@ -176,21 +181,25 @@ export default function CalendarioView() {
               className={`ax-cal-cell ${isWeekend ? 'ax-cal-cell--weekend' : ''}`}
               onClick={() => handleOpenNewAtDate(nDate)}
             >
-              <span className="ax-cal-cell__n ax-cal-cell__n--muted ax-num">{nDay}</span>
-              {evts.slice(0, 2).map((ev) => (
-                <span
-                  key={ev.id}
-                  className="ax-cal-event"
-                  style={{ '--c': calEventColor(ev) }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openEditTask(ev.id);
-                  }}
-                  title={ev.titulo}
-                >
-                  {ev.titulo}
-                </span>
-              ))}
+              <div className="flex items-center justify-between w-full shrink-0">
+                <span className="ax-cal-cell__n ax-cal-cell__n--muted ax-num">{nDay}</span>
+              </div>
+              <div className="ax-cal-cell-events">
+                {evts.map((ev) => (
+                  <span
+                    key={ev.id}
+                    className="ax-cal-event opacity-60"
+                    style={{ '--c': calEventColor(ev) }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEditTask(ev.id);
+                    }}
+                    title={ev.titulo}
+                  >
+                    {ev.titulo}
+                  </span>
+                ))}
+              </div>
             </button>
           );
           day++;
@@ -206,22 +215,30 @@ export default function CalendarioView() {
               className={`ax-cal-cell ${isToday ? 'ax-cal-cell--today' : ''} ${isWeekend ? 'ax-cal-cell--weekend' : ''}`}
               onClick={() => handleOpenNewAtDate(dDate)}
             >
-              <span className={`ax-cal-cell__n ax-num ${isToday ? 'ax-cal-cell__n--today' : ''}`}>{day}</span>
-              {evts.slice(0, 3).map((ev) => (
-                <span
-                  key={ev.id}
-                  className="ax-cal-event"
-                  style={{ '--c': calEventColor(ev) }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openEditTask(ev.id);
-                  }}
-                  title={ev.titulo}
-                >
-                  {ev.titulo}
-                </span>
-              ))}
-              {evts.length > 3 && <span className="ax-cal-more">+{evts.length - 3} mais</span>}
+              <div className="flex items-center justify-between w-full shrink-0">
+                <span className={`ax-cal-cell__n ax-num ${isToday ? 'ax-cal-cell__n--today' : ''}`}>{day}</span>
+                {evts.length > 0 && (
+                  <span className="text-[10px] text-[var(--ax-text-subtle)] font-mono font-semibold">
+                    {evts.length}
+                  </span>
+                )}
+              </div>
+              <div className="ax-cal-cell-events">
+                {evts.map((ev) => (
+                  <span
+                    key={ev.id}
+                    className="ax-cal-event"
+                    style={{ '--c': calEventColor(ev) }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEditTask(ev.id);
+                    }}
+                    title={ev.titulo}
+                  >
+                    {ev.titulo}
+                  </span>
+                ))}
+              </div>
             </button>
           );
           day++;
@@ -251,14 +268,14 @@ export default function CalendarioView() {
           className="ax-cal-week-col"
           onClick={() => handleOpenNewAtDate(dateISO)}
         >
-          <div className={`ax-cal-week-col__head ${isToday ? 'is-today' : ''}`}>
+          <div className={`ax-cal-week-col__head shrink-0 ${isToday ? 'is-today' : ''}`}>
             <span className="text-xs font-bold" style={{ color: isToday ? 'var(--ax-accent)' : 'inherit' }}>
               {CAL_DOW_SHORT[d]}
             </span>
             <span className={`ax-num ${isToday ? 'ax-cal-cell__n--today' : ''}`}>{cday}</span>
           </div>
 
-          <div className="flex flex-col gap-1.5 flex-1 overflow-y-auto min-h-[80px]">
+          <div className="flex flex-col gap-1.5 flex-1 min-h-0 overflow-y-auto pr-0.5">
             {evts.length === 0 ? (
               <div className="text-[11px] text-[var(--ax-text-subtle)] text-center py-4">Sem posts</div>
             ) : (
@@ -267,7 +284,7 @@ export default function CalendarioView() {
                 return (
                   <div
                     key={ev.id}
-                    className="ax-card ax-card--interactive p-2.5 bg-[var(--ax-surface-solid)]"
+                    className="ax-card ax-card--interactive p-2 bg-[var(--ax-surface-solid)] shrink-0"
                     style={{ borderInlineStart: `3px solid ${calEventColor(ev)}` }}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -277,16 +294,16 @@ export default function CalendarioView() {
                     <div className="text-xs font-bold text-[var(--ax-text-strong)] line-clamp-2 leading-tight">
                       {ev.titulo}
                     </div>
-                    <div className="flex items-center justify-between gap-1 mt-1.5">
-                      <span className={`ax-badge ax-badge--soft ax-badge--${isComemorativaTask(ev) ? 'violet' : st.tone} ax-badge--sm ax-badge--pill`}>
+                    <div className="flex items-center justify-between gap-1 mt-1">
+                      <span className={`ax-badge ax-badge--soft ax-badge--${isComemorativaTask(ev) ? 'violet' : st.tone} ax-badge--sm ax-badge--pill text-[10px]`}>
                         {isComemorativaTask(ev) ? 'Data Comemorativa' : st.label}
                       </span>
-                      <span className="ax-num text-[11px] font-semibold text-[var(--ax-text-muted)]">
+                      <span className="ax-num text-[10px] font-semibold text-[var(--ax-text-muted)]">
                         {ev.progress || 0}%
                       </span>
                     </div>
                     {ev.canais && ev.canais.length > 0 && (
-                      <div className="text-[10px] text-[var(--ax-accent)] font-bold uppercase mt-1">
+                      <div className="text-[9px] text-[var(--ax-accent)] font-bold uppercase mt-1 truncate">
                         {ev.canais.join(', ')}
                       </div>
                     )}
@@ -298,7 +315,7 @@ export default function CalendarioView() {
 
           <button
             type="button"
-            className="ax-btn ax-btn--ghost ax-btn--sm w-full text-xs gap-1"
+            className="ax-btn ax-btn--ghost ax-btn--sm w-full text-xs gap-1 shrink-0 mt-auto"
             onClick={(e) => {
               e.stopPropagation();
               handleOpenNewAtDate(dateISO);
@@ -315,9 +332,9 @@ export default function CalendarioView() {
   };
 
   return (
-    <div className="flex flex-col gap-5 w-full">
-      <div className="ax-card w-full">
-        <div className="ax-card__header flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+    <div className="flex flex-col h-full w-full min-h-0 flex-1">
+      <div className="ax-card ax-card--calendar w-full h-full flex flex-col min-h-0 flex-1 overflow-hidden">
+        <div className="ax-card__header shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 py-2.5 px-4 border-b border-[var(--ax-border)]">
           <div className="flex items-center justify-between gap-2">
             <h2 className="ax-card__title text-base sm:text-lg">
               {calMode === 'month' ? `${CAL_MONTHS[m]} ${y}` : getWeekRange(calDate).label}
@@ -366,7 +383,7 @@ export default function CalendarioView() {
         </div>
 
         {/* Barra Interativa de Filtros e Legenda */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 px-4 py-2 text-xs border-b border-[var(--ax-border)] bg-[var(--ax-surface-1)]">
+        <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 px-4 py-1.5 text-xs border-b border-[var(--ax-border)] bg-[var(--ax-surface-1)]">
           <div className="flex flex-wrap items-center gap-1.5">
             {/* Todos */}
             <button
@@ -488,14 +505,14 @@ export default function CalendarioView() {
           </div>
         </div>
 
-        <div className="ax-card__body p-3">
+        <div className="ax-card__body p-0 flex-1 min-h-0 flex flex-col overflow-hidden">
           {calMode === 'month' ? (
-            <div>
-              <div className="grid grid-cols-7 border-b border-[var(--ax-border)]">
+            <div className="flex-1 min-h-0 flex flex-col h-full overflow-hidden">
+              <div className="grid grid-cols-7 border-b border-[var(--ax-border)] shrink-0 bg-[var(--ax-surface-subtle)]">
                 {CAL_DOW_SHORT.map((dow, i) => (
                   <div
                     key={dow}
-                    className={`p-2 text-[11px] font-semibold tracking-wider uppercase text-[var(--ax-text-subtle)] text-center bg-[var(--ax-surface-subtle)] ${
+                    className={`py-1 text-[11px] font-bold tracking-wider uppercase text-[var(--ax-text-subtle)] text-center ${
                       i < 6 ? 'border-r border-[var(--ax-border)]' : ''
                     }`}
                   >
@@ -503,10 +520,15 @@ export default function CalendarioView() {
                   </div>
                 ))}
               </div>
-              <div className="grid grid-cols-7">{renderMonthlyGrid()}</div>
+              <div
+                className="grid grid-cols-7 flex-1 min-h-0 h-full overflow-hidden"
+                style={{ gridTemplateRows: `repeat(${numRows}, minmax(0, 1fr))` }}
+              >
+                {renderMonthlyGrid()}
+              </div>
             </div>
           ) : (
-            <div className="ax-cal-week">{renderWeeklyGrid()}</div>
+            <div className="ax-cal-week flex-1 min-h-0 h-full p-2">{renderWeeklyGrid()}</div>
           )}
         </div>
       </div>
