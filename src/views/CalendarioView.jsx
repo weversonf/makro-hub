@@ -7,9 +7,10 @@ const CAL_DOW_SHORT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const CAL_DOW_MINI = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
 export default function CalendarioView() {
-  const { activities, allActivities, openNewTask, openEditTask, stageOf, isEditorialActivity } = useHub();
+  const { activities, allActivities, openNewTask, openEditTask, stageOf, isEditorialActivity, isComemorativa, catOf } = useHub();
   const [calDate, setCalDate] = useState(new Date());
   const [calMode, setCalMode] = useState('month'); // 'month' | 'week'
+  const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'postado' | 'em_andamento' | 'afazer' | 'comemorativa' | 'agendadas' | 'publicadas'
 
   const y = calDate.getFullYear();
   const m = calDate.getMonth();
@@ -17,19 +18,51 @@ export default function CalendarioView() {
 
   const editorialTasks = (allActivities && allActivities.length > 0 ? allActivities : activities).filter((a) => isEditorialActivity(a));
 
-  // Cor do evento por status:
-  // - Concluído / Postado = verde
-  // - Em andamento (execução, espera, validando) = amarelo
-  // - A fazer = cinza
-  const calEventColor = (stage) => {
+  const isComemorativaTask = (t) => {
+    if (!t) return false;
+    if (isComemorativa && isComemorativa(t)) return true;
+    if (t.tipo === 'comemorativa' || t.tipo === 'data_comemorativa' || t.isComemorativa) return true;
+    if (t.tipoPublicacao === 'comemorativa' || t.tipoPublicacao === 'data_comemorativa') return true;
+    const cat = catOf?.(t.categoria);
+    if (cat && cat.nome && cat.nome.toLowerCase().includes('comemorat')) return true;
+    if (typeof t.categoria === 'string' && t.categoria.toLowerCase().includes('comemorat')) return true;
+    return false;
+  };
+
+  // Cor do evento por status ou tipo:
+  // - Data Comemorativa = roxo (#8B5CF6)
+  // - Concluído / Postado = verde (var(--ax-viz-emerald))
+  // - Em andamento (execução, espera, validando) = amarelo (var(--ax-viz-amber))
+  // - A fazer = cinza (var(--ax-text-muted))
+  const calEventColor = (ev) => {
+    if (isComemorativaTask(ev)) return '#8B5CF6';
+    const stage = typeof ev === 'string' ? ev : ev?.stage;
     if (stage === 'concluido') return 'var(--ax-viz-emerald)';
     if (stage === 'afazer') return 'var(--ax-text-muted)';
     return 'var(--ax-viz-amber)';
   };
 
+  // Contadores globais das publicações para os botões de filtro
+  const pubCount = editorialTasks.filter((a) => a.stage === 'concluido').length;
+  const pendCount = editorialTasks.filter((a) => a.stage !== 'concluido').length;
+  const emAndamentoCount = editorialTasks.filter((a) => a.stage !== 'concluido' && a.stage !== 'afazer').length;
+  const afazerCount = editorialTasks.filter((a) => a.stage === 'afazer').length;
+  const comemCount = editorialTasks.filter((a) => isComemorativaTask(a)).length;
+
+  // Filtragem interativa
+  const filteredEditorialTasks = editorialTasks.filter((t) => {
+    if (activeFilter === 'all') return true;
+    if (activeFilter === 'postado' || activeFilter === 'publicadas') return t.stage === 'concluido';
+    if (activeFilter === 'em_andamento') return t.stage !== 'concluido' && t.stage !== 'afazer';
+    if (activeFilter === 'afazer') return t.stage === 'afazer';
+    if (activeFilter === 'comemorativa') return isComemorativaTask(t);
+    if (activeFilter === 'agendadas') return t.stage !== 'concluido';
+    return true;
+  });
+
   // Mapeamento por data
   const dayMap = {};
-  editorialTasks.forEach((t) => {
+  filteredEditorialTasks.forEach((t) => {
     const k = t.dataPostagem || t.dataVencimento;
     if (k) {
       if (!dayMap[k]) dayMap[k] = [];
@@ -58,8 +91,11 @@ export default function CalendarioView() {
   const calToday = () => setCalDate(new Date());
 
   const handleOpenNewAtDate = (dateStr) => {
+    const isComem = activeFilter === 'comemorativa';
     openNewTask('afazer', {
       categoria: 1, // Editorial
+      tipo: isComem ? 'comemorativa' : 'padrao',
+      isComemorativa: isComem,
       dataVencimento: dateStr,
       dataPostagem: dateStr
     });
@@ -116,7 +152,7 @@ export default function CalendarioView() {
                 <span
                   key={ev.id}
                   className="ax-cal-event"
-                  style={{ '--c': calEventColor(ev.stage) }}
+                  style={{ '--c': calEventColor(ev) }}
                   onClick={(e) => {
                     e.stopPropagation();
                     openEditTask(ev.id);
@@ -145,7 +181,7 @@ export default function CalendarioView() {
                 <span
                   key={ev.id}
                   className="ax-cal-event"
-                  style={{ '--c': calEventColor(ev.stage) }}
+                  style={{ '--c': calEventColor(ev) }}
                   onClick={(e) => {
                     e.stopPropagation();
                     openEditTask(ev.id);
@@ -175,7 +211,7 @@ export default function CalendarioView() {
                 <span
                   key={ev.id}
                   className="ax-cal-event"
-                  style={{ '--c': calEventColor(ev.stage) }}
+                  style={{ '--c': calEventColor(ev) }}
                   onClick={(e) => {
                     e.stopPropagation();
                     openEditTask(ev.id);
@@ -232,7 +268,7 @@ export default function CalendarioView() {
                   <div
                     key={ev.id}
                     className="ax-card ax-card--interactive p-2.5 bg-[var(--ax-surface-solid)]"
-                    style={{ borderInlineStart: `3px solid ${calEventColor(ev.stage)}` }}
+                    style={{ borderInlineStart: `3px solid ${calEventColor(ev)}` }}
                     onClick={(e) => {
                       e.stopPropagation();
                       openEditTask(ev.id);
@@ -242,8 +278,8 @@ export default function CalendarioView() {
                       {ev.titulo}
                     </div>
                     <div className="flex items-center justify-between gap-1 mt-1.5">
-                      <span className={`ax-badge ax-badge--soft ax-badge--${st.tone} ax-badge--sm ax-badge--pill`}>
-                        {st.label}
+                      <span className={`ax-badge ax-badge--soft ax-badge--${isComemorativaTask(ev) ? 'violet' : st.tone} ax-badge--sm ax-badge--pill`}>
+                        {isComemorativaTask(ev) ? 'Data Comemorativa' : st.label}
                       </span>
                       <span className="ax-num text-[11px] font-semibold text-[var(--ax-text-muted)]">
                         {ev.progress || 0}%
@@ -332,29 +368,126 @@ export default function CalendarioView() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 text-xs text-[var(--ax-text-muted)] border-b border-[var(--ax-border)]">
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1.5 font-medium">
-              <i className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: 'var(--ax-viz-emerald)' }} />
-              Postado / OK
-            </span>
-            <span className="flex items-center gap-1.5 font-medium">
-              <i className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: 'var(--ax-viz-amber)' }} />
-              Em andamento
-            </span>
-            <span className="flex items-center gap-1.5 font-medium">
-              <i className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: 'var(--ax-text-muted)' }} />
-              A fazer
-            </span>
+        {/* Barra Interativa de Filtros e Legenda */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 px-4 py-2 text-xs border-b border-[var(--ax-border)] bg-[var(--ax-surface-1)]">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {/* Todos */}
+            <button
+              type="button"
+              onClick={() => setActiveFilter('all')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition border cursor-pointer ${
+                activeFilter === 'all'
+                  ? 'bg-[var(--ax-surface-2)] text-[var(--ax-text-strong)] border-[var(--ax-border-strong)] shadow-xs'
+                  : 'bg-transparent text-[var(--ax-text-muted)] border-transparent hover:bg-[var(--ax-surface-subtle)] hover:text-[var(--ax-text-strong)]'
+              }`}
+              title="Exibir todas as publicações"
+            >
+              Todos
+              <span className="ax-num text-[10px] opacity-75">({editorialTasks.length})</span>
+            </button>
+
+            {/* Postado / OK */}
+            <button
+              type="button"
+              onClick={() => setActiveFilter(activeFilter === 'postado' ? 'all' : 'postado')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition border cursor-pointer ${
+                activeFilter === 'postado'
+                  ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/50 shadow-xs ring-1 ring-emerald-500/30'
+                  : activeFilter !== 'all'
+                  ? 'opacity-50 bg-transparent text-[var(--ax-text-muted)] border-transparent hover:opacity-100 hover:bg-[var(--ax-surface-subtle)]'
+                  : 'bg-[var(--ax-surface-subtle)] text-[var(--ax-text-strong)] border-[var(--ax-border)] hover:border-emerald-500/40'
+              }`}
+              title="Filtrar por Postado / OK"
+            >
+              <i className="w-2.5 h-2.5 rounded-full inline-block shrink-0" style={{ background: 'var(--ax-viz-emerald)' }} />
+              <span>Postado / OK</span>
+              <span className="ax-num text-[10px] opacity-75">({pubCount})</span>
+            </button>
+
+            {/* Em andamento */}
+            <button
+              type="button"
+              onClick={() => setActiveFilter(activeFilter === 'em_andamento' ? 'all' : 'em_andamento')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition border cursor-pointer ${
+                activeFilter === 'em_andamento'
+                  ? 'bg-amber-500/15 text-amber-400 border-amber-500/50 shadow-xs ring-1 ring-amber-500/30'
+                  : activeFilter !== 'all'
+                  ? 'opacity-50 bg-transparent text-[var(--ax-text-muted)] border-transparent hover:opacity-100 hover:bg-[var(--ax-surface-subtle)]'
+                  : 'bg-[var(--ax-surface-subtle)] text-[var(--ax-text-strong)] border-[var(--ax-border)] hover:border-amber-500/40'
+              }`}
+              title="Filtrar por Em andamento"
+            >
+              <i className="w-2.5 h-2.5 rounded-full inline-block shrink-0" style={{ background: 'var(--ax-viz-amber)' }} />
+              <span>Em andamento</span>
+              <span className="ax-num text-[10px] opacity-75">({emAndamentoCount})</span>
+            </button>
+
+            {/* A fazer */}
+            <button
+              type="button"
+              onClick={() => setActiveFilter(activeFilter === 'afazer' ? 'all' : 'afazer')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition border cursor-pointer ${
+                activeFilter === 'afazer'
+                  ? 'bg-neutral-500/20 text-[var(--ax-text-strong)] border-neutral-400/50 shadow-xs ring-1 ring-neutral-400/30'
+                  : activeFilter !== 'all'
+                  ? 'opacity-50 bg-transparent text-[var(--ax-text-muted)] border-transparent hover:opacity-100 hover:bg-[var(--ax-surface-subtle)]'
+                  : 'bg-[var(--ax-surface-subtle)] text-[var(--ax-text-strong)] border-[var(--ax-border)] hover:border-neutral-400/40'
+              }`}
+              title="Filtrar por A fazer"
+            >
+              <i className="w-2.5 h-2.5 rounded-full inline-block shrink-0" style={{ background: 'var(--ax-text-muted)' }} />
+              <span>A fazer</span>
+              <span className="ax-num text-[10px] opacity-75">({afazerCount})</span>
+            </button>
+
+            {/* Data Comemorativa */}
+            <button
+              type="button"
+              onClick={() => setActiveFilter(activeFilter === 'comemorativa' ? 'all' : 'comemorativa')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition border cursor-pointer ${
+                activeFilter === 'comemorativa'
+                  ? 'bg-[#8B5CF6]/20 text-[#A78BFA] border-[#8B5CF6]/60 shadow-xs ring-1 ring-[#8B5CF6]/50'
+                  : activeFilter !== 'all'
+                  ? 'opacity-50 bg-transparent text-[var(--ax-text-muted)] border-transparent hover:opacity-100 hover:bg-[var(--ax-surface-subtle)]'
+                  : 'bg-[var(--ax-surface-subtle)] text-[var(--ax-text-strong)] border-[var(--ax-border)] hover:border-[#8B5CF6]/40'
+              }`}
+              title="Filtrar por Data Comemorativa"
+            >
+              <i className="w-2.5 h-2.5 rounded-full inline-block shrink-0" style={{ background: '#8B5CF6' }} />
+              <span>Data Comemorativa</span>
+              <span className="ax-num text-[10px] opacity-75">({comemCount})</span>
+            </button>
           </div>
 
-          <div className="flex items-center gap-3 text-xs">
-            <span className="px-2.5 py-1 rounded-lg bg-[var(--ax-surface-subtle)] border border-[var(--ax-border)]">
+          <div className="flex items-center gap-2 text-xs">
+            <button
+              type="button"
+              onClick={() => setActiveFilter(activeFilter === 'agendadas' ? 'all' : 'agendadas')}
+              className={`px-2.5 py-1 rounded-lg border text-xs font-semibold transition cursor-pointer ${
+                activeFilter === 'agendadas'
+                  ? 'bg-cyan-500/15 border-cyan-500/50 text-[var(--ax-text-strong)] shadow-xs ring-1 ring-cyan-500/30'
+                  : activeFilter !== 'all'
+                  ? 'opacity-60 bg-[var(--ax-surface-subtle)] border-[var(--ax-border)] text-[var(--ax-text-muted)] hover:opacity-100'
+                  : 'bg-[var(--ax-surface-subtle)] border-[var(--ax-border)] text-[var(--ax-text-muted)] hover:border-cyan-500/40'
+              }`}
+              title="Filtrar publicações pendentes / agendadas"
+            >
               Agendadas: <strong className="text-[var(--ax-viz-cyan)] ax-num">{pendCount}</strong>
-            </span>
-            <span className="px-2.5 py-1 rounded-lg bg-[var(--ax-surface-subtle)] border border-[var(--ax-border)]">
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveFilter(activeFilter === 'publicadas' ? 'all' : 'publicadas')}
+              className={`px-2.5 py-1 rounded-lg border text-xs font-semibold transition cursor-pointer ${
+                activeFilter === 'publicadas'
+                  ? 'bg-emerald-500/15 border-emerald-500/50 text-[var(--ax-text-strong)] shadow-xs ring-1 ring-emerald-500/30'
+                  : activeFilter !== 'all'
+                  ? 'opacity-60 bg-[var(--ax-surface-subtle)] border-[var(--ax-border)] text-[var(--ax-text-muted)] hover:opacity-100'
+                  : 'bg-[var(--ax-surface-subtle)] border-[var(--ax-border)] text-[var(--ax-text-muted)] hover:border-emerald-500/40'
+              }`}
+              title="Filtrar publicações postadas / concluídas"
+            >
               Publicadas: <strong className="text-[var(--ax-viz-emerald)] ax-num">{pubCount}</strong>
-            </span>
+            </button>
           </div>
         </div>
 

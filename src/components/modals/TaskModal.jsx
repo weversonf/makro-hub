@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useHub, STAGES, PRIOS, CANAIS, fmtDate, isEditorialActivity } from '../../context/HubContext';
+import { useHub, STAGES, PRIOS, CANAIS, fmtDate, isEditorialActivity, isComemorativa } from '../../context/HubContext';
 import { storage, auth } from '../../firebase';
-import { X, Trash2, ExternalLink, UploadCloud, Tag, Calendar, Send, Plus, Copy, Check, FolderKanban, User, TrendingUp, CheckSquare } from 'lucide-react';
+import { X, Trash2, ExternalLink, UploadCloud, Tag, Calendar, Send, Plus, Copy, Check, FolderKanban, User, TrendingUp, CheckSquare, Sparkles } from 'lucide-react';
 import HrivoDatePicker from '../common/HrivoDatePicker';
 
 export default function TaskModal() {
@@ -31,6 +31,7 @@ export default function TaskModal() {
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
   const [categoria, setCategoria] = useState('');
+  const [tipo, setTipo] = useState('padrao');
   const [isProjeto, setIsProjeto] = useState(false);
   const [projeto, setProjeto] = useState('');
   const [isCreatingNewProject, setIsCreatingNewProject] = useState(false);
@@ -65,6 +66,8 @@ export default function TaskModal() {
         setTitulo(task.titulo || '');
         setDescricao(task.descricao || '');
         setCategoria(task.categoria || '');
+        const isCom = isComemorativa(task, categories);
+        setTipo(isCom ? 'comemorativa' : (task.tipo || 'padrao'));
         setStage(task.stage || 'afazer');
         setPrioridade(task.prioridade || 'baixa');
         setDataVencimento(task.dataVencimento || '');
@@ -110,6 +113,10 @@ export default function TaskModal() {
       // Nova tarefa / publicação
       setTitulo('');
       setDescricao('');
+      const isInitCom = taskModalInitialData?.tipo === 'comemorativa' ||
+                        taskModalInitialData?.isComemorativa ||
+                        isComemorativa(taskModalInitialData, categories);
+      setTipo(isInitCom ? 'comemorativa' : (taskModalInitialData?.tipo || 'padrao'));
       const defaultCat = taskModalInitialData?.categoria || (categories[0]?.id === 1 && categories.length > 1 ? categories[1].id : categories[0]?.id || '');
       setCategoria(defaultCat);
       setStage(taskModalInitialData?.stage || 'afazer');
@@ -253,6 +260,9 @@ export default function TaskModal() {
       titulo: titulo.trim(),
       descricao: descricao.trim(),
       categoria: Number(categoria) || categoria || null,
+      tipo: tipo === 'comemorativa' ? 'comemorativa' : 'padrao',
+      isComemorativa: tipo === 'comemorativa',
+      tipoPublicacao: tipo === 'comemorativa' ? 'comemorativa' : 'padrao',
       isProjeto: Boolean(cleanProjeto),
       projeto: cleanProjeto || null,
       responsavel: allowResponsibleSelection
@@ -503,6 +513,48 @@ export default function TaskModal() {
               </div>
             </div>
 
+            {/* Tipo de Atividade */}
+            <div>
+              <label className="text-xs font-bold text-[var(--color-heading)] block mb-1.5 flex items-center justify-between">
+                <span>Tipo da Atividade</span>
+                {tipo === 'comemorativa' && (
+                  <span className="text-[10px] font-bold text-[#8B5CF6] flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#8B5CF6]" />
+                    Data Comemorativa
+                  </span>
+                )}
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setTipo('padrao')}
+                  className={`h-9 px-3 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                    tipo !== 'comemorativa'
+                      ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)]'
+                      : 'border-[var(--color-border)] bg-[var(--color-subtle)] text-[var(--color-muted)] hover:text-[var(--color-heading)]'
+                  }`}
+                >
+                  <span>Padrão</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTipo('comemorativa');
+                    const comemCat = categories.find((c) => c.nome && c.nome.toLowerCase().includes('comemorat'));
+                    if (comemCat) setCategoria(comemCat.id);
+                  }}
+                  className={`h-9 px-3 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                    tipo === 'comemorativa'
+                      ? 'border-[#8B5CF6] bg-[#8B5CF6]/15 text-[#8B5CF6] ring-1 ring-[#8B5CF6]'
+                      : 'border-[var(--color-border)] bg-[var(--color-subtle)] text-[var(--color-muted)] hover:text-[var(--color-heading)]'
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full bg-[#8B5CF6]" />
+                  <span>Data Comemorativa</span>
+                </button>
+              </div>
+            </div>
+
             {/* Categoria */}
             <div>
               <label className="text-xs font-bold text-[var(--color-heading)] block mb-1">
@@ -511,7 +563,14 @@ export default function TaskModal() {
               <select
                 className="w-full h-9 px-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-subtle)] text-xs text-[var(--color-heading)] focus:border-[var(--color-primary)] outline-none"
                 value={categoria}
-                onChange={(e) => setCategoria(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setCategoria(val);
+                  const found = categories.find((c) => String(c.id) === String(val));
+                  if (found && found.nome && found.nome.toLowerCase().includes('comemorat')) {
+                    setTipo('comemorativa');
+                  }
+                }}
               >
                 <option value="">Sem categoria</option>
                 {categories.map((c) => (

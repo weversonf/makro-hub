@@ -27,10 +27,11 @@ export const CANAIS = [
 ];
 
 export const DEFAULT_CATS = [
-  { id: 1, nome: 'Editorial',      cor: '#3B82F6' },
-  { id: 2, nome: 'Administrativo', cor: '#F59E0B' },
-  { id: 3, nome: 'Design',         cor: '#8B5CF6' },
-  { id: 4, nome: 'Cliente XYZ',    cor: '#0EA5C4' }
+  { id: 1, nome: 'Editorial',          cor: '#3B82F6' },
+  { id: 2, nome: 'Administrativo',     cor: '#F59E0B' },
+  { id: 3, nome: 'Design',             cor: '#8B5CF6' },
+  { id: 4, nome: 'Cliente XYZ',        cor: '#0EA5C4' },
+  { id: 5, nome: 'Data Comemorativa',  cor: '#8B5CF6' }
 ];
 
 export const DEFAULT_PROJECTS = [
@@ -104,8 +105,22 @@ export function fmtDateFull(iso) {
   return `${p[2]}/${p[1]}/${p[0]}`;
 }
 
+export function isComemorativa(activity, categories = []) {
+  if (!activity) return false;
+  if (activity.tipo === 'comemorativa' || activity.tipo === 'data_comemorativa' || activity.isComemorativa) return true;
+  if (activity.tipoPublicacao === 'comemorativa' || activity.tipoPublicacao === 'data_comemorativa') return true;
+  if (categories && categories.length > 0) {
+    const cat = categories.find((c) => String(c.id) === String(activity.categoria));
+    if (cat && cat.nome && cat.nome.toLowerCase().includes('comemorat')) return true;
+  }
+  if (typeof activity.categoria === 'string' && activity.categoria.toLowerCase().includes('comemorat')) return true;
+  if (activity.tags && Array.isArray(activity.tags) && activity.tags.some((t) => String(t).toLowerCase().includes('comemorat'))) return true;
+  return false;
+}
+
 export function isEditorialActivity(activity, categories = []) {
   if (!activity) return false;
+  if (isComemorativa(activity, categories)) return true;
   // 1. Categoria ID 1 (numérico ou string)
   if (String(activity.categoria) === '1') return true;
   // 2. Por nome da categoria (Editorial, Redes Sociais, Revista, etc.)
@@ -1751,6 +1766,7 @@ export function HubProvider({ children }) {
         exportBackup,
         importBackup,
         isEditorialActivity: (a) => isEditorialActivity(a, categories),
+        isComemorativa: (a) => isComemorativa(a, categories),
         rescheduleUnpublishedEditorial,
         authError,
         loggingIn,
