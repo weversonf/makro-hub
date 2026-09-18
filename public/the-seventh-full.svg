@@ -1,0 +1,15 @@
+﻿<svg xmlns=\http://www.w3.org/2000/svg\ viewBox=\0 0 280 64\ fill=\none\>
+ <!-- Icon on left -->
+ <g transform=\translate 4 4 \>
+ <rect width=\56\ height=\56\ rx=\14\ fill=\#0A0C11\/>
+ <rect width=\56\ height=\56\ rx=\14\ stroke=\#1F2430\ stroke-width=\1\/>
+ <g transform=\translate 6 4 scale 0.75 \>
+ <path d=\M18 20 H56 L38 48 H27 L43 26 H18 V20Z\ fill=\#FFFFFF\/>
+ <path d=\M28 45 L37 55 L55 33 L50 29 L35 48 L29 40 L28 45Z\ fill=\#1279FF\/>
+ </g>
+ </g>
+
+ <!-- Typography: THE SEVENTH -->
+ <text x=\72\ y=\37\ fill=\#FFFFFF\ font-family=\Plus Jakarta Sans -apple-system sans-serif\ font-size=\18\ font-weight=\800\ letter-spacing=\1.5\>THE SEVENTH</text>
+ <text x=\73\ y=\49\ fill=\#6B7280\ font-family=\Plus Jakarta Sans -apple-system sans-serif\ font-size=\9\ font-weight=\600\ letter-spacing=\1.2\>HUB DE ATIVIDADES</text>
+</svg>
