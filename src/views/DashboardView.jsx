@@ -70,7 +70,7 @@ export default function DashboardView() {
               <span>👋</span> {greeting}, {firstName}!
             </p>
             <h2 className="text-2xl font-bold text-[var(--color-heading)] mt-1.5">
-              Hub de Marketing Makro
+              Hub de Atividades
             </h2>
             <p className="text-sm text-[var(--color-text-secondary)] mt-1">
               {formattedDate} · {atrasadas > 0 ? `${atrasadas} tarefas precisam de atenção prioritária.` : 'Todas as entregas estão em dia!'}

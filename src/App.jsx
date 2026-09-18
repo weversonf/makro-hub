@@ -156,7 +156,7 @@ export default function App() {
       <div className="flex h-screen items-center justify-center bg-[var(--ax-canvas)]">
         <div className="flex flex-col items-center gap-4">
           <div className="ax-spinner" />
-          <span className="text-xs text-[var(--ax-text-muted)] font-medium">Carregando Hub de Marketing…</span>
+          <span className="text-xs text-[var(--ax-text-muted)] font-medium">Carregando Hub de Atividades…</span>
         </div>
       </div>
     );
@@ -254,7 +254,7 @@ export default function App() {
           />
 
           <div>
-            <h2 className="font-bold text-xl text-[var(--color-heading)]">Hub de Marketing</h2>
+            <h2 className="font-bold text-xl text-[var(--color-heading)]">Hub de Atividades</h2>
             <p className="text-xs text-[var(--color-muted)] mt-1.5 leading-relaxed">
               Gestão Integrada de Tarefas, Calendário Editorial e NPS Makro
             </p>
