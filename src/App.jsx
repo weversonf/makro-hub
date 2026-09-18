@@ -256,7 +256,7 @@ export default function App() {
           <div>
             <h2 className="font-bold text-xl text-[var(--color-heading)]">Hub de Atividades</h2>
             <p className="text-xs text-[var(--color-muted)] mt-1.5 leading-relaxed">
-              Gestão Integrada de Tarefas, Calendário Editorial e NPS Makro
+              Organize a semana. O sétimo dia é para descansar.
             </p>
           </div>
 
