@@ -318,6 +318,8 @@ export default function ConfigView() {
             </div>
           </div>
         </div>
+      )}
+
       {/* CONTEÚDO DA ABA: LOGOS & MARCA */}
       {activeTab === 'marca' && (
         <div className="flex flex-col gap-5">
