@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 const MONTH_NAMES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -8,7 +9,9 @@ const DOW_NAMES = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
 export default function HrivoDatePicker({ value, onChange, placeholder = 'dd/mm/aaaa', label, icon }) {
   const [open, setOpen] = useState(false);
-  const containerRef = useRef(null);
+  const triggerRef = useRef(null);
+  const popoverRef = useRef(null);
+  const [coords, setCoords] = useState({ top: 0, left: 0 });
 
   // Inicializa visualização do calendário no mês do valor selecionado ou na data atual
   const initialDate = value ? new Date(value + 'T12:00:00') : new Date();
@@ -25,17 +28,55 @@ export default function HrivoDatePicker({ value, onChange, placeholder = 'dd/mm/
     }
   }, [value]);
 
-  // Fecha ao clicar fora
+  // Calcula posição para renderizar "pra fora" (fora dos limites e scrolls do modal)
+  const updatePosition = () => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const popoverHeight = 315;
+    const popoverWidth = 264;
+
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const placeAbove = spaceBelow < popoverHeight && rect.top > popoverHeight;
+
+    const top = placeAbove
+      ? Math.max(10, rect.top - popoverHeight - 6)
+      : Math.min(window.innerHeight - popoverHeight - 10, rect.bottom + 6);
+
+    let left = rect.left;
+    if (left + popoverWidth > window.innerWidth - 10) {
+      left = Math.max(10, window.innerWidth - popoverWidth - 10);
+    }
+
+    setCoords({ top, left });
+  };
+
+  // Posicionamento dinâmico e clique fora
   useEffect(() => {
+    if (!open) return;
+
+    updatePosition();
+
+    const handleScrollOrResize = (e) => {
+      if (popoverRef.current && popoverRef.current.contains(e.target)) return;
+      updatePosition();
+    };
+
+    window.addEventListener('resize', handleScrollOrResize);
+    window.addEventListener('scroll', handleScrollOrResize, true);
+
     function handleClickOutside(event) {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
+      const clickedTrigger = triggerRef.current && triggerRef.current.contains(event.target);
+      const clickedPopover = popoverRef.current && popoverRef.current.contains(event.target);
+      if (!clickedTrigger && !clickedPopover) {
         setOpen(false);
       }
     }
-    if (open) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+
     return () => {
+      window.removeEventListener('resize', handleScrollOrResize);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [open]);
@@ -106,9 +147,10 @@ export default function HrivoDatePicker({ value, onChange, placeholder = 'dd/mm/
   const selectedDayNum = selectedParts ? selectedParts[2] : null;
 
   return (
-    <div className="relative w-full" ref={containerRef}>
+    <div className="relative w-full">
       {/* Botão Gatilho Estilo Hrivo */}
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen(!open)}
         className="w-full h-9 px-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-subtle)] text-xs text-[var(--color-heading)] flex items-center justify-between gap-2 hover:border-[var(--color-primary)] transition text-left cursor-pointer"
@@ -122,9 +164,20 @@ export default function HrivoDatePicker({ value, onChange, placeholder = 'dd/mm/
         <i className="ph ph-caret-down text-xs text-[var(--color-muted)] flex-shrink-0" />
       </button>
 
-      {/* Popover Calendário Hrivo Dark/Light */}
-      {open && (
-        <div className="absolute top-full left-0 mt-1.5 w-64 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-2xl p-3.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+      {/* Popover Calendário Renderizado "Pra Fora" (Portal Flutuante no document.body) */}
+      {open && typeof document !== 'undefined' && createPortal(
+        <div
+          ref={popoverRef}
+          style={{
+            position: 'fixed',
+            top: `${coords.top}px`,
+            left: `${coords.left}px`,
+            width: '264px',
+            zIndex: 99999
+          }}
+          className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-2xl p-3.5 animate-in fade-in zoom-in-95 duration-150 select-none"
+          onClick={(e) => e.stopPropagation()}
+        >
           {/* Header: Navegação de Mês */}
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold text-[var(--color-heading)] capitalize">
@@ -211,7 +264,8 @@ export default function HrivoDatePicker({ value, onChange, placeholder = 'dd/mm/
               Hoje
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

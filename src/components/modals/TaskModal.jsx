@@ -57,6 +57,11 @@ export default function TaskModal() {
   const [responsavelEmail, setResponsavelEmail] = useState('');
   const [responsavelFoto, setResponsavelFoto] = useState('');
 
+  const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved'
+  const isLoadedRef = useRef(false);
+  const autoSaveTimeoutRef = useRef(null);
+  const currentFieldsRef = useRef({});
+
   useEffect(() => {
     if (!taskModalOpen) return;
 
@@ -108,8 +113,16 @@ export default function TaskModal() {
         setResponsavelNome(rNome || fallbackNome);
         setResponsavelEmail(rEmail || (rNome ? '' : fallbackEmail));
         setResponsavelFoto(rFoto || (rNome ? '' : fallbackFoto));
+
+        setSaveStatus('idle');
+        const timer = setTimeout(() => {
+          isLoadedRef.current = true;
+        }, 200);
+        return () => clearTimeout(timer);
       }
     } else {
+      isLoadedRef.current = false;
+      setSaveStatus('idle');
       // Nova tarefa / publicação
       setTitulo('');
       setDescricao('');
@@ -242,6 +255,139 @@ export default function TaskModal() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  currentFieldsRef.current = {
+    titulo,
+    descricao,
+    categoria,
+    tipo,
+    stage,
+    prioridade,
+    dataVencimento,
+    dataPostagem,
+    progress,
+    syncChecklist,
+    checklist,
+    canais,
+    imagens,
+    supportLinks,
+    isProjeto,
+    projeto,
+    responsavelId,
+    responsavelNome,
+    responsavelEmail,
+    responsavelFoto
+  };
+
+  const buildPayload = (fields = null) => {
+    const f = fields || currentFieldsRef.current;
+    const cleanProjeto = f.isProjeto && f.projeto ? f.projeto.trim() : '';
+    const isEditMode = Boolean(editTaskId);
+    const allowResponsibleSelection = isAdmin || isEditorial || isEditMode;
+
+    const payload = {
+      titulo: f.titulo !== undefined ? f.titulo.trim() : '',
+      descricao: f.descricao !== undefined ? f.descricao.trim() : '',
+      categoria: Number(f.categoria) || f.categoria || null,
+      tipo: f.tipo === 'comemorativa' ? 'comemorativa' : 'padrao',
+      isComemorativa: f.tipo === 'comemorativa',
+      tipoPublicacao: f.tipo === 'comemorativa' ? 'comemorativa' : 'padrao',
+      isProjeto: Boolean(cleanProjeto),
+      projeto: cleanProjeto || null,
+      responsavel: allowResponsibleSelection
+        ? (f.responsavelNome || (isMaster ? 'Weverson Nascimento' : (userProfile?.displayName || user?.displayName || 'Colaborador')))
+        : (userProfile?.displayName || userProfile?.nome || user?.displayName || 'Colaborador'),
+      responsavelEmail: allowResponsibleSelection
+        ? (f.responsavelEmail || (isMaster ? MASTER_ADMIN_EMAIL : (userProfile?.email || user?.email || '')))
+        : (userProfile?.email || user?.email || ''),
+      responsavelId: allowResponsibleSelection
+        ? (f.responsavelId || (isMaster ? 'master' : (user?.uid || '')))
+        : (user?.uid || ''),
+      responsavelFoto: allowResponsibleSelection
+        ? (f.responsavelFoto || (userProfile?.photoURL || user?.photoURL || ''))
+        : (userProfile?.photoURL || userProfile?.foto || user?.photoURL || ''),
+      stage: f.stage,
+      prioridade: f.prioridade,
+      dataVencimento: f.dataVencimento || null,
+      dataPostagem: f.dataPostagem || null,
+      progress: f.progress,
+      syncChecklist: f.syncChecklist,
+      idCheck: f.checklist,
+      canais: f.canais,
+      imagens: f.imagens,
+      supportLinks: f.supportLinks
+    };
+
+    if (f.stage === 'concluido') payload.progress = 100;
+    return payload;
+  };
+
+  const triggerAutoSave = (immediate = false) => {
+    if (!editTaskId || !isLoadedRef.current) return;
+    if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+
+    const execute = () => {
+      const payload = buildPayload();
+      const existing = getTask(editTaskId);
+      if (!payload.titulo && existing?.titulo) {
+        payload.titulo = existing.titulo;
+      }
+      if (payload.titulo) {
+        setSaveStatus('saving');
+        saveTask(payload, { keepOpen: true, silent: true });
+        setTimeout(() => setSaveStatus('saved'), 350);
+      }
+    };
+
+    if (immediate) {
+      execute();
+    } else {
+      setSaveStatus('saving');
+      autoSaveTimeoutRef.current = setTimeout(execute, 500);
+    }
+  };
+
+  // Efeito disparado ao alterar qualquer campo da tarefa existente (auto-save contínuo)
+  useEffect(() => {
+    if (editTaskId && isLoadedRef.current) {
+      triggerAutoSave(false);
+    }
+  }, [
+    titulo, descricao, categoria, tipo, stage, prioridade,
+    dataVencimento, dataPostagem, progress, syncChecklist,
+    checklist, canais, imagens, supportLinks, isProjeto, projeto,
+    responsavelId
+  ]);
+
+  // Fechamento garantindo que qualquer alteração pendente seja salva antes de sair
+  const handleCloseModal = () => {
+    if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+    if (editTaskId && isLoadedRef.current) {
+      const payload = buildPayload();
+      const existing = getTask(editTaskId);
+      if (!payload.titulo && existing?.titulo) {
+        payload.titulo = existing.titulo;
+      }
+      if (payload.titulo) {
+        saveTask(payload, { keepOpen: false, silent: true });
+        isLoadedRef.current = false;
+        return;
+      }
+    }
+    isLoadedRef.current = false;
+    closeTaskModal();
+  };
+
+  // Suporte à tecla Escape para fechamento com salvamento
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && taskModalOpen) {
+        handleCloseModal();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [taskModalOpen, editTaskId]);
+
   const handleSubmit = (e) => {
     if (e) e.preventDefault();
     if (isSaving) return;
@@ -251,50 +397,14 @@ export default function TaskModal() {
     }
 
     setIsSaving(true);
+    const payload = buildPayload();
 
-    const cleanProjeto = isProjeto && projeto ? projeto.trim() : '';
-    const isEditMode = Boolean(editTaskId);
-    const allowResponsibleSelection = isAdmin || isEditorial || isEditMode;
-
-    const payload = {
-      titulo: titulo.trim(),
-      descricao: descricao.trim(),
-      categoria: Number(categoria) || categoria || null,
-      tipo: tipo === 'comemorativa' ? 'comemorativa' : 'padrao',
-      isComemorativa: tipo === 'comemorativa',
-      tipoPublicacao: tipo === 'comemorativa' ? 'comemorativa' : 'padrao',
-      isProjeto: Boolean(cleanProjeto),
-      projeto: cleanProjeto || null,
-      responsavel: allowResponsibleSelection
-        ? (responsavelNome || (isMaster ? 'Weverson Nascimento' : (userProfile?.displayName || user?.displayName || 'Colaborador')))
-        : (userProfile?.displayName || userProfile?.nome || user?.displayName || 'Colaborador'),
-      responsavelEmail: allowResponsibleSelection
-        ? (responsavelEmail || (isMaster ? MASTER_ADMIN_EMAIL : (userProfile?.email || user?.email || '')))
-        : (userProfile?.email || user?.email || ''),
-      responsavelId: allowResponsibleSelection
-        ? (responsavelId || (isMaster ? 'master' : (user?.uid || '')))
-        : (user?.uid || ''),
-      responsavelFoto: allowResponsibleSelection
-        ? (responsavelFoto || (userProfile?.photoURL || user?.photoURL || ''))
-        : (userProfile?.photoURL || userProfile?.foto || user?.photoURL || ''),
-      stage,
-      prioridade,
-      dataVencimento: dataVencimento || null,
-      dataPostagem: dataPostagem || null,
-      progress,
-      syncChecklist,
-      idCheck: checklist,
-      canais,
-      imagens,
-      supportLinks
-    };
-
-    if (cleanProjeto) {
-      createProject({ nome: cleanProjeto });
+    if (payload.projeto) {
+      createProject({ nome: payload.projeto });
     }
 
-    if (stage === 'concluido') payload.progress = 100;
-    saveTask(payload);
+    isLoadedRef.current = false;
+    saveTask(payload, { keepOpen: false, silent: false });
   };
 
   const charCount = descricao.length;
@@ -303,7 +413,7 @@ export default function TaskModal() {
   const checklistPercent = checklist.length > 0 ? Math.round((doneCount / checklist.length) * 100) : 0;
 
   return (
-    <div className="ax-overlay open" onClick={closeTaskModal}>
+    <div className="ax-overlay open" onClick={handleCloseModal}>
       <div
         className="ax-modal"
         style={{
@@ -335,12 +445,32 @@ export default function TaskModal() {
             <span className="text-xs font-mono text-[var(--color-muted)]">
               {editTaskId ? `#${editTaskId}` : 'Nova Demanda'}
             </span>
+            {editTaskId && (
+              <span className="text-[11px] font-medium transition flex items-center gap-1.5 ml-2">
+                {saveStatus === 'saving' ? (
+                  <span className="text-amber-400 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    Salvando...
+                  </span>
+                ) : saveStatus === 'saved' ? (
+                  <span className="text-emerald-400 flex items-center gap-1">
+                    <Check size={12} />
+                    Salvo
+                  </span>
+                ) : (
+                  <span className="text-[var(--color-muted)] flex items-center gap-1 opacity-70">
+                    <Check size={12} />
+                    Salvo
+                  </span>
+                )}
+              </span>
+            )}
           </div>
 
           <button
             type="button"
             className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--color-muted)] hover:text-white hover:bg-white/10 transition"
-            onClick={closeTaskModal}
+            onClick={handleCloseModal}
             aria-label="Fechar"
           >
             <X size={18} />
@@ -878,6 +1008,7 @@ export default function TaskModal() {
                 placeholder="Ex.: A verdadeira força está na capacidade de atender a qualquer desafio..."
                 value={titulo}
                 onChange={(e) => setTitulo(e.target.value)}
+                onBlur={() => triggerAutoSave(true)}
                 autoFocus
               />
             </div>
@@ -910,6 +1041,7 @@ export default function TaskModal() {
                 placeholder={isEditorial ? 'Escreva a copy completa, hashtags e detalhes da publicação…' : 'Detalhe os requisitos, observações e briefing desta entrega…'}
                 value={descricao}
                 onChange={(e) => setDescricao(e.target.value)}
+                onBlur={() => triggerAutoSave(true)}
               />
             </div>
 
@@ -983,12 +1115,27 @@ export default function TaskModal() {
           )}
 
           <div className="flex items-center gap-2.5">
+            {editTaskId && (
+              <span className="text-xs text-[var(--color-muted)] hidden sm:inline-block mr-1.5 font-medium">
+                {saveStatus === 'saving' ? (
+                  <span className="text-amber-400 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    Salvando alterações...
+                  </span>
+                ) : (
+                  <span className="text-emerald-400 flex items-center gap-1">
+                    <Check size={12} />
+                    Salvo automaticamente
+                  </span>
+                )}
+              </span>
+            )}
             <button
               type="button"
               className="hr-btn hr-btn--secondary text-xs h-9 px-4"
-              onClick={closeTaskModal}
+              onClick={handleCloseModal}
             >
-              Cancelar
+              {editTaskId ? 'Fechar' : 'Cancelar'}
             </button>
             <button
               type="button"
@@ -1001,8 +1148,10 @@ export default function TaskModal() {
                   <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
                   <span>Salvando...</span>
                 </>
+              ) : editTaskId ? (
+                'Salvar e Fechar'
               ) : (
-                'Salvar Alterações'
+                'Criar Tarefa'
               )}
             </button>
           </div>

@@ -1230,7 +1230,8 @@ export function HubProvider({ children }) {
     setTaskModalInitialData(null);
   }, []);
 
-  const saveTask = (taskData) => {
+  const saveTask = (taskData, options = {}) => {
+    const { keepOpen = false, silent = false } = options;
     try {
       let respEmail = taskData.responsavelEmail || '';
       let respId = taskData.responsavelId || '';
@@ -1257,8 +1258,10 @@ export function HubProvider({ children }) {
         responsavelFoto: respFoto || (taskData.responsavel ? '' : (userProfile?.photoURL || userProfile?.foto || user?.photoURL || ''))
       };
 
-      if (editTaskId) {
-        const existing = getTask(editTaskId);
+      const targetId = taskData.id || editTaskId;
+
+      if (targetId) {
+        const existing = getTask(targetId);
         if (existing) {
           const finalResp = {
             responsavel: taskData.responsavel || existing.responsavel || defaultResp.responsavel,
@@ -1274,9 +1277,13 @@ export function HubProvider({ children }) {
             concluidoEm: taskData.stage === 'concluido' ? (existing.concluidoEm || todayISO()) : null
           };
           // Atualização otimista imediata na UI
-          setAllActivities((prev) => prev.map((a) => (a.id === editTaskId ? updatedTask : a)));
-          closeTaskModal();
-          showToast('Tarefa atualizada com sucesso');
+          setAllActivities((prev) => prev.map((a) => (a.id === targetId ? updatedTask : a)));
+          if (!keepOpen) {
+            closeTaskModal();
+          }
+          if (!silent) {
+            showToast('Tarefa atualizada com sucesso');
+          }
 
           if (existing._fbId) {
             getSharedDoc('activities', existing._fbId)
@@ -1284,8 +1291,8 @@ export function HubProvider({ children }) {
               .catch((err) => {
                 console.error('[Firestore] Erro ao atualizar tarefa:', err);
                 // Rollback
-                setAllActivities((prev) => prev.map((a) => (a.id === editTaskId ? existing : a)));
-                showToast('Erro ao sincronizar atualização com o servidor.', 'error');
+                setAllActivities((prev) => prev.map((a) => (a.id === targetId ? existing : a)));
+                if (!silent) showToast('Erro ao sincronizar atualização com o servidor.', 'error');
               });
             db.collection('activities').doc(existing._fbId).set({ ...taskData, ...finalResp }, { merge: true }).catch(() => {});
           }
