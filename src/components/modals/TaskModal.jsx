@@ -157,8 +157,6 @@ export default function TaskModal() {
     setIsSaving(false);
   }, [taskModalOpen, editTaskId, taskModalInitialData, categories, getTask, user, userProfile, isMaster, MASTER_ADMIN_EMAIL, registeredUsers]);
 
-  if (!taskModalOpen) return null;
-
   const currentTaskMock = { categoria, canais, dataPostagem };
   const isEditorial = isEditorialActivity(currentTaskMock, categories);
   const currentCat = catOf(categoria);
@@ -348,10 +346,12 @@ export default function TaskModal() {
 
   // Efeito disparado ao alterar qualquer campo da tarefa existente (auto-save contínuo)
   useEffect(() => {
+    if (!taskModalOpen) return;
     if (editTaskId && isLoadedRef.current) {
       triggerAutoSave(false);
     }
   }, [
+    taskModalOpen,
     titulo, descricao, categoria, tipo, stage, prioridade,
     dataVencimento, dataPostagem, progress, syncChecklist,
     checklist, canais, imagens, supportLinks, isProjeto, projeto,
@@ -379,8 +379,9 @@ export default function TaskModal() {
 
   // Suporte à tecla Escape para fechamento com salvamento
   useEffect(() => {
+    if (!taskModalOpen) return;
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && taskModalOpen) {
+      if (e.key === 'Escape') {
         handleCloseModal();
       }
     };
@@ -411,6 +412,8 @@ export default function TaskModal() {
   const wordCount = descricao.trim() ? descricao.trim().split(/\s+/).length : 0;
   const doneCount = checklist.filter((c) => c.done).length;
   const checklistPercent = checklist.length > 0 ? Math.round((doneCount / checklist.length) * 100) : 0;
+
+  if (!taskModalOpen) return null;
 
   return (
     <div className="ax-overlay open" onClick={handleCloseModal}>
