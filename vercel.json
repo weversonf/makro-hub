@@ -11,7 +11,18 @@
           "value": "makrohub.vercel.app"
         }
       ],
-      "destination": "https://my-saturday.vercel.app/$1",
+      "destination": "https://theseventh.vercel.app/$1",
+      "permanent": true
+    },
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "my-saturday.vercel.app"
+        }
+      ],
+      "destination": "https://theseventh.vercel.app/$1",
       "permanent": true
     }
   ],
