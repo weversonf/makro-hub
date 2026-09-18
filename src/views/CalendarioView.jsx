@@ -314,9 +314,6 @@ export default function CalendarioView() {
     return cols;
   };
 
-  const pubCount = editorialTasks.filter((a) => a.stage === 'concluido').length;
-  const pendCount = editorialTasks.length - pubCount;
-
   return (
     <div className="flex flex-col gap-5 w-full">
       <div className="ax-card w-full">
